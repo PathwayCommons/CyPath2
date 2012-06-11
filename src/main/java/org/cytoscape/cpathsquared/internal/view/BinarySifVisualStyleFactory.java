@@ -23,7 +23,7 @@ import static org.cytoscape.view.presentation.property.BasicVisualLexicon.*;
  * 
  */
 public final class BinarySifVisualStyleFactory {
-	public final static String BINARY_SIF_VISUAL_STYLE = "Binary_SIF_Version_1";
+	public final static String BINARY_SIF_VISUAL_STYLE = "BioPAX_Binary_SIF";
 	public final static String BINARY_NETWORK = "BINARY_NETWORK";
 	public final static String COMPONENT_OF = "COMPONENT_OF";
 	public final static String COMPONENT_IN_SAME = "IN_SAME_COMPONENT";
@@ -37,7 +37,7 @@ public final class BinarySifVisualStyleFactory {
 	public final static String CO_CONTROL_DEPENDENT_SIMILAR = "CO_CONTROL_DEPENDENT_SIMILAR";
 	public final static String CO_CONTROL_DEPENDENT_ANTI = "CO_CONTROL_DEPENDENT_ANTI";
 	private final static String COMPLEX = "Complex";
-	private final static String INTERACTION = "interaction"; // TODO: Double check this constant
+	private final static String INTERACTION = "Interaction";
 
 	VisualStyle binarySifStyle;
 
@@ -56,13 +56,13 @@ public final class BinarySifVisualStyleFactory {
 		this.passthroughFactory = passthroughFactory;
 	}
 
-	// /**
-	// * Constructor.
-	// * If an existing BioPAX Viz Mapper already exists, we use it.
-	// * Otherwise, we create a new one.
-	// *
-	// * @return VisualStyle Object.
-	// */
+	 /**
+	 * Constructor.
+	 * If an existing SIF Viz Mapper already exists, we use it.
+	 * Otherwise, we create a new one.
+	 *
+	 * @return VisualStyle Object.
+	 */
 	public VisualStyle getVisualStyle() {
 		synchronized (this) {
 			if (binarySifStyle == null) {
@@ -105,8 +105,7 @@ public final class BinarySifVisualStyleFactory {
 		// Complexes are Hexagons.
 		DiscreteMapping<String, NodeShape> function = (DiscreteMapping<String, NodeShape>) discreteFactory
 				.createVisualMappingFunction(
-						BioPaxUtil.BIOPAX_ENTITY_TYPE, String.class, null,
-						NODE_SHAPE);
+						BioPaxUtil.BIOPAX_ENTITY_TYPE, String.class, NODE_SHAPE);
 		function.putMapValue(COMPLEX, NodeShapeVisualProperty.HEXAGON);
 		style.addVisualMappingFunction(function);
 	}
@@ -119,8 +118,7 @@ public final class BinarySifVisualStyleFactory {
 		Color lightBlue = new Color(153, 153, 255);
 		DiscreteMapping<String, Paint> function = (DiscreteMapping<String, Paint>) discreteFactory
 				.createVisualMappingFunction(
-						BioPaxUtil.BIOPAX_ENTITY_TYPE, String.class, null,
-						NODE_FILL_COLOR);
+						BioPaxUtil.BIOPAX_ENTITY_TYPE, String.class, NODE_FILL_COLOR);
 		function.putMapValue(COMPLEX, lightBlue);
 		style.addVisualMappingFunction(function);
 	}
@@ -130,8 +128,7 @@ public final class BinarySifVisualStyleFactory {
 		// to a particular node color
 		style.setDefaultValue(EDGE_PAINT, Color.BLACK);
 		DiscreteMapping<String, Paint> function = (DiscreteMapping<String, Paint>) discreteFactory
-				.createVisualMappingFunction(INTERACTION, String.class, null,
-						EDGE_PAINT);
+				.createVisualMappingFunction(INTERACTION, String.class, EDGE_PAINT);
 		
 		function.putMapValue(PARTICIPATES_CONVERSION,
 				Color.decode("#ccc1da"));
@@ -159,9 +156,7 @@ public final class BinarySifVisualStyleFactory {
 	private void createDirectedEdges(VisualStyle style) {
 		DiscreteMapping<String, ArrowShape> discreteMapping = 
 			(DiscreteMapping<String, ArrowShape>) discreteFactory
-				.createVisualMappingFunction(
-						INTERACTION, String.class, null,
-						EDGE_TARGET_ARROW_SHAPE);
+				.createVisualMappingFunction(INTERACTION, String.class, EDGE_TARGET_ARROW_SHAPE);
 
 		discreteMapping.putMapValue(COMPONENT_OF, ArrowShapeVisualProperty.ARROW);
 		discreteMapping.putMapValue(CONTROLS_STATE_CHANGE, ArrowShapeVisualProperty.ARROW);
@@ -175,7 +170,6 @@ public final class BinarySifVisualStyleFactory {
 	private void createNodeLabel(VisualStyle style) {
 		// create pass through mapper for node labels	
 		style.addVisualMappingFunction(passthroughFactory
-				.createVisualMappingFunction(CyNetwork.NAME, String.class, null,
-						BasicVisualLexicon.NODE_LABEL));
+				.createVisualMappingFunction(CyNetwork.NAME, String.class, BasicVisualLexicon.NODE_LABEL));
 	}
 }

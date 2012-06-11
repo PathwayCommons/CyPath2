@@ -12,6 +12,7 @@ import org.cytoscape.application.CyApplicationManager;
 import org.cytoscape.view.vizmap.VisualMappingFunctionFactory;
 import org.cytoscape.view.vizmap.VisualStyleFactory;
 import org.cytoscape.model.CyNetworkFactory;
+import org.cytoscape.property.CyProperty;
 import org.cytoscape.io.read.CyNetworkReaderManager;
 import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
 
@@ -50,6 +51,7 @@ public final class CyActivator extends AbstractCyActivator {
 		VisualStyleFactory visualStyleFactoryRef = getService(bc,VisualStyleFactory.class);
 		VisualMappingFunctionFactory discreteMappingFactoryRef = getService(bc,VisualMappingFunctionFactory.class,"(mapping.type=discrete)");
 		VisualMappingFunctionFactory passthroughMappingFactoryRef = getService(bc,VisualMappingFunctionFactory.class,"(mapping.type=passthrough)");
+		CyProperty cytoscapePropertiesServiceRef = getService(bc, CyProperty.class, "(cyPropertyName=cytoscape3.props)");
 		
 		BinarySifVisualStyleFactory binarySifVisualStyleUtil = new BinarySifVisualStyleFactory(
 				visualStyleFactoryRef,
@@ -71,11 +73,8 @@ public final class CyActivator extends AbstractCyActivator {
 				cyLayoutsRef,
 				undoSupportRef,
 				binarySifVisualStyleUtil,
-				visualMappingManagerRef);
-		
-		// tmp hack
-		CPath2Factory.cPathUrl = "http://localhost:8080/cpath-web-service/";
-//      CPath2Factory.cPathUrl = "http://awabi.cbio.mskcc.org/cpath2/";	
+				visualMappingManagerRef,
+				cytoscapePropertiesServiceRef);
 		
 		// register the service
 		CPath2CytoscapeWebService cPathWebService = new CPath2CytoscapeWebService();

@@ -21,16 +21,13 @@ import javax.swing.table.DefaultTableModel;
 
 import org.cytoscape.cpathsquared.internal.CPath2Factory;
 import org.cytoscape.cpathsquared.internal.task.ExecuteGetRecordByCPathIdTask;
-import org.cytoscape.work.TaskFactory;
-import org.cytoscape.work.TaskManager;
+import org.cytoscape.work.TaskIterator;
 
-import cpath.service.OutputFormat;
 import cpath.service.jaxb.SearchHit;
 
-/**
- * Download Details Frame.
- *
- */
+
+@Deprecated
+//TODO get/copy what's useful out of here and remove this class
 final class DownloadDetails extends JDialog {
     private String ids[];
     
@@ -126,13 +123,11 @@ final class DownloadDetails extends JDialog {
      */
     public void downloadInteractions() {
         String networkTitle = "Network";
-
-        OutputFormat format = CPath2Factory.downloadMode;
-
-        TaskManager<?,?> taskManager = CPath2Factory.getTaskManager();
-        TaskFactory taskFactory = CPath2Factory.newTaskFactory(
-        		new ExecuteGetRecordByCPathIdTask(ids, format, networkTitle));
-        taskManager.execute(taskFactory.createTaskIterator());
+        TaskIterator iterator = new TaskIterator(
+        	new ExecuteGetRecordByCPathIdTask(ids,  
+        		CPath2Factory.downloadMode, networkTitle));
+        
+        CPath2Factory.getTaskManager().execute(iterator);
     }
 }
 

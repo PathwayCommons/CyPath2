@@ -11,7 +11,6 @@ import java.util.Map;
 
 import javax.swing.SwingUtilities;
 
-import org.biopax.paxtools.controller.ModelUtils;
 import org.biopax.paxtools.converter.OneTwoThree;
 import org.biopax.paxtools.io.SimpleIOHandler;
 import org.biopax.paxtools.model.BioPAXElement;
@@ -196,13 +195,10 @@ public class ExecuteGetRecordByCPathIdTask extends AbstractTask {
 	/**
 	 * Execute Post-Processing on BINARY SIF Network.
 	 * 
-	 * @param cyNetwork
-	 *            Cytoscape Network Object.
+	 * @param cyNetwork Cytoscape Network Object.
 	 */
 	private void postProcessingBinarySif(final CyNetworkView view, TaskMonitor taskMonitor) {
 		// Init the node attribute meta data, e.g. description, visibility, etc.
-		// TODO: What happened to attribute descriptions?
-		// BioPaxMapper.initAttributes(nodeAttributes);
 
 		final CyNetwork cyNetwork = view.getModel();
 

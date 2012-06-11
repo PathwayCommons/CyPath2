@@ -78,6 +78,7 @@ final class DetailsPanel extends JPanel {
             public void hyperlinkUpdate(HyperlinkEvent hyperlinkEvent) {
                 if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
                     browser.openURL(hyperlinkEvent.getURL().toString());
+                    //TODO execute import network by uri...
                 }
             }
         });

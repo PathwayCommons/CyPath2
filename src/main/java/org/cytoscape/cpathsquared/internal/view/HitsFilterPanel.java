@@ -5,6 +5,8 @@ import java.awt.Font;
 import java.awt.event.MouseEvent;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
 import java.util.Set;
 
 import javax.swing.BoxLayout;
@@ -28,9 +30,10 @@ import cpath.service.jaxb.SearchHit;
 import cpath.service.jaxb.SearchResponse;
 
 
-final class HitsFilterPanel extends JPanel {
-    private final JLabel matchingItemsLabel;
-    private final HitsFilterModel hitsFilterModel;
+final class HitsFilterPanel extends JPanel implements Observer {
+	private static final long serialVersionUID = 1L;
+	private final JLabel matchingItemsLabel;
+    private final HitsModel hitsFilterModel;
     private final JList hitsJList;
     private final CheckNode rootNode;
     private final CheckNode typeFilterNode;
@@ -39,8 +42,8 @@ final class HitsFilterPanel extends JPanel {
     private final JTreeWithCheckNodes tree;
     private final CollapsablePanel filterTreePanel;
 	
-	public HitsFilterPanel(JList hitsJList) {
-        this.hitsFilterModel = new HitsFilterModel();
+	public HitsFilterPanel(final JList hitsJList, final HitsModel hitsModel) {
+        this.hitsFilterModel = hitsModel;
         this.hitsJList = hitsJList;
         
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -69,13 +72,10 @@ final class HitsFilterPanel extends JPanel {
 
         JScrollPane scrollPane = new JScrollPane(filterTreePanel);
         add(scrollPane);
+        
+        hitsFilterModel.addObserver(this);
     }
 
-	
-	public HitsFilterModel getModel() {
-		return hitsFilterModel;
-	}
-	
 	
     /**
      * Expands all Nodes.
@@ -159,9 +159,11 @@ final class HitsFilterPanel extends JPanel {
 	 * 
 	 * @param searchResponse
 	 */
-	public void update(final SearchResponse searchResponse) {
+	@Override
+	public void update(Observable o, Object arg) {
 		
-		hitsFilterModel.setSearchResponse(searchResponse);
+		SearchResponse searchResponse = (SearchResponse) arg;
+		
         matchingItemsLabel.setText("Listed: "
         	+ searchResponse.getSearchHit().size());
 		
@@ -253,4 +255,5 @@ final class HitsFilterPanel extends JPanel {
 		}
 
 	}
+
 }

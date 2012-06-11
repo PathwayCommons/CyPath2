@@ -3,8 +3,6 @@ package org.cytoscape.cpathsquared.internal.view;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultListModel;
-import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
@@ -24,16 +22,15 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 
-import org.apache.commons.lang.StringUtils;
 import org.cytoscape.cpathsquared.internal.CPath2Factory;
-import org.cytoscape.cpathsquared.internal.CPath2Factory.SearchFor;
 import org.cytoscape.cpathsquared.internal.task.ExecuteGetRecordByCPathIdTask;
-import org.cytoscape.work.TaskFactory;
+import org.cytoscape.work.Task;
+import org.cytoscape.work.TaskIterator;
+import org.cytoscape.work.TaskMonitor;
 
 import cpath.service.OutputFormat;
 import cpath.service.jaxb.SearchHit;
 import cpath.service.jaxb.SearchResponse;
-import cpath.service.jaxb.TraverseResponse;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -43,10 +40,12 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
 
 /**
  * Graphical User Interface (GUI) Utilities,
@@ -54,6 +53,13 @@ import java.util.List;
  */
 public final class GuiUtils {
 
+	// this model is used by the filters panel (left) and hits jlist
+	private static final HitsModel topPathwaysModel = new HitsModel(false);
+    
+	//create top pathways panel (north)
+	private static final TopPathwaysJList tpwJList = new TopPathwaysJList();
+	
+	
     private GuiUtils() {
 		throw new AssertionError("not instantiable");
 	}
@@ -144,52 +150,24 @@ public final class GuiUtils {
         panel.add(configPanel);
         return new JScrollPane(panel);
     }
-    
-	
-	public static JDialog createDownloadDetails(List<SearchHit> passedRecordList) {
-		return new DownloadDetails(passedRecordList);
-	}
 
 
-	public static JPanel createTopPathwaysPanel() {
-        final JPanel panel = new JPanel(); // to return
-       
-//		CPath2.addApiListener(panel); // required if 
+	public synchronized static JPanel createTopPathwaysPanel() {
+		
+		final JPanel panel = new JPanel(); // to return       
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
         //  Create Info Panel (the first tab)
         final DetailsPanel detailsPanel = new DetailsPanel();
         final JTextPane summaryTextPane = detailsPanel.getTextPane();
         
-//        //create participants (the third tab is about Entity References, Complexes, and Genes...)
-//        final JList mList = new JList(new DefaultListModel());
-//        mList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-//        mList.setPrototypeCellValue("12345678901234567890");
-//        JPanel mListPane = new JPanel();
-//        mListPane.setLayout(new BorderLayout());
-//        JScrollPane mListScrollPane = new JScrollPane(mList);
-//        mListScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-//        mListPane.add(mListScrollPane, BorderLayout.CENTER);
-        
         // make (south) tabs
         JTabbedPane southPane = new JTabbedPane(); 
         southPane.add("Summary", detailsPanel);
-//        southPane.add("Members", mListPane);
-        
-        //create top pathways panel (north)
-        //TODO if slow, - wrap as a new Task and run...
-        SearchResponse resp = CPath2Factory.newClient().getTopPathways();
-        TopPathwaysJList tpwJList = new TopPathwaysJList();
-		DefaultListModel listModel = (DefaultListModel) tpwJList.getModel();
-		listModel.clear();
-		List<SearchHit> searchHits = resp.getSearchHit();
-		for (SearchHit searchHit : searchHits)
-			listModel.addElement(searchHit);
-		
-        //  Create off-line filtering panel
-        final HitsFilterPanel filterPanel = new HitsFilterPanel(tpwJList);
-        filterPanel.update(resp);
-        tpwJList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+
+		//  Create the 'off-line' filtering panel
+        final HitsFilterPanel filterPanel = new HitsFilterPanel(tpwJList, topPathwaysModel);
+        tpwJList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         tpwJList.setPrototypeCellValue("12345678901234567890");
         // define a list item selection listener which updates the details panel, etc..
         tpwJList.addListSelectionListener(new ListSelectionListener() {
@@ -201,26 +179,35 @@ public final class GuiUtils {
                     if (selectedIndex >=0) {
                     	SearchHit item = (SearchHit) l.getModel().getElementAt(selectedIndex);
                 		// get/create and show hit's summary
-                		String summary = getSearchHitSummary(item);
+                		String summary = topPathwaysModel.hitsSummaryMap.get(item.getUri());
                 		summaryTextPane.setText(summary);
-                		summaryTextPane.setCaretPosition(0);
-                		
-                		// update members list
-//						DefaultListModel m = (DefaultListModel) mList.getModel();
-//						m.clear();
-//                		TraverseResponse tres = CPath2Factory.traverse(
-//                			"Pathway/pathwayComponent:Named/displayName",
-//								Collections.singleton(item.getUri()));
-//						if (tres != null)
-//							if (!tres.getTraverseEntry().isEmpty())
-//								for (String v : tres.getTraverseEntry().get(0).getValue())
-//									m.addElement(v);						
+                		summaryTextPane.setCaretPosition(0);					
                     }
                 }
             }
         });
+		tpwJList.addMouseListener(new MouseAdapter() {
+			public void mouseClicked(MouseEvent e) {
+				if (e.getClickCount() == 2) {
+					int selectedIndex = tpwJList.getSelectedIndex();
+					// ignore the "unselect" event.
+					if (selectedIndex >= 0) {
+						SearchHit item = (SearchHit) tpwJList.getModel()
+								.getElementAt(selectedIndex);						
+						String uri = item.getUri();
+						//TODO execute download network task
+						
+						
+					}
+				}
+			}
+		});
+		// add the list to model's observers
+        topPathwaysModel.addObserver(tpwJList);
         
         JPanel tpwFilterListPanel = new JPanel();
+        tpwFilterListPanel.setBorder(new TitledBorder("Type in the text field " +
+        		"to filter; double-click to download (creates a new network)!"));
         tpwFilterListPanel.setLayout(new BorderLayout());
         JScrollPane tpwListScrollPane = new JScrollPane(tpwJList);
         tpwListScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -242,61 +229,47 @@ public final class GuiUtils {
 	}
 
 	
-	static String getSearchHitSummary(SearchHit item) {
-		// get/create and show hit's summary
-		StringBuilder html = new StringBuilder();
-		html.append("<html>");
-
-		if (item.getName() != null)
-			html.append("<h2>" + item.getName() + "</h2>");
-		html.append("<h3>Class: " + item.getBiopaxClass() + ", URI: "
-				+ item.getUri() + "</h3>");
-
-		String primeExcerpt = item.getExcerpt();
-		if (primeExcerpt != null) {
-			html.append("<h4>Excerpt:</h4>");
-			html.append("<span class='excerpt'>" + primeExcerpt + "</span><br/>");
-		}
+	/**
+	 * Loads the list of top pathways from the server
+	 * if it hasn't been done already.
+	 * 
+	 * @param topPathwaysModel
+	 * @param tpwJList
+	 */
+	public static void loadTopPathwaysOnce() {
+		if(topPathwaysModel.getSearchResponse() != null) 
+			return; // already done!
 		
-		List<String> items = item.getOrganism();
-		if (items != null && !items.isEmpty()) {
-			html.append("<h3>Organisms:</h3>"
-				+ StringUtils.join(items, "<br/>"));
-		}
+		TaskIterator taskIterator = new TaskIterator(new Task() {
+			@Override
+			public void run(TaskMonitor taskMonitor) throws Exception {
+				try {
+					taskMonitor.setTitle("cPathSquared Task: Top Pathways");
+					taskMonitor.setProgress(0.1);
+					taskMonitor.setStatusMessage("Retrieving top pathways...");
+					SearchResponse resp = CPath2Factory.newClient().getTopPathways();
+					// reset the model and kick off observers (list and filter panel)
+			        topPathwaysModel.update(resp);
+				} catch (Throwable e) { 
+					//fail on both when there is no data (server error) and runtime/osgi errors
+					throw new RuntimeException(e);
+				} finally {
+					taskMonitor.setStatusMessage("Done");
+					taskMonitor.setProgress(1.0);
+				}
+			}
+			@Override
+			public void cancel() {
+			}
+		});
 		
-		items = item.getDataSource();
-		if (items != null && !items.isEmpty()) {
-			html.append("<h3>Data sources:</h3>"
-				+ StringUtils.join(items, "<br/>"));
-		}
-
-		// add about components/participants	
-		String path = null;
-		if("Pathway".equalsIgnoreCase(item.getBiopaxClass()))
-			path = "Pathway/pathwayComponent";
-		else if("Complex".equalsIgnoreCase(item.getBiopaxClass()))
-				path = "Complex/component";
-		else if(CPath2Factory.searchFor == SearchFor.INTERACTION)
-			path = "Interaction/participant";
-		else if(CPath2Factory.searchFor == SearchFor.PHYSICALENTITY)
-				path = "PhysicalEntity/memberPhysicalEntity";		
-		TraverseResponse members = CPath2Factory
-			.traverse(path + ":Named/displayName", Collections.singleton(item.getUri()));
-		if (members != null) {
-			List<String> values  = members.getTraverseEntry().get(0).getValue();
-			if (!values.isEmpty())
-				html.append("<h3>Contains " + values.size()
-					+ " components/members (direct):</h3>" + StringUtils.join(values, "<br/>"));
-		}
-
-		html.append("</html>");
-
-		return html.toString();
+		// kick off the task execution
+		CPath2Factory.getTaskManager().execute(taskIterator);
 	}
 	
 	
 
-	static class ToolTipsSearchHitsJList extends JList {
+	public static class ToolTipsSearchHitsJList extends JList implements Observer {
 
 		public ToolTipsSearchHitsJList() {
 			super(new DefaultListModel());
@@ -324,10 +297,24 @@ public final class GuiUtils {
 			}
 		}
 
+		@Override
+		public void update(Observable o, Object arg) {
+			SearchResponse resp = (SearchResponse) arg;
+			DefaultListModel lm = (DefaultListModel) this.getModel();
+			lm.clear();
+			for (SearchHit searchHit : resp.getSearchHit())
+				lm.addElement(searchHit);
+		}
+
+		
+		@Override
+		public synchronized ListModel getModel() {
+			return super.getModel();
+		}
 	}
 	
 	
-    static class TopPathwaysJList extends FilterdJList<SearchHit> {
+    static class TopPathwaysJList extends FilterdJList<SearchHit> implements Observer {
     	
     	@Override
     	public String getToolTipText(MouseEvent mouseEvent) {
@@ -348,6 +335,22 @@ public final class GuiUtils {
     			return null;
     		}
     	}
+
+		@Override
+		public void update(Observable o, Object arg) {
+			SearchResponse resp = (SearchResponse) arg;
+			FilterListModel<SearchHit> lm = (FilterListModel<SearchHit>) this.getModel();
+			lm.clear();
+			List<SearchHit> searchHits = resp.getSearchHit();
+			if (!searchHits.isEmpty())
+				for (SearchHit searchHit : searchHits)
+					lm.addElement(searchHit);	
+		}
+		
+		@Override
+		public synchronized ListModel getModel() {
+			return super.getModel();
+		}
     }
 
 	
@@ -356,7 +359,6 @@ public final class GuiUtils {
     	private final int DEFAULT_FIELD_WIDTH = 20;
     	
     	public FilterdJList() {
-    		super();
     		setModel(new FilterListModel<T>());
 			filterField = new FilterField<T>(DEFAULT_FIELD_WIDTH);
 		}
@@ -399,28 +401,35 @@ public final class GuiUtils {
 			ArrayList<E> items;
 			ArrayList<E> filterItems;
 
+			private synchronized List<E> items() {
+				return items;
+			}
+			
+			private synchronized List<E> filterItems() {
+				return filterItems;
+			}
+			
 			public FilterListModel() {
-				super();
 				items = new ArrayList<E>();
 				filterItems = new ArrayList<E>();
 			}
 
 			@Override
 			public Object getElementAt(int index) {
-				if (index < filterItems.size())
-					return filterItems.get(index);
+				if (index < filterItems().size())
+					return filterItems().get(index);
 				else
 					return null;
 			}
 
 			@Override
 			public int getSize() {
-				return filterItems.size();
+				return filterItems().size();
 			}
 			
 			@Override
 			public void addElement(Object o) {
-				items.add((E) o);
+				items().add((E) o);
 				refilter();
 			}
 
@@ -430,24 +439,22 @@ public final class GuiUtils {
 			}
 			
 			private void refilter() {
-				filterItems.clear();
+				filterItems().clear();
 				String term = getFilterField().getText();
-				for (E it : items)
+				for (E it : items())
 					if (it.toString().indexOf(term, 0) != -1)
-						filterItems.add(it);
+						filterItems().add(it);
 				fireContentsChanged(this, 0, getSize());
 			}
 			
 			@Override
 			public void clear() {
 				super.clear();
-				items.clear();
+				items().clear();
 				refilter();
 			}
 		}
     }
-
-    
 
 	
     //TODO assign to a button or link
@@ -462,32 +469,9 @@ public final class GuiUtils {
         String title = model.getValueAt(i, 0)
         	+ " (" + model.getValueAt(i, 1) + ")";
 
-        OutputFormat format = CPath2Factory.downloadMode;
-
-        TaskFactory taskFactory = CPath2Factory.newTaskFactory(new ExecuteGetRecordByCPathIdTask(
-        	new String[]{internalId}, format, title));
-        CPath2Factory.getTaskManager().execute(taskFactory.createTaskIterator());
-    }
- 
-    
-    //TODO 
-    private static final JButton createDownloadButton() {
-    	JButton downlodButton = new JButton("Download");
-        downlodButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent actionEvent) {               	
-//                    DownloadDetails detailsFrame = factory.createDownloadDetails(passedRecordList);
-//                    if (dialog != null) {
-//                            SwingUtilities.invokeLater(new Runnable() {
-//                                public void run() {
-//                                    dialog.dispose();
-//                                }
-//                            });
-//                    }
-//                    detailsFrame.setVisible(true);
-            }
-        });
-        
-        return downlodButton;
+        CPath2Factory.getTaskManager().execute(new TaskIterator(
+        		new ExecuteGetRecordByCPathIdTask(new String[]{internalId}, 
+        				CPath2Factory.downloadMode, title)));
     }
 
 

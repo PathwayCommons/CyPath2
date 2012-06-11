@@ -12,10 +12,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
+import java.util.Observer;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -50,20 +50,19 @@ import org.cytoscape.cpathsquared.internal.CPath2Factory.SearchFor;
 import org.cytoscape.cpathsquared.internal.view.GuiUtils.ToolTipsSearchHitsJList;
 import org.cytoscape.util.swing.CheckBoxJList;
 import org.cytoscape.work.Task;
-import org.cytoscape.work.TaskFactory;
+import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskMonitor;
 
 import cpath.client.CPath2Client;
 import cpath.client.util.NoResultsFoundException;
 import cpath.service.jaxb.SearchHit;
 import cpath.service.jaxb.SearchResponse;
-import cpath.service.jaxb.TraverseEntry;
-import cpath.service.jaxb.TraverseResponse;
 
 
 final class SearchPanel extends JPanel
 {
-    private final HitsFilterPanel filterPanel;
+	private static final long serialVersionUID = 1L;
+	private final HitsModel hitsModel;
 	private final JList resList; 
     private final JTextPane summaryTextPane;
     private final DetailsPanel detailsPanel;
@@ -73,9 +72,12 @@ final class SearchPanel extends JPanel
     private final CheckBoxJList dataSourceList;
     private final JTextField searchField;
     private final JLabel info;
+    private final JButton searchButton;
 
 	public SearchPanel() 
     {	   	 	
+		this.hitsModel = new HitsModel(true);
+		
 		setLayout(new BorderLayout());
 		
 		// Assembly the query panel
@@ -87,10 +89,11 @@ final class SearchPanel extends JPanel
     	searchField = createSearchField();
         
         // create query field, examples/label, and button
-        JButton searchButton = new JButton("Search");
+        searchButton = new JButton("Search");
         searchButton.setToolTipText("Full-Text Search");
         searchButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent actionEvent) {
+            	searchButton.setEnabled(false);
                 executeSearch(searchField.getText(), 
                 	organismList.getSelectedValues(), 
                 	dataSourceList.getSelectedValues(),
@@ -235,51 +238,36 @@ final class SearchPanel extends JPanel
                     if (selectedIndex >=0) {
                     	SearchHit item = (SearchHit) l.getModel().getElementAt(selectedIndex);
                 		// get/create and show hit's summary
-                		String summary = GuiUtils.getSearchHitSummary(item);
+                		String summary = hitsModel.hitsSummaryMap.get(item.getUri());
                 		summaryTextPane.setText(summary);
                 		summaryTextPane.setCaretPosition(0);
                 		
-                		// TODO update pathways list in a Task...
+                		// update pathways list
                 		DefaultListModel ppwListModel = (DefaultListModel) ppwList.getModel();
 						ppwListModel.clear();
-						if (!item.getPathway().isEmpty()) {
-							TraverseResponse ppwNames = CPath2Factory.traverse(
-									"Named/displayName", item.getPathway());
-							if (ppwNames != null) {
-								Map<String, String> map = new HashMap<String, String>();
-								for (TraverseEntry e : ppwNames.getTraverseEntry())
-									map.put(e.getUri(), e.getValue().get(0)); //uri: " + e.getUri());
-								// update the map values with ppw component counts
-								TraverseResponse ppwComponents = CPath2Factory.traverse(
-									"Pathway/pathwayComponent", item.getPathway());
-								for (TraverseEntry e : ppwComponents.getTraverseEntry()) {
-									String val = map.get(e.getUri());
-									if(!val.contains(" processes)")) //tmp hack against duplicated parent pathways (search index bug)
-										map.put(e.getUri(), val + 
-											" (" + e.getValue().size() + " processes)");
-								}
-								for (String uri : map.keySet())
-									ppwListModel.addElement(new NameValuePairListItem(map.get(uri), uri));
-							}
-						}              			
-//               			repaint();
+						Collection<NameValuePairListItem> ppws = hitsModel.hitsPathwaysMap.get(item.getUri());
+						if (ppws != null && !ppws.isEmpty())
+							for (NameValuePairListItem it : ppws)
+								ppwListModel.addElement(it);           			
                     }
                 }
             }
         });
+        // register the jlist as model's observer
+        hitsModel.addObserver((Observer) resList);
         
         JPanel hitListPane = new JPanel();
         hitListPane.setLayout(new BorderLayout());
         JScrollPane hitListScrollPane = new JScrollPane(resList);
         hitListScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        
+        hitListScrollPane.setBorder(new TitledBorder("Double-click to include/exclude an item to/from the network!"));
         // make (north) tabs       
         JSplitPane vSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, hitListScrollPane, southPane);
         vSplit.setDividerLocation(200);
         hitListPane.add(vSplit, BorderLayout.CENTER);
         
         //  Create search results extra filtering panel
-        this.filterPanel = new HitsFilterPanel(resList);
+        HitsFilterPanel filterPanel = new HitsFilterPanel(resList, hitsModel);
         
         //  Create the Split Pane
         JSplitPane hSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, filterPanel, hitListPane);
@@ -295,36 +283,66 @@ final class SearchPanel extends JPanel
 
       
     private final JComponent createOrganismFilterBox() {	
-    	Map<String,String> map = CPath2Factory.getAvailableOrganisms();
-    	//make sorted by name list
-    	SortedSet<NameValuePairListItem> items = new TreeSet<NameValuePairListItem>();
-    	for(String o : map.keySet()) {
-    		items.add(new NameValuePairListItem(map.get(o), o));
-    	}
-    	DefaultListModel model = new DefaultListModel();
-    	for(NameValuePairListItem nvp : items) {
-    		model.addElement(nvp);
-    	}
-    	organismList.setModel(model);
-        organismList.setToolTipText("Select Organisms");
-        organismList.setAlignmentX(Component.LEFT_ALIGNMENT);
+    	
+    	Task task = new Task() {	
+			@Override
+			public void run(TaskMonitor taskMonitor) throws Exception {
+		    	Map<String,String> map = CPath2Factory.getAvailableOrganisms();
+
+		    	//make sorted by name list
+		    	SortedSet<NameValuePairListItem> items = new TreeSet<NameValuePairListItem>();
+		    	for(String o : map.keySet()) {
+		    		items.add(new NameValuePairListItem(map.get(o), o));
+		    	}
+		    	DefaultListModel model = new DefaultListModel();
+		    	for(NameValuePairListItem nvp : items) {
+		    		model.addElement(nvp);
+		    	}
+		    	organismList.setModel(model);
+		        organismList.setToolTipText("Select Organisms");
+		        organismList.setAlignmentX(Component.LEFT_ALIGNMENT);
+			}
+			
+			@Override
+			public void cancel() {
+			}
+		};
+        
         JScrollPane scroll = new JScrollPane(organismList, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scroll.setBorder(new TitledBorder("Limit to organism(s):"));
+        
+        CPath2Factory.getTaskManager().execute(new TaskIterator(task));
+        
         return scroll;
     }
     
     private final JComponent createDataSourceFilterBox() {
-        DefaultListModel dataSourceBoxModel = new DefaultListModel(); 
-        Map<String,String> map = CPath2Factory.getLoadedDataSources();
-    	for(String d : map.keySet()) {
-    		dataSourceBoxModel.addElement(new NameValuePairListItem(map.get(d), d));
-    	}
         
-        dataSourceList.setModel(dataSourceBoxModel);
-        dataSourceList.setToolTipText("Select Datasources");
-        dataSourceList.setAlignmentX(Component.LEFT_ALIGNMENT);
+    	TaskIterator iterator = new TaskIterator(new Task() {
+			@Override
+			public void run(TaskMonitor taskMonitor) throws Exception {
+		    	DefaultListModel dataSourceBoxModel = new DefaultListModel(); 
+		        Map<String,String> map = CPath2Factory.getLoadedDataSources();
+		    	for(String d : map.keySet()) {
+		    		dataSourceBoxModel.addElement(new NameValuePairListItem(map.get(d), d));
+		    	}
+		        
+		        dataSourceList.setModel(dataSourceBoxModel);
+		        dataSourceList.setToolTipText("Select Datasources");
+		        dataSourceList.setAlignmentX(Component.LEFT_ALIGNMENT);
+			}
+
+			@Override
+			public void cancel() {
+			}
+    	});
+        
+        
         JScrollPane scroll = new JScrollPane(dataSourceList, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scroll.setBorder(new TitledBorder("Limit to datasource(s):"));
+        
+        CPath2Factory.getTaskManager().execute(iterator);  
+        
         return scroll;
     }
     
@@ -374,12 +392,12 @@ final class SearchPanel extends JPanel
     	
         if (keyword == null || keyword.trim().length() == 0 || keyword.startsWith(ENTER_TEXT)) {
 			info.setText("Error: Please enter a Gene Name or ID!");
+			searchButton.setEnabled(true);
 		} else {
 			info.setText("");
-			TaskFactory search = CPath2Factory.newTaskFactory(new Task() {
+			Task search = new Task() {
 				@Override
 				public void run(TaskMonitor taskMonitor) throws Exception {
-					DefaultListModel listModel = (DefaultListModel) resList.getModel();
 					try {
 						taskMonitor.setProgress(0);
 						taskMonitor.setStatusMessage("Executing search for " + keyword);
@@ -388,20 +406,17 @@ final class SearchPanel extends JPanel
 						client.setType(biopaxType);
 						if (datasource != null)
 							client.setDataSources(datasources);
+						
 						SearchResponse searchResponse = (SearchResponse) client.search(keyword);
-						listModel.clear();
-						List<SearchHit> searchHits = searchResponse.getSearchHit();
-						if (searchHits.size() > 0)
-							for (SearchHit searchHit : searchHits)
-								listModel.addElement(searchHit);
-						filterPanel.update(searchResponse);
+						// update hits model (also notifies observers!)
+						hitsModel.update(searchResponse);
 						info.setText("Hits found:  " + searchResponse.getNumHits() 
-								+ "; retrieved: " + searchHits.size()
+								+ "; retrieved: " + searchResponse.getSearchHit().size()
 								+ " (page: " + searchResponse.getPageNo() + ")");
 					} catch (NoResultsFoundException e) {
-						info.setText("No matches found for:  " + keyword);
-						listModel.clear();
-						filterPanel.update(new SearchResponse());
+						info.setText("No match for:  " + keyword
+							+ " and current filter values (try again)");
+						hitsModel.update(new SearchResponse()); //clear
 					} catch (Throwable e) { 
 						// using Throwable helps catch unresolved runtime dependency issues!
 						info.setText("Failed:  " + e);
@@ -409,15 +424,16 @@ final class SearchPanel extends JPanel
 					} finally {
 						taskMonitor.setStatusMessage("Done");
 						taskMonitor.setProgress(1);
+						searchButton.setEnabled(true);
 					}
 				}
 
 				@Override
 				public void cancel() {
 				}
-			});
+			};
 
-			CPath2Factory.getTaskManager().execute(search.createTaskIterator());
+			CPath2Factory.getTaskManager().execute(new TaskIterator(search));
 		}
     }    
  

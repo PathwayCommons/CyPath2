@@ -3,7 +3,10 @@ package org.cytoscape.cpathsquared.internal;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import org.biopax.paxtools.model.Model;
@@ -15,14 +18,12 @@ import org.cytoscape.cpathsquared.internal.view.BinarySifVisualStyleFactory;
 import org.cytoscape.io.read.CyNetworkReaderManager;
 import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.CyNetworkManager;
+import org.cytoscape.property.CyProperty;
 import org.cytoscape.session.CyNetworkNaming;
 import org.cytoscape.util.swing.OpenBrowser;
 import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
 import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.view.vizmap.VisualMappingManager;
-import org.cytoscape.work.Task;
-import org.cytoscape.work.TaskFactory;
-import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskManager;
 import org.cytoscape.work.undo.UndoSupport;
 import org.slf4j.Logger;
@@ -31,12 +32,14 @@ import org.slf4j.LoggerFactory;
 import cpath.client.CPath2Client;
 import cpath.client.util.CPathException;
 import cpath.service.OutputFormat;
+import cpath.service.jaxb.SearchHit;
 import cpath.service.jaxb.SearchResponse;
 import cpath.service.jaxb.TraverseResponse;
 
-// TODO: This is a "God" object.  Probably shouldn't exist, but it's better than having to
-//       propagate all of the injected dependencies throughout all the implementation classes.
-//       Lesser of two evils.
+/** A "God" singleton object, which, once initialized, provides 
+ *  access to injected Cy3 OSGi services and static constants 
+ *  throughout all the implementation classes within this app.
+ */
 public final class CPath2Factory {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(CPath2Factory.class);
@@ -54,6 +57,7 @@ public final class CPath2Factory {
 	private static UndoSupport undoSupport;
 	private static BinarySifVisualStyleFactory binarySifVisualStyleUtil;
 	private static VisualMappingManager mappingManager;
+	private static CyProperty cyProperty;
 	
 	public static final String JVM_PROPERTY_CPATH2_URL = "cPath2Url";
 	public static final String DEFAULT_CPATH2_URL = "http://www.pathwaycommons.org/pc2/";
@@ -93,7 +97,8 @@ public final class CPath2Factory {
 			CyNetworkManager nm, CyApplicationManager am, CyNetworkViewManager nvm, 
 			CyNetworkReaderManager nvrm, CyNetworkNaming nn, CyNetworkFactory nf, 
 			CyLayoutAlgorithmManager lam, UndoSupport us, 
-			BinarySifVisualStyleFactory bsvsf, VisualMappingManager mm) 
+			BinarySifVisualStyleFactory bsvsf, VisualMappingManager mm,
+			CyProperty prop) 
 	{
 		application = app;
 		taskManager = tm;
@@ -108,26 +113,7 @@ public final class CPath2Factory {
 		undoSupport = us;
 		binarySifVisualStyleUtil = bsvsf;
 		mappingManager = mm;
-	}
-	
-	/**
-	 * Creates a new universal task factory
-	 * (can contain one or more different tasks)
-	 * 
-	 * @return
-	 */
-	public static TaskFactory newTaskFactory(final Task... tasks) {
-		return new TaskFactory() {
-			@Override
-			public TaskIterator createTaskIterator() {
-				return new TaskIterator(tasks);
-			}
-
-			@Override
-			public boolean isReady() {
-				return true; //TODO really? ;)
-			}
-		};
+		cyProperty = prop;
 	}
 
 	public static OpenBrowser getOpenBrowser() {
@@ -182,10 +168,6 @@ public final class CPath2Factory {
 		return binarySifVisualStyleUtil;
 	}
 
-	public static CyApplicationManager getApplicationManager() {
-		return applicationManager;
-	}
-
 	public static CyNetworkViewManager getNetworkViewManager() {
 		return networkViewManager;
 	}
@@ -219,7 +201,7 @@ public final class CPath2Factory {
 	/**
      * Gets One or more records by Primary ID.
      * @param ids               Array of URIs.
-     * @param format            Output format. TODO
+     * @param format            Output format.
      * @return data string.
      * @throws EmptySetException    Empty Set Error.
      */
@@ -255,8 +237,6 @@ public final class CPath2Factory {
     {
     	if(LOGGER.isDebugEnabled())
     		LOGGER.debug("traverse: path=" + path);
-    	
-    	// TODO Notify all listeners of start
 
         CPath2Client client = newClient();
         client.setPath(path);
@@ -268,9 +248,84 @@ public final class CPath2Factory {
 			LOGGER.error("getting " + path + 
 				" failed; uri:" + uris.toString(), e);
 		}
-      	
-		// TODO Notify all listeners of end
 			
        	return res;
     }
+
+    
+    public static SearchResponse unmodifiableSearchResponce(final SearchResponse resp) {
+    	if(resp == null)
+    		return null;
+    	
+    	// create a read-only proxy/view
+    	SearchResponse imm = new SearchResponse() {
+			@Override
+			public String getComment() {
+				return resp.getComment();
+			}
+
+			@Override
+			public Integer getMaxHitsPerPage() {
+				return resp.getMaxHitsPerPage();
+			}
+
+			@Override
+			public Integer getNumHits() {
+				return resp.getNumHits();
+			}
+
+			@Override
+			public Integer getPageNo() {
+				return resp.getPageNo();
+			}
+
+			@Override
+			public List<SearchHit> getSearchHit() {
+				return Collections.unmodifiableList(resp.getSearchHit());
+			}
+
+			@Override
+			public boolean isEmpty() {
+				return resp.isEmpty();
+			}
+
+			@Override
+			public void setComment(String comment) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public void setMaxHitsPerPage(Integer maxHitsPerPage) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public void setNumHits(Integer numHits) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public void setPageNo(Integer pageNo) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public void setSearchHit(List<SearchHit> searchHit) {
+				throw new UnsupportedOperationException();
+			}
+    	};  	
+    	
+    	return imm;
+    }
+    
+    
+    /**
+     * Gets a global Cytoscape property value. 
+     * 
+     * @param key
+     * @return
+     */
+    public static Object getCyProperty(String key) {
+		return ((Properties)cyProperty.getProperties()).getProperty(key);
+	}
 }
