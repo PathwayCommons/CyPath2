@@ -8,11 +8,12 @@ import javax.swing.JTabbedPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.cytoscape.cpathsquared.internal.view.GuiUtils;
 import org.cytoscape.io.webservice.NetworkImportWebServiceClient;
 import org.cytoscape.io.webservice.SearchWebServiceClient;
 import org.cytoscape.io.webservice.swing.AbstractWebServiceGUIClient;
+import org.cytoscape.work.Task;
 import org.cytoscape.work.TaskIterator;
+import org.cytoscape.work.TaskMonitor;
 
 /**
  * CPathSquared Web Service UI, integrated into the Cytoscape Web Services Framework.
@@ -24,34 +25,32 @@ public final class CPath2CytoscapeWebService extends AbstractWebServiceGUIClient
     private static final String DISPLAY_NAME = CPath2Factory.serverName + " Client";
 
     
+    //TODO where it is used? (not in this GUI as far as I can see...)
 	@Override
 	public TaskIterator createTaskIterator(final Object query) {
 
-//		TaskIterator taskIterator = new TaskIterator(new Task() {
-//			@Override
-//			public void run(TaskMonitor taskMonitor) throws Exception {
-//				String idStrs[] = ((String) query).split(" "); //TODO consider using/casting to a Collection query
-//				String ids[] = new String[idStrs.length];
-//				for (int i = 0; i < ids.length; i++) {
-//					ids[i] = idStrs[i].trim();
-//				}
-//
-//				TaskIterator iterator = new TaskIterator(
-//						new ExecuteGetByUriTask(ids,
-//								CPath2Factory.downloadMode,
-//								CPath2Factory.serverName));
-//				CPath2Factory.getTaskManager().execute(iterator);
-//			}
-//
-//			@Override
-//			public void cancel() {
-//			}
-//		});
-//
-//		return taskIterator;
-		
-		//TODO where it is used? (not in the GUI as far as I can see...)
-		throw new UnsupportedOperationException();
+		TaskIterator taskIterator = new TaskIterator(new Task() {
+			@Override
+			public void run(TaskMonitor taskMonitor) throws Exception {
+				String idStrs[] = ((String) query).split(" "); //TODO consider using a Collection
+				String ids[] = new String[idStrs.length];
+				for (int i = 0; i < ids.length; i++) {
+					ids[i] = idStrs[i].trim();
+				}
+
+				TaskIterator iterator = new TaskIterator(
+						new ExecuteGetByUriTask(ids,
+								CPath2Factory.downloadMode,
+								CPath2Factory.serverName));
+				CPath2Factory.getTaskManager().execute(iterator);
+			}
+
+			@Override
+			public void cancel() {
+			}
+		});
+
+		return taskIterator;
 	}
     
     /**
@@ -61,16 +60,16 @@ public final class CPath2CytoscapeWebService extends AbstractWebServiceGUIClient
     	super(CPath2Factory.cPathUrl, DISPLAY_NAME, makeDescription());
     	
         JTabbedPane tabbedPane = new JTabbedPane();
-    	JPanel searchPanel = GuiUtils.createSearchPanel();
+    	JPanel searchPanel = CPath2Factory.createSearchPanel();
         tabbedPane.add("Search", searchPanel);
-        tabbedPane.add("Top Pathways", GuiUtils.createTopPathwaysPanel());
-        tabbedPane.add("Options", GuiUtils.createOptionsPane());
+        tabbedPane.add("Top Pathways", CPath2Factory.createTopPathwaysPanel());
+        tabbedPane.add("Options", CPath2Factory.createOptionsPane());
         tabbedPane.addChangeListener(new ChangeListener() {
 			@Override
 			public void stateChanged(ChangeEvent ev) {
 		        JTabbedPane pane = (JTabbedPane)ev.getSource();
 		        if(pane.getSelectedIndex() == 1)
-		        	GuiUtils.loadTopPathwaysOnce();
+		        	CPath2Factory.loadTopPathwaysOnce();
 			}
 		});
         

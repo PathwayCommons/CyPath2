@@ -1,10 +1,16 @@
-package org.cytoscape.cpathsquared.internal.view;
+package org.cytoscape.cpathsquared.internal;
 
 
+import java.awt.BorderLayout;
+import java.awt.Component;
+
+import javax.swing.ImageIcon;
+import javax.swing.JCheckBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTree;
+import javax.swing.UIManager;
 import javax.swing.tree.TreeCellRenderer;
-import javax.swing.*;
-import java.awt.*;
-import java.net.URL;
 
 /**
  * Node with CheckBox Renderer.
@@ -49,8 +55,13 @@ final class CheckNodeRenderer implements TreeCellRenderer {
 class CustomNodePanel extends JPanel {
     private JCheckBox check;
     private JLabel label;
-    private static URL url = GradientHeader.class.getResource("resources/stock_autofilter.png");
-    private static ImageIcon filterIcon = new ImageIcon(url);
+    
+    // use the "lazy initialization holder class idiom" to sync. shared (by threads) static fields
+    private static class FieldHolder {
+        private static final ImageIcon filterIcon = 
+        	new ImageIcon(GradientHeader.class.getResource("stock_autofilter.png"));
+    }
+    static ImageIcon filterIcon() { return FieldHolder.filterIcon;}
 
     /**
      * Constructor.
@@ -76,10 +87,10 @@ class CustomNodePanel extends JPanel {
         if (leaf) {
             //label.setIcon(UIManager.getIcon("Tree.leafIcon"));
         } else if (expanded) {
-            label.setIcon(filterIcon);
+            label.setIcon(filterIcon());
             //label.setIcon(UIManager.getIcon("Tree.openIcon"));
         } else {
-            label.setIcon(filterIcon);
+            label.setIcon(filterIcon());
             //label.setIcon(UIManager.getIcon("Tree.closedIcon"));
         }
         setOpaque(false);

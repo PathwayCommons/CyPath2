@@ -1,4 +1,4 @@
-package org.cytoscape.cpathsquared.internal.view;
+package org.cytoscape.cpathsquared.internal;
 
 import java.awt.Color;
 import java.awt.Paint;

@@ -1,4 +1,4 @@
-package org.cytoscape.cpathsquared.internal.view;
+package org.cytoscape.cpathsquared.internal;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -154,11 +154,11 @@ final class CollapsablePanel extends JPanel {
         ImageIcon[] iconArrow = new ImageIcon[2];
         URL iconURL;
 
-        iconURL = CollapsablePanel.class.getResource("resources/arrow_collapsed.gif");
+        iconURL = CollapsablePanel.class.getResource("arrow_collapsed.gif");
         if (iconURL != null) {
             iconArrow[COLLAPSED] = new ImageIcon(iconURL);
         }
-        iconURL = CollapsablePanel.class.getResource("resources/arrow_expanded.gif");
+        iconURL = CollapsablePanel.class.getResource("arrow_expanded.gif");
         if (iconURL != null) {
             iconArrow[EXPANDED] = new ImageIcon(iconURL);
         }

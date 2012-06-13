@@ -1,4 +1,4 @@
-package org.cytoscape.cpathsquared.internal.view;
+package org.cytoscape.cpathsquared.internal;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -12,9 +12,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.awt.event.MouseEvent;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Observable;
 import java.util.Observer;
 import java.util.Set;
 import java.util.SortedSet;
@@ -36,6 +38,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
+import javax.swing.ListModel;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
@@ -45,9 +48,7 @@ import javax.swing.event.HyperlinkListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
-import org.cytoscape.cpathsquared.internal.CPath2Factory;
-import org.cytoscape.cpathsquared.internal.CPath2Factory.SearchFor;
-import org.cytoscape.cpathsquared.internal.view.GuiUtils.ToolTipsSearchHitsJList;
+import org.cytoscape.cpathsquared.internal.HitsModel.SearchFor;
 import org.cytoscape.util.swing.CheckBoxJList;
 import org.cytoscape.work.Task;
 import org.cytoscape.work.TaskIterator;
@@ -97,7 +98,7 @@ final class SearchPanel extends JPanel
                 executeSearch(searchField.getText(), 
                 	organismList.getSelectedValues(), 
                 	dataSourceList.getSelectedValues(),
-                	CPath2Factory.searchFor.toString());
+                	hitsModel.searchFor.toString());
             }
         });
         searchButton.setAlignmentX(Component.LEFT_ALIGNMENT);  
@@ -137,38 +138,29 @@ final class SearchPanel extends JPanel
         final JRadioButton button1 = new JRadioButton("pathways");
         button1.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent actionEvent) {
-                CPath2Factory.searchFor = SearchFor.PATHWAY;
+                hitsModel.searchFor = SearchFor.PATHWAY;
             }
         });
+        //default option (2)
         final JRadioButton button2 = new JRadioButton("interactions");
+        button2.setSelected(true);
+        hitsModel.searchFor = SearchFor.INTERACTION;
         button2.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent actionEvent) {
-                CPath2Factory.searchFor = SearchFor.INTERACTION;
+            	hitsModel.searchFor = SearchFor.INTERACTION;
             }
         });
         final JRadioButton button3 = new JRadioButton("physical entities");
         button3.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent actionEvent) {
-                CPath2Factory.searchFor = SearchFor.PHYSICALENTITY;
+            	hitsModel.searchFor = SearchFor.PHYSICALENTITY;
             }
         });
 
         ButtonGroup group = new ButtonGroup();
         group.add(button1);
         group.add(button2);
-        group.add(button3);
-        
-		switch (CPath2Factory.searchFor) {
-		case PATHWAY:
-			button1.setSelected(true);
-			break;
-		case PHYSICALENTITY:
-			button3.setSelected(true);
-			break;
-		default:
-			button2.setSelected(true);
-			break;
-		}     
+        group.add(button3);    
         
     	JPanel groupPanel = new JPanel();
         groupPanel.setBorder(new TitledBorder("Search for"));
@@ -437,4 +429,48 @@ final class SearchPanel extends JPanel
 		}
     }    
  
+    
+	class ToolTipsSearchHitsJList extends JList implements Observer {
+
+		public ToolTipsSearchHitsJList() {
+			super(new DefaultListModel());
+		}
+
+		@Override
+		public String getToolTipText(MouseEvent mouseEvent) {
+			int index = locationToIndex(mouseEvent.getPoint());
+			if (index >= 0 && getModel() != null) {
+				SearchHit record = (SearchHit) getModel().getElementAt(index);
+				StringBuilder html = new StringBuilder();
+				html.append("<html><table cellpadding=10><tr><td>");
+				html.append("<B>").append(record.getBiopaxClass());
+				if (!record.getDataSource().isEmpty())
+					html.append("&nbsp;").append(
+							record.getDataSource().toString());
+				if (!record.getOrganism().isEmpty())
+					html.append("&nbsp;").append(
+							record.getOrganism().toString());
+				html.append("</B>&nbsp;");
+				html.append("</td></tr></table></html>");
+				return html.toString();
+			} else {
+				return null;
+			}
+		}
+
+		@Override
+		public void update(Observable o, Object arg) {
+			SearchResponse resp = (SearchResponse) arg;
+			DefaultListModel lm = (DefaultListModel) this.getModel();
+			lm.clear();
+			for (SearchHit searchHit : resp.getSearchHit())
+				lm.addElement(searchHit);
+		}
+
+		
+		@Override
+		public synchronized ListModel getModel() {
+			return super.getModel();
+		}
+	}
 }

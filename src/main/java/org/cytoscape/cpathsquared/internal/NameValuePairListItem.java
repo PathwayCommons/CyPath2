@@ -1,4 +1,4 @@
-package org.cytoscape.cpathsquared.internal.view;
+package org.cytoscape.cpathsquared.internal;
 
 
 final class NameValuePairListItem implements Comparable<NameValuePairListItem> {

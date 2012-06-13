@@ -1,4 +1,4 @@
-package org.cytoscape.cpathsquared.internal.view;
+package org.cytoscape.cpathsquared.internal;
 
 import java.awt.BorderLayout;
 
@@ -13,7 +13,6 @@ import javax.swing.text.Document;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.StyleSheet;
 
-import org.cytoscape.cpathsquared.internal.CPath2Factory;
 import org.cytoscape.util.swing.OpenBrowser;
 
 /**

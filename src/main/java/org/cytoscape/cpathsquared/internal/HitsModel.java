@@ -1,4 +1,4 @@
-package org.cytoscape.cpathsquared.internal.view;
+package org.cytoscape.cpathsquared.internal;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -12,8 +12,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.apache.commons.lang.StringUtils;
-import org.cytoscape.cpathsquared.internal.CPath2Factory;
-import org.cytoscape.cpathsquared.internal.CPath2Factory.SearchFor;
 import org.cytoscape.work.Task;
 import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskMonitor;
@@ -41,6 +39,14 @@ final class HitsModel extends Observable {
     final Map<String, Collection<NameValuePairListItem>> hitsPathwaysMap 
     		= new HashMap<String, Collection<NameValuePairListItem>>();
 
+    static enum SearchFor {
+    	PATHWAY,
+    	INTERACTION,
+    	PHYSICALENTITY;
+    }
+
+    volatile SearchFor searchFor = SearchFor.INTERACTION; 
+    
     
     public HitsModel(boolean parentPathwaysUsed) {
 		this.parentPathwaysRequired = parentPathwaysUsed;
@@ -175,9 +181,9 @@ final class HitsModel extends Observable {
 			path = "Pathway/pathwayComponent";
 		else if("Complex".equalsIgnoreCase(item.getBiopaxClass()))
 				path = "Complex/component";
-		else if(CPath2Factory.searchFor == SearchFor.INTERACTION)
+		else if(searchFor == SearchFor.INTERACTION)
 			path = "Interaction/participant";
-		else if(CPath2Factory.searchFor == SearchFor.PHYSICALENTITY)
+		else if(searchFor == SearchFor.PHYSICALENTITY)
 				path = "PhysicalEntity/memberPhysicalEntity";		
 		TraverseResponse members = CPath2Factory
 			.traverse(path + ":Named/displayName", Collections.singleton(item.getUri()));

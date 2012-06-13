@@ -16,7 +16,6 @@ import org.cytoscape.property.CyProperty;
 import org.cytoscape.io.read.CyNetworkReaderManager;
 import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
 
-import org.cytoscape.cpathsquared.internal.view.BinarySifVisualStyleFactory;
 import org.cytoscape.cpathsquared.internal.CPath2Factory;
 
 

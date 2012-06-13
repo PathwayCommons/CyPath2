@@ -118,7 +118,7 @@ public class ExecuteGetByUriTask extends AbstractTask {
 			
 			// Import data via Cy3 I/O API
 			
-//the biopax graph reader used to need the following property to be set...
+//			//the biopax graph reader used to need the following property to be set...
 //			if (networkTitle != null && networkTitle.length() > 0) {
 //				System.setProperty("biopax.network_view_title", networkTitle);
 //			}
