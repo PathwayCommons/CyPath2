@@ -1,6 +1,5 @@
 package org.cytoscape.cpathsquared.internal;
 
-import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -9,11 +8,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import org.biopax.paxtools.model.Model;
 import org.cytoscape.application.CyApplicationManager;
 import org.cytoscape.application.swing.CySwingApplication;
-import org.cytoscape.cpathsquared.internal.util.BioPaxUtil;
-import org.cytoscape.cpathsquared.internal.util.EmptySetException;
 import org.cytoscape.cpathsquared.internal.view.BinarySifVisualStyleFactory;
 import org.cytoscape.io.read.CyNetworkReaderManager;
 import org.cytoscape.model.CyNetworkFactory;
@@ -28,6 +24,7 @@ import org.cytoscape.work.TaskManager;
 import org.cytoscape.work.undo.UndoSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.client.RestTemplate;
 
 import cpath.client.CPath2Client;
 import cpath.client.util.CPathException;
@@ -60,19 +57,13 @@ public final class CPath2Factory {
 	private static CyProperty cyProperty;
 	
 	public static final String JVM_PROPERTY_CPATH2_URL = "cPath2Url";
-	public static final String DEFAULT_CPATH2_URL = "http://www.pathwaycommons.org/pc2/";
-	
-    public static String cPathUrl = System.getProperty(JVM_PROPERTY_CPATH2_URL, DEFAULT_CPATH2_URL);
-    
-    public static String serverName = "Pathway Commons (BioPAX L3)";
-    
-    public static String blurb = 
-    		"<span class='bold'>Pathway Commons</span> is a convenient point of access " +
-            "to biological pathway " +
-            "information collected from public pathway databases, which you can " +
-            "browse or search. <BR><BR>Pathways include biochemical reactions, complex " +
-            "assembly, transport and catalysis events, and physical interactions " +
-            "involving proteins, DNA, RNA, small molecules and complexes. Now using BioPAX Level3!";
+	public static final String DEFAULT_CPATH2_URL = "http://www.pathwaycommons.org/pc2/";	
+    public static final String cPathUrl = System.getProperty(JVM_PROPERTY_CPATH2_URL, DEFAULT_CPATH2_URL);   
+    public static final String serverName = "Pathway Commons (BioPAX L3)";
+    public static final String INFO_ABOUT = 
+    	"<span class='bold'>Pathway Commons 2</span> is a warehouse of " +
+    	"biological pathway information integrated from public databases and " +
+    	"persisted in BioPAX Level3 format, which one can search, traverse, download.";
     
     public static String iconToolTip  = "Import Pathway Data from Pathway Commons (cPathSquared web services, BioPAX L3)";
     
@@ -209,11 +200,16 @@ public final class CPath2Factory {
     {
     	//TODO client to return other formats as well
     	CPath2Client cli = newClient();
-    	Model res = cli.get(Arrays.asList(ids));  
-    	ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        BioPaxUtil.getBiopaxIO().convertToOWL(res, baos);
-        
-        return baos.toString();
+//    	Model res = cli.get(Arrays.asList(ids));  
+//    	ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//        BioPaxUtil.getBiopaxIO().convertToOWL(res, baos);
+//        
+//        return baos.toString();
+    	
+    	String queryUrl = cli.queryGet(Arrays.asList(ids));
+    	RestTemplate template = new RestTemplate();
+    	
+    	return template.getForObject(queryUrl, String.class);
     }
 
 

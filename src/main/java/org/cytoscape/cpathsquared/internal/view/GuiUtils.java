@@ -20,10 +20,9 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.table.DefaultTableModel;
 
 import org.cytoscape.cpathsquared.internal.CPath2Factory;
-import org.cytoscape.cpathsquared.internal.task.ExecuteGetRecordByCPathIdTask;
+import org.cytoscape.cpathsquared.internal.ExecuteGetByUriTask;
 import org.cytoscape.work.Task;
 import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskMonitor;
@@ -196,8 +195,11 @@ public final class GuiUtils {
 								.getElementAt(selectedIndex);						
 						String uri = item.getUri();
 						//TODO execute download network task
-						
-						
+
+				        CPath2Factory.getTaskManager().execute(new TaskIterator(
+				        	new ExecuteGetByUriTask(new String[]{uri}, 
+				        		CPath2Factory.downloadMode, "Downloading " +
+				        			item.getName())));	
 					}
 				}
 			}
@@ -455,25 +457,6 @@ public final class GuiUtils {
 			}
 		}
     }
-
-	
-    //TODO assign to a button or link
-    private static void downloadPathway(int[] rows, DefaultTableModel model) {
-    	if(rows.length < 1) {
-    		return;
-    	}
-    	
-        int i= rows[0];
-    	SearchHit hit = (SearchHit) model.getDataVector().get(i);
-        String internalId = hit.getUri();
-        String title = model.getValueAt(i, 0)
-        	+ " (" + model.getValueAt(i, 1) + ")";
-
-        CPath2Factory.getTaskManager().execute(new TaskIterator(
-        		new ExecuteGetRecordByCPathIdTask(new String[]{internalId}, 
-        				CPath2Factory.downloadMode, title)));
-    }
-
 
 	public static JPanel createSearchPanel() {
 		return new SearchPanel();

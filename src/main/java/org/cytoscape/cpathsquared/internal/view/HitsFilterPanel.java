@@ -3,6 +3,7 @@ package org.cytoscape.cpathsquared.internal.view;
 import java.awt.Component;
 import java.awt.Font;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Observable;
@@ -20,11 +21,6 @@ import javax.swing.event.TreeModelEvent;
 import javax.swing.event.TreeModelListener;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
-
-import org.cytoscape.cpathsquared.internal.filters.ChainedFilter;
-import org.cytoscape.cpathsquared.internal.filters.DataSourceFilter;
-import org.cytoscape.cpathsquared.internal.filters.EntityTypeFilter;
-import org.cytoscape.cpathsquared.internal.filters.OrganismFilter;
 
 import cpath.service.jaxb.SearchHit;
 import cpath.service.jaxb.SearchResponse;
@@ -175,7 +171,7 @@ final class HitsFilterPanel extends JPanel implements Observer {
         
         //  Remove all children
         typeFilterNode.removeAllChildren();
-        // Create Filter Nodes
+        // Create HitsFilter Nodes
         for (String key : hitsFilterModel.numHitsByTypeMap.keySet()) {
             CategoryCount categoryCount = new CategoryCount(key, hitsFilterModel.numHitsByTypeMap.get(key));
             CheckNode typeNode = new CheckNode(categoryCount, false, true);
@@ -253,7 +249,167 @@ final class HitsFilterPanel extends JPanel implements Observer {
 				return null;
 			}
 		}
-
 	}
 
+	
+
+	/**
+	 * HitsFilter interface.
+	 */
+	interface HitsFilter {
+	    /**
+	     * Filters the record list.  Those items which pass the filter
+	     * are included in the returned list.
+	     *
+	     * @param recordList List of SearchHit Objects.
+	     * @return
+	     */
+	    List<SearchHit> filter (List<SearchHit> recordList);
+	}
+	
+	
+	class ChainedFilter implements HitsFilter {
+	    private ArrayList<HitsFilter> filterList = new ArrayList<HitsFilter>();
+
+	    /**
+	     * Adds a new filter.
+	     * @param filter HitsFilter Object.
+	     */
+	    public void addFilter (HitsFilter filter) {
+	        filterList.add(filter);
+	    }
+
+	    /**
+	     * Filters the record list.  Those items which pass the filter
+	     * are included in the returned list.
+	     *
+	     * @param recordList
+	     * @return
+	     */    
+	    public List<SearchHit> filter(List<SearchHit> recordList) {
+	        for (HitsFilter filter:  filterList) {
+	            recordList = filter.filter(recordList);
+	        }
+	        return recordList;
+	    }
+	}
+
+	
+	/**
+	 * EntityType HitsFilter.
+	 *
+	 */
+	class EntityTypeFilter implements HitsFilter {
+	    Set<String> entityTypeSet;
+
+	    /**
+	     * Constructor.
+	     *
+	     * @param entityTypeSet Set of Entity Types we want to keep.
+	     */
+	    public EntityTypeFilter(Set<String> entityTypeSet) {
+	        this.entityTypeSet = entityTypeSet;
+	    }
+
+	    /**
+	     * Filters the record list.  Those items which pass the filter
+	     * are included in the returned list.
+	     *
+	     * @param recordList
+	     * @return
+	     */
+	    public List<SearchHit> filter(List<SearchHit> recordList) {
+	        ArrayList<SearchHit> passedList = new ArrayList<SearchHit>();
+	        for (SearchHit record : recordList) {
+	            String type = record.getBiopaxClass();
+	            if (type != null) {
+	                if (entityTypeSet.contains(type)) {
+	                    passedList.add(record);
+	                }
+	            }
+	        }
+	        return passedList;
+	    }
+	}
+	
+	
+	class DataSourceFilter implements HitsFilter {
+	    final Set<String> dataSourceSet;
+
+	    
+	    public DataSourceFilter(Set<String> dataSourceSet) {
+	        this.dataSourceSet = dataSourceSet;
+	    }
+
+
+		public List<SearchHit> filter(List<SearchHit> recordList) {
+			ArrayList<SearchHit> passedList = new ArrayList<SearchHit>();
+			for (SearchHit record : recordList) {
+				if (!record.getDataSource().isEmpty()) 
+				{
+					//copy datasources to a new set
+					Set<String> ds = new HashSet<String>(record.getDataSource());
+					ds.retainAll(dataSourceSet); //keep two sets intersection
+					if (!ds.isEmpty()) {
+						passedList.add(record);
+					}
+				} else {
+					passedList.add(record);
+				}
+			}
+			return passedList;
+		}
+	}
+	
+	
+	class OrganismFilter implements HitsFilter {
+	    final Set<String> organismsSet;
+
+	    
+	    public OrganismFilter(Set<String> organismsSet) {
+	        this.organismsSet = organismsSet;
+	    }
+
+
+		public List<SearchHit> filter(List<SearchHit> recordList) {
+			ArrayList<SearchHit> passedList = new ArrayList<SearchHit>();
+			for (SearchHit record : recordList) {
+				if (!record.getOrganism().isEmpty()) 
+				{
+					//copy organisms to a new set
+					Set<String> o = new HashSet<String>(record.getOrganism());
+					o.retainAll(organismsSet); //keep two sets intersection
+					if (!o.isEmpty()) {
+						passedList.add(record);
+					}
+				} else {
+					passedList.add(record);
+				}
+			}
+			return passedList;
+		}
+	}
+	
+	
+	class CategoryCount {
+	    private String categoryName;
+	    private int count;
+
+	    public CategoryCount (String categoryName, int count) {
+	        this.categoryName = categoryName;
+	        this.count = count;
+	    }
+
+	    public String getCategoryName() {
+	        return categoryName;
+	    }
+
+	    public int getCount() {
+	        return count;
+	    }
+
+	    public String toString() {
+	        return categoryName + ":  " + count;
+	    }
+	}
 }

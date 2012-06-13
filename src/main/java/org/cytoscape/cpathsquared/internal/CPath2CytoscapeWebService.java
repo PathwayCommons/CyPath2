@@ -37,7 +37,7 @@ public final class CPath2CytoscapeWebService extends AbstractWebServiceGUIClient
 //				}
 //
 //				TaskIterator iterator = new TaskIterator(
-//						new ExecuteGetRecordByCPathIdTask(ids,
+//						new ExecuteGetByUriTask(ids,
 //								CPath2Factory.downloadMode,
 //								CPath2Factory.serverName));
 //				CPath2Factory.getTaskManager().execute(iterator);
@@ -84,7 +84,7 @@ public final class CPath2CytoscapeWebService extends AbstractWebServiceGUIClient
     }
 
     private static String makeDescription() {
-        String desc = CPath2Factory.blurb;
+        String desc = CPath2Factory.INFO_ABOUT;
         desc = desc.replaceAll("<span class='bold'>", "<B>");
         desc = desc.replaceAll("</span>", "</B>");
         return "<html><body>" + desc + "</body></html>";

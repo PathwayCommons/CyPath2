@@ -1,4 +1,4 @@
-package org.cytoscape.cpathsquared.internal.task;
+package org.cytoscape.cpathsquared.internal;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URL;

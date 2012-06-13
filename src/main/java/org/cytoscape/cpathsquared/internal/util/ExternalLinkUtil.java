@@ -113,7 +113,7 @@ public class ExternalLinkUtil {
 	 * The following rules apply for creating links to IHOP:
 	 * <UL>
 	 * <LI>Only create links for elements of type:  protein, DNA and RNA.
-	 * IHOP does not capture information about other BioPAX types.
+	 * IHOP does not capture information INFO_ABOUT other BioPAX types.
 	 * <LI>If synonyms exist, use them.
 	 * <LI>If XRefs for UniProt, Entrez Gene or RefSeq exist, use them.
 	 * <LI>If we have at least one synonym or xref, append a taxonomy ID.

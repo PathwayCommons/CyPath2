@@ -84,7 +84,7 @@ final class HitsModel extends Observable {
     }
     
     /**
-     * Refresh the model and notify all observers about it's changed.
+     * Refresh the model and notify all observers INFO_ABOUT it's changed.
      * 
      * @param response
      */
@@ -97,7 +97,7 @@ final class HitsModel extends Observable {
 		hitsSummaryMap.clear();
 		hitsPathwaysMap.clear();
 	
-		// get/save info about components/participants/members
+		// get/save info INFO_ABOUT components/participants/members
 		TaskIterator taskIterator = new TaskIterator(new Task() {
 			@Override
 			public void run(TaskMonitor taskMonitor) throws Exception {

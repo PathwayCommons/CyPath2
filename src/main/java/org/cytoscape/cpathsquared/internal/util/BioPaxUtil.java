@@ -25,6 +25,10 @@
  **/
 package org.cytoscape.cpathsquared.internal.util;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -32,6 +36,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,6 +50,7 @@ import org.biopax.paxtools.controller.PropertyEditor;
 import org.biopax.paxtools.controller.SimpleEditorMap;
 import org.biopax.paxtools.io.BioPAXIOHandler;
 import org.biopax.paxtools.io.SimpleIOHandler;
+import org.biopax.paxtools.io.sif.SimpleInteractionConverter;
 import org.biopax.paxtools.model.BioPAXElement;
 import org.biopax.paxtools.model.BioPAXLevel;
 import org.biopax.paxtools.model.Model;
@@ -145,22 +151,6 @@ public final class BioPaxUtil {
 		return biopaxIO;
 	}
 
-
-// NOT required in this app
-//	public static Model read(final InputStream in) throws FileNotFoundException {
-//		Model model = null;
-//		try {
-//			model =  biopaxIO.convertFromOWL(in);	
-//			// immediately convert to BioPAX Level3 model
-//			if(model != null && BioPAXLevel.L2.equals(model.getLevel())) {
-//				model = new OneTwoThree().filter(model);
-//			}
-//		} catch (Exception e) {
-//			log.warn("Import failed: " + e);
-//		}
-//		return model;
-//	}
-	
 	
 	/**
 	 * Gets or infers the name of the node. 
@@ -1028,5 +1018,110 @@ public final class BioPaxUtil {
 		// outta here
 		return (((chemicalModification != null) && (chemicalModification.length() > 0))
 				? chemicalModification : "");
+	}
+	
+	
+	/**
+	 * Export a BioPAX L3 Model to SIF format.
+	 * 
+	 * @param model
+	 * @param rules
+	 * @return
+	 * @throws IOException
+	 */
+	public static String convertToBinarySIF(Model model) throws IOException
+	{
+		String sif = null;
+		SimpleInteractionConverter sic = new SimpleInteractionConverter(
+                new HashMap(),
+                new HashSet(), // TODO use a 'blacklist' (to deal with ubiquitous molecules)
+				new org.biopax.paxtools.io.sif.level3.ComponentRule(),
+				new org.biopax.paxtools.io.sif.level3.ConsecutiveCatalysisRule(),
+				new org.biopax.paxtools.io.sif.level3.ControlRule(),
+				new org.biopax.paxtools.io.sif.level3.ControlsTogetherRule(),
+				new org.biopax.paxtools.io.sif.level3.ParticipatesRule()
+		);
+		
+		OutputStream edgeStream = new ByteArrayOutputStream();
+		sic.writeInteractionsInSIF(model, edgeStream);
+		sif = removeDuplicateBinaryInteractions(edgeStream);
+			
+		return sif;
+	}
+
+	
+	/**
+	 * Remove duplicate binary interactions from SIF/SIFNX converter output
+	 *
+	 * @param edgeStream OutputStream from converter
+	 * @return String
+	 */
+	private static String removeDuplicateBinaryInteractions(OutputStream edgeStream) {
+
+		StringBuffer toReturn = new StringBuffer();
+		HashSet<String> interactions = new HashSet<String>();
+		for (String interaction : edgeStream.toString().split("\n")) {
+			interactions.add(interaction);
+		}
+		Iterator<String> iterator = interactions.iterator();
+		while (iterator.hasNext()) {
+			toReturn.append(iterator.next() + "\n");
+		}
+		
+		return toReturn.toString();
+	}
+	
+	
+	public static Model convertFromOwl(final InputStream stream) {
+		final Model[] model = new Model[1];
+		final SimpleIOHandler handler = new SimpleIOHandler();
+		handler.mergeDuplicates(true); // a workaround (illegal) BioPAX data having duplicated rdf:ID...
+		StaxHack.runWithHack(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					model[0] =  handler.convertFromOWL(stream);	
+				} catch (Throwable e) {
+					log.warn("Import failed: " + e);
+				}
+			}
+		});
+		return model[0];
+	}
+	
+	
+	/**
+	 * A class to store a given nodes's
+	 * chemical modification(s), etc.,
+	 * along with a string of abbreviations for the respective attribute
+	 * (which is used in the construction of the node label).
+	 */
+	static class NodeAttributesWrapper {
+		// map of cellular location
+		// or chemical modifications
+		private Map<String, Object> attributesMap;
+		// abbreviations string
+		private String abbreviationString;
+
+		// contructor
+		public NodeAttributesWrapper(Map<String,Object> attributesMap, String abbreviationString) {
+			this.attributesMap = attributesMap;
+			this.abbreviationString = abbreviationString;
+		}
+
+		// gets the attributes map
+		public Map<String,Object> getMap() {
+			return attributesMap;
+		}
+
+		// gets the attributes map as list
+		public List<String> getList() {
+			return (attributesMap != null) ? new ArrayList<String>(attributesMap.keySet()) : null;
+		}
+
+		// gets the abbrevation string (used in node label)
+		public String getAbbreviationString() {
+			return abbreviationString;
+		}
 	}
 }
