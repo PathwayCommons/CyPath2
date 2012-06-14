@@ -31,14 +31,16 @@
  **/
 package org.cytoscape.cpathsquared.internal.util;
 
-import java.util.*;
-
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 
 /**
  * Utility Class for Creating Links to External Databases.
  * 
- * TODO eventually replace this with Miriam (MiriamLink) or identifiers.org API
+ * TODO re-write this uring Miriam (MiriamLink) or identifiers.org API to lookup URLs from Xrefs!
  */
 final class ExternalLinks {
 	
@@ -166,8 +168,8 @@ final class ExternalLinks {
 	}
 	
 	static {
-		dbMap = new HashMap();
-		ihopMap = new HashMap();
+		dbMap = new HashMap<String,String>();
+		ihopMap = new HashMap<String,String>();
 
 		//  Pub Med
 		String url = "http://www.ncbi.nlm.nih.gov/entrez/"
@@ -182,7 +184,7 @@ final class ExternalLinks {
         //  UniProt
 		url = "http://www.pir.uniprot.org/cgi-bin/upEntry?id=";
 
-		HashMap temp = new HashMap();
+		HashMap<String,String> temp = new HashMap<String,String>();
 		temp.put("UNIPROT", url);
 		temp.put("SWISSPROT", url);
 		temp.put("SWP", url);
@@ -207,7 +209,7 @@ final class ExternalLinks {
 
 		//  Ref Seq
 		url = "http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=gene&" + "cmd=search&term=";
-		temp = new HashMap();
+		temp = new HashMap<String,String>();
 		temp.put("REFSEQ", url);
 		temp.put("REF-SEQ", url);
 		temp.put("REF_SEQ", url);
@@ -220,7 +222,7 @@ final class ExternalLinks {
 
 		//  Entrez Gene
 		url = "http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=gene&" + "cmd=search&term=";
-		temp = new HashMap();
+		temp = new HashMap<String,String>();
         temp.put("ENTREZGENE", url);
         temp.put("ENTREZ_GENE", url);
 		temp.put("LOCUS_LINK", url);
@@ -289,7 +291,7 @@ final class ExternalLinks {
 	public static String createLink(String dbName, String id) {
         dbName = dbName.toUpperCase();
 		String url = getUrl(dbName, id);
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 
         if (url != null) {
 			buf.append("<A class=\"link\" HREF=\"" + url + "\">" + dbName + ":  " + id + "</A>");
@@ -324,16 +326,16 @@ final class ExternalLinks {
 	 * @param taxonomyId NCBI TaxonomyID or -1 if unknown.
 	 * @return URL String, or null if a URL cannot be constructed.
 	 */
-	public static String getIHOPUrl(String type, List synList, List dbList, int taxonomyId) 
+	public static String getIHOPUrl(String type, List<String> synList, List<ExternalLink> dbList, int taxonomyId) 
 	{
 		if (type.equalsIgnoreCase("protein") 
 			|| type.equalsIgnoreCase("dna")
 		    	|| type.equalsIgnoreCase("rna")) 
 		{
-			StringBuffer url = new StringBuffer();
+			StringBuilder url = new StringBuilder();
 
 			// Use the URL Below for local testing within cbio
-			// StringBuffer url = new StringBuffer
+			// StringBuilder url = new StringBuilder
 			//        ("http://cbio.mskcc.org/UniPub/iHOP/in?");
 			String synonymParameter = createSynonymParameter(synList);
 			String dbParameter = createDbParameter(dbList, synList);
@@ -359,7 +361,7 @@ final class ExternalLinks {
 		return null;
 	}
 
-	private static void appendAmpersand(String param, StringBuffer url) {
+	private static void appendAmpersand(String param, StringBuilder url) {
 		if (param.length() > 0) {
 			url.append(AMPERSAND);
 		}
@@ -370,10 +372,10 @@ final class ExternalLinks {
 	 * DBRefs appear like this:
 	 * dbrefs_1=UNIPROT__AC|P0214,NCBI_GENE__ID=327..
 	 */
-	private static String createDbParameter(List dbList, List synList) {
+	private static String createDbParameter(List<ExternalLink> dbList, List<String> synList) {
 		int dbHits = 0;
 		int uniProtHits = 0;
-		StringBuffer temp = new StringBuffer();
+		StringBuilder temp = new StringBuilder();
 
 		if ((dbList != null) && (dbList.size() > 0)) {
 			for (int i = 0; i < dbList.size(); i++) {
@@ -412,14 +414,14 @@ final class ExternalLinks {
 	 * Synonyms appear like this:
 	 * syns_1=SYN1|SYN2|SYN3...
 	 */
-	private static String createSynonymParameter(List synList) {
-		StringBuffer temp = new StringBuffer();
+	private static String createSynonymParameter(List<String> synList) {
+		StringBuilder temp = new StringBuilder();
 
 		if ((synList != null) && (synList.size() > 0)) {
 			temp.append("syns_1=");
 
 			for (int i = 0; i < synList.size(); i++) {
-				temp.append((String) synList.get(i));
+				temp.append(synList.get(i));
 
 				if (i < (synList.size() - 1)) {
 					temp.append(pipeChar);
@@ -441,12 +443,12 @@ final class ExternalLinks {
 	 * @return HTML Link.
 	 */
 	public static String createIHOPLink(String type, 
-			List synList, List linkList, int taxonomyId) 
+			List<String> synList, List<ExternalLink> linkList, int taxonomyId) 
 	{
 		String url = getIHOPUrl(type, synList, linkList, taxonomyId);
 
         if (url != null) {
-			StringBuffer buf = new StringBuffer();
+			StringBuilder buf = new StringBuilder();
 			buf.append("<A class=\"link\" HREF=\"" + url + "\">" + "Search iHOP</A>");
 			return buf.toString();
 		} else {
@@ -455,11 +457,11 @@ final class ExternalLinks {
 	}
 
 
-	private static void addIHOPEntries(HashMap map, String iHopCode) {
-		Iterator iterator = map.keySet().iterator();
+	private static void addIHOPEntries(Map<String,String> map, String iHopCode) {
+		Iterator<String> iterator = map.keySet().iterator();
 
 		while (iterator.hasNext()) {
-			String key = (String) iterator.next();
+			String key = iterator.next();
 			ihopMap.put(key, iHopCode);
 		}
 	}
