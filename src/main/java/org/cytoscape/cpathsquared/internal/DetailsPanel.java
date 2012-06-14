@@ -29,7 +29,7 @@ final class DetailsPanel extends JPanel {
      */
     public DetailsPanel() {
         this.setLayout(new BorderLayout());
-        textPane = createHtmlTextPane(CPath2Factory.getOpenBrowser());
+        textPane = createHtmlTextPane(CpsFactory.context().openBrowser);
         doc = textPane.getDocument();
         JScrollPane scrollPane = encloseInJScrollPane (textPane);
         add(scrollPane, BorderLayout.CENTER);

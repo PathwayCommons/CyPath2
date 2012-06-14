@@ -16,7 +16,7 @@ import org.cytoscape.property.CyProperty;
 import org.cytoscape.io.read.CyNetworkReaderManager;
 import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
 
-import org.cytoscape.cpathsquared.internal.CPath2Factory;
+import org.cytoscape.cpathsquared.internal.CpsFactory;
 
 
 
@@ -59,7 +59,7 @@ public final class CyActivator extends AbstractCyActivator {
 				passthroughMappingFactoryRef);
 		
 		// initialize the internal "God" static factory
-		CPath2Factory.init(
+		CpsFactory.init(
 				cySwingApplicationRef,
 				taskManagerRef,
 				openBrowserRef,
@@ -76,7 +76,7 @@ public final class CyActivator extends AbstractCyActivator {
 				cytoscapePropertiesServiceRef);
 		
 		// register the service
-		CPath2CytoscapeWebService cPathWebService = new CPath2CytoscapeWebService();
+		CpsWebServiceGuiClient cPathWebService = new CpsWebServiceGuiClient();
 		registerAllServices(bc, cPathWebService, new Properties());
 	}
 }

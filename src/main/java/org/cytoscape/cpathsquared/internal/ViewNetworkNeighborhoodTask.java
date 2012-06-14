@@ -13,6 +13,8 @@ import org.cytoscape.view.model.View;
 import org.cytoscape.work.Task;
 import org.cytoscape.work.TaskMonitor;
 
+//TODO needs updating/re-factoring (or, seems, - re-writing from scratch...)
+@Deprecated
 public class ViewNetworkNeighborhoodTask implements Task {
 
     private static final String PC_WEB_SERVICE_URL = "/webservice.do?version=3.0&cmd=get_neighbors&q=";

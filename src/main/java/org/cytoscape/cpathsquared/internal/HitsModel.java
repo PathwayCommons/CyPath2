@@ -36,8 +36,8 @@ final class HitsModel extends Observable {
     final Map<String, Integer> numHitsByDatasourceMap = new TreeMap<String, Integer>();
     
     final Map<String, String> hitsSummaryMap = new HashMap<String, String>();
-    final Map<String, Collection<NameValuePairListItem>> hitsPathwaysMap 
-    		= new HashMap<String, Collection<NameValuePairListItem>>();
+    final Map<String, Collection<NvpListItem>> hitsPathwaysMap 
+    		= new HashMap<String, Collection<NvpListItem>>();
 
     static enum SearchFor {
     	PATHWAY,
@@ -136,12 +136,12 @@ final class HitsModel extends Observable {
 		});
 		
 		// kick task execution
-		CPath2Factory.getTaskManager().execute(taskIterator);
+		CpsFactory.execute(taskIterator);
 	}
 
     
     public SearchResponse getSearchResponse() {
-        return CPath2Factory.unmodifiableSearchResponce(response);
+        return CpsFactory.unmodifiableSearchResponce(response);
     }
 
     
@@ -185,7 +185,7 @@ final class HitsModel extends Observable {
 			path = "Interaction/participant";
 		else if(searchFor == SearchFor.PHYSICALENTITY)
 				path = "PhysicalEntity/memberPhysicalEntity";		
-		TraverseResponse members = CPath2Factory
+		TraverseResponse members = CpsFactory
 			.traverse(path + ":Named/displayName", Collections.singleton(item.getUri()));
 		
 		if (members != null) {
@@ -201,9 +201,9 @@ final class HitsModel extends Observable {
 		
 		if(this.parentPathwaysRequired && !item.getPathway().isEmpty()) {
 			// add parent pathways to the Map ("ppw" prefix means "parent pathway's" -)
-			final Collection<NameValuePairListItem> ppws = new TreeSet<NameValuePairListItem>();	
+			final Collection<NvpListItem> ppws = new TreeSet<NvpListItem>();	
 			final Set<String> ppwUris = new HashSet<String>(item.getPathway()); // a hack for not unique URIs (a cpath2 indexing bug...)
-			TraverseResponse ppwNames = CPath2Factory.traverse("Named/displayName", ppwUris);
+			TraverseResponse ppwNames = CpsFactory.traverse("Named/displayName", ppwUris);
 			if (ppwNames != null) {
 				Map<String, String> ppwUriToNameMap = new HashMap<String, String>();			
 				for (TraverseEntry e : ppwNames.getTraverseEntry()) {
@@ -212,12 +212,12 @@ final class HitsModel extends Observable {
 				}
 				
 				// add ppw component counts to names and wrap/save as NVP, finally:
-				TraverseResponse ppwComponents = CPath2Factory.traverse(
+				TraverseResponse ppwComponents = CpsFactory.traverse(
 						"Pathway/pathwayComponent", ppwUris); // this gets URIs of pathways
 				for (TraverseEntry e : ppwComponents.getTraverseEntry()) {
 					assert ppwUriToNameMap.containsKey(e.getUri());
 					String name = ppwUriToNameMap.get(e.getUri());
-					ppws.add(new NameValuePairListItem(name + " (" + e.getValue().size() + " processes)", e.getUri()));
+					ppws.add(new NvpListItem(name + " (" + e.getValue().size() + " processes)", e.getUri()));
 				}
 			}
 			hitsPathwaysMap.put(item.getUri(), ppws);

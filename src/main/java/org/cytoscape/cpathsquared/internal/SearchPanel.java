@@ -237,9 +237,9 @@ final class SearchPanel extends JPanel
                 		// update pathways list
                 		DefaultListModel ppwListModel = (DefaultListModel) ppwList.getModel();
 						ppwListModel.clear();
-						Collection<NameValuePairListItem> ppws = hitsModel.hitsPathwaysMap.get(item.getUri());
+						Collection<NvpListItem> ppws = hitsModel.hitsPathwaysMap.get(item.getUri());
 						if (ppws != null && !ppws.isEmpty())
-							for (NameValuePairListItem it : ppws)
+							for (NvpListItem it : ppws)
 								ppwListModel.addElement(it);           			
                     }
                 }
@@ -279,15 +279,15 @@ final class SearchPanel extends JPanel
     	Task task = new Task() {	
 			@Override
 			public void run(TaskMonitor taskMonitor) throws Exception {
-		    	Map<String,String> map = CPath2Factory.getAvailableOrganisms();
+		    	Map<String,String> map = CpsFactory.getAvailableOrganisms();
 
 		    	//make sorted by name list
-		    	SortedSet<NameValuePairListItem> items = new TreeSet<NameValuePairListItem>();
+		    	SortedSet<NvpListItem> items = new TreeSet<NvpListItem>();
 		    	for(String o : map.keySet()) {
-		    		items.add(new NameValuePairListItem(map.get(o), o));
+		    		items.add(new NvpListItem(map.get(o), o));
 		    	}
 		    	DefaultListModel model = new DefaultListModel();
-		    	for(NameValuePairListItem nvp : items) {
+		    	for(NvpListItem nvp : items) {
 		    		model.addElement(nvp);
 		    	}
 		    	organismList.setModel(model);
@@ -303,7 +303,7 @@ final class SearchPanel extends JPanel
         JScrollPane scroll = new JScrollPane(organismList, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scroll.setBorder(new TitledBorder("Limit to organism(s):"));
         
-        CPath2Factory.getTaskManager().execute(new TaskIterator(task));
+        CpsFactory.execute(new TaskIterator(task));
         
         return scroll;
     }
@@ -314,9 +314,9 @@ final class SearchPanel extends JPanel
 			@Override
 			public void run(TaskMonitor taskMonitor) throws Exception {
 		    	DefaultListModel dataSourceBoxModel = new DefaultListModel(); 
-		        Map<String,String> map = CPath2Factory.getLoadedDataSources();
+		        Map<String,String> map = CpsFactory.getLoadedDataSources();
 		    	for(String d : map.keySet()) {
-		    		dataSourceBoxModel.addElement(new NameValuePairListItem(map.get(d), d));
+		    		dataSourceBoxModel.addElement(new NvpListItem(map.get(d), d));
 		    	}
 		        
 		        dataSourceList.setModel(dataSourceBoxModel);
@@ -333,7 +333,7 @@ final class SearchPanel extends JPanel
         JScrollPane scroll = new JScrollPane(dataSourceList, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scroll.setBorder(new TitledBorder("Limit to datasource(s):"));
         
-        CPath2Factory.getTaskManager().execute(iterator);  
+        CpsFactory.execute(iterator);  
         
         return scroll;
     }
@@ -376,11 +376,11 @@ final class SearchPanel extends JPanel
         
         final Set<String> organisms = new HashSet<String>();
         for(Object it : organism)
-        	organisms.add(((NameValuePairListItem) it).getValue());
+        	organisms.add(((NvpListItem) it).getValue());
         
     	final Set<String> datasources = new HashSet<String>();
         for(Object it : datasource)
-        	datasources.add(((NameValuePairListItem) it).getValue());
+        	datasources.add(((NvpListItem) it).getValue());
     	
         if (keyword == null || keyword.trim().length() == 0 || keyword.startsWith(ENTER_TEXT)) {
 			info.setText("Error: Please enter a Gene Name or ID!");
@@ -393,7 +393,7 @@ final class SearchPanel extends JPanel
 					try {
 						taskMonitor.setProgress(0);
 						taskMonitor.setStatusMessage("Executing search for " + keyword);
-						CPath2Client client = CPath2Factory.newClient();
+						CPath2Client client = CpsFactory.newClient();
 						client.setOrganisms(organisms);
 						client.setType(biopaxType);
 						if (datasource != null)
@@ -425,7 +425,7 @@ final class SearchPanel extends JPanel
 				}
 			};
 
-			CPath2Factory.getTaskManager().execute(new TaskIterator(search));
+			CpsFactory.execute(new TaskIterator(search));
 		}
     }    
  

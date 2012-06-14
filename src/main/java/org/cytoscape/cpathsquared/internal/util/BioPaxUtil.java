@@ -42,9 +42,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.biopax.paxtools.controller.AbstractTraverser;
-import org.biopax.paxtools.controller.ModelUtils;
 import org.biopax.paxtools.controller.ObjectPropertyEditor;
 import org.biopax.paxtools.controller.PropertyEditor;
 import org.biopax.paxtools.controller.SimpleEditorMap;
@@ -61,7 +61,6 @@ import org.biopax.paxtools.model.level3.EntityReference;
 import org.biopax.paxtools.model.level3.Interaction;
 import org.biopax.paxtools.model.level3.Level3Element;
 import org.biopax.paxtools.model.level3.Named;
-import org.biopax.paxtools.model.level3.Pathway;
 import org.biopax.paxtools.model.level3.PhysicalEntity;
 import org.biopax.paxtools.model.level3.Provenance;
 import org.biopax.paxtools.model.level3.PublicationXref;
@@ -74,11 +73,14 @@ import org.biopax.paxtools.model.level3.XReferrable;
 import org.biopax.paxtools.model.level3.Xref;
 import org.biopax.paxtools.util.ClassFilterSet;
 import org.biopax.paxtools.util.Filter;
+import org.cytoscape.cpathsquared.internal.util.ExternalLinks.ExternalLink;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;
 import org.cytoscape.model.CyRow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.ctc.wstx.stax.WstxInputFactory;
 
 /**
  * BioPax Utility Class - is a BioPAX Model Adapter 
@@ -112,6 +114,20 @@ public final class BioPaxUtil {
 	public static final String BIOPAX_AFFYMETRIX_REFERENCES_LIST = "affymetrix_references";
 	public static final String PHOSPHORYLATION_SITE = "phosphorylation site";
 	public static final String PROTEIN_PHOSPHORYLATED = "Protein-phosphorylated";
+
+	
+	static class StaxHack {
+		public static final void runWithHack(Runnable runnable) {
+			Thread thread = Thread.currentThread();
+			ClassLoader loader = thread.getContextClassLoader();
+			try {
+				thread.setContextClassLoader(WstxInputFactory.class.getClassLoader());
+				runnable.run();
+			} finally {
+				thread.setContextClassLoader(loader);
+			}
+		}
+	}
 	
 	// private Constructor
 	private BioPaxUtil() {}
@@ -165,22 +181,17 @@ public final class BioPaxUtil {
 		}
 				
 		String nodeName = getShortName(bpe);
-
-		if ((nodeName != null) && (nodeName.length() > 0)) {
-			return nodeName;
+		if (nodeName == null || nodeName.length()== 0) {
+			nodeName = getStandardName(bpe);
+			if (nodeName == null || nodeName.length() == 0) {
+				Collection<String> names = getSynonymList(bpe);
+				if (!names.isEmpty())
+					nodeName = getTheShortestString(names);
+			}
 		}
 
-		nodeName = getStandardName(bpe);
-		if ((nodeName != null) && (nodeName.length() > 0)) {
-			return nodeName;
-		}
-
-		Collection<String> names = getSynonymList(bpe);
-		if (names != null && !names.isEmpty()) {
-			return getTheShortestString(names);
-		}
-
-		return bpe.getRDFId();
+		return (nodeName == null || nodeName.length() == 0)
+				? bpe.getRDFId() : StringEscapeUtils.unescapeHtml(nodeName);
 	}
 	
 	
@@ -314,7 +325,7 @@ public final class BioPaxUtil {
 	}
 
 	/**
-	 * Gets the NameValuePairListItem Name.
+	 * Gets the NvpListItem Name.
 	 *
 	 * @param bpe BioPAX element
 	 * @return organism field, or null if not available.
@@ -433,38 +444,6 @@ public final class BioPaxUtil {
 		}
 		
 		return subclasses;
-	}
-
-
-	/**
-	 * Creates a name for to the BioPAX model
-	 * using its top-level process name(s). 
-	 * 
-	 * @param model
-	 * @return
-	 */
-	public static String getName(Model model) {		
-		StringBuffer modelName = new StringBuffer();
-		
-		Collection<Pathway> pws = ModelUtils.getRootElements(model, Pathway.class);
-		for(Pathway pw: pws) {
-				modelName.append(" ").append(getNodeName(pw)); 
-		}
-		
-		if(modelName.length()==0) {
-			Collection<Interaction> itrs = ModelUtils.getRootElements(model, Interaction.class);
-			for(Interaction it: itrs) {
-				modelName.append(" ").append(getNodeName(it));
-			}	
-		}
-		
-		if(modelName.length()==0) {
-			modelName.append(model.getXmlBase());
-		}
-		
-		String name = modelName.toString().trim();
-
-		return name;
 	}
 
 	
@@ -654,9 +633,9 @@ public final class BioPaxUtil {
 							if(!vals.contains(value)) 
 								vals.add(value);
 
-							AttributeUtil.set(network, node, attrName, vals, String.class);
+							Attributes.set(network, node, attrName, vals, String.class);
 						} else {
-							AttributeUtil.set(network, node, attrName, value, String.class);
+							Attributes.set(network, node, attrName, value, String.class);
 						}
 					}
 					
@@ -681,13 +660,13 @@ public final class BioPaxUtil {
 		};
 
 		// set the most important attributes
-		AttributeUtil.set(network, node, BIOPAX_RDF_ID, element.getRDFId(), String.class);
-		AttributeUtil.set(network, node, BIOPAX_ENTITY_TYPE, element.getModelInterface().getSimpleName(), String.class);	
+		Attributes.set(network, node, BIOPAX_RDF_ID, element.getRDFId(), String.class);
+		Attributes.set(network, node, BIOPAX_ENTITY_TYPE, element.getModelInterface().getSimpleName(), String.class);	
 		
 		// add a piece of the BioPAX (RDF/XML without parent|child elements)
 		
 		String owl = toOwl(element); // (requires common-lang-2.4 bundle to be started)
-		AttributeUtil.set(network, node, CyNetwork.HIDDEN_ATTRS, BIOPAX_DATA, owl, String.class);
+		Attributes.set(network, node, CyNetwork.HIDDEN_ATTRS, BIOPAX_DATA, owl, String.class);
 		
 		String name = BioPaxUtil.truncateLongStr(BioPaxUtil.getNodeName(element) + "");
 		
@@ -710,7 +689,7 @@ public final class BioPaxUtil {
 			setChemicalModificationAttributes(network, node, chemicalModificationsWrapper);	
 		}
 		// update the name (also used for node's label and quick find)
-		AttributeUtil.set(network, node, CyNetwork.NAME, name, String.class);		
+		Attributes.set(network, node, CyNetwork.NAME, name, String.class);		
 		
 		// traverse to create the rest of attr.
 		bpeAutoMapper.traverse(element, null);
@@ -743,14 +722,14 @@ public final class BioPaxUtil {
 
 			//  Store List of Chemical Modifications Only
 			List<String> list = new ArrayList<String>(modificationsMap.keySet());
-			AttributeUtil.set(network, node, BIOPAX_CHEMICAL_MODIFICATIONS_LIST, list, String.class);
+			Attributes.set(network, node, BIOPAX_CHEMICAL_MODIFICATIONS_LIST, list, String.class);
 
 			//  Store Complete Map of Chemical Modifications --> # of Modifications
 			// TODO: How do we handle MultiHashMaps?
 //			setMultiHashMap(cyNodeId, nodeAttributes, BIOPAX_CHEMICAL_MODIFICATIONS_MAP, modificationsMap);
 
 			if (modificationsMap.containsKey(BioPaxUtil.PHOSPHORYLATION_SITE)) {
-				AttributeUtil.set(network, node, BIOPAX_ENTITY_TYPE, BioPaxUtil.PROTEIN_PHOSPHORYLATED, String.class);
+				Attributes.set(network, node, BIOPAX_ENTITY_TYPE, BioPaxUtil.PROTEIN_PHOSPHORYLATED, String.class);
 			}
 		}
 	}
@@ -762,14 +741,14 @@ public final class BioPaxUtil {
 		List<String> xrefList = getXRefList(resource,
 				BIOPAX_AFFYMETRIX_REFERENCES_LIST);
 		if ((xrefList != null) && !xrefList.isEmpty()) {
-			AttributeUtil.set(network, node, BIOPAX_AFFYMETRIX_REFERENCES_LIST,
+			Attributes.set(network, node, BIOPAX_AFFYMETRIX_REFERENCES_LIST,
 					xrefList, String.class);
 		}
 		
 		// ihop links
 		String stringRef = addIHOPLinks(network, resource);
 		if (stringRef != null) {
-			AttributeUtil.set(network, node, CyNetwork.HIDDEN_ATTRS, BIOPAX_IHOP_LINKS, stringRef, String.class);
+			Attributes.set(network, node, CyNetwork.HIDDEN_ATTRS, BIOPAX_IHOP_LINKS, stringRef, String.class);
 		}
 
 		List<String> allxList = new ArrayList<String>();
@@ -784,14 +763,14 @@ public final class BioPaxUtil {
 			// Set individual XRefs; Max of 1 per database.
 			String existingId = network.getRow(node).get(key, String.class);
 			if (existingId == null) {
-				AttributeUtil.set(network, node, key, link.getId(), String.class);
+				Attributes.set(network, node, key, link.getId(), String.class);
 			}
 			
 
 			StringBuffer temp = new StringBuffer();
 			
 			if(!"CPATH".equalsIgnoreCase(link.getDb()))
-				temp.append(ExternalLinkUtil.createLink(link.getDb(), link.getId()));
+				temp.append(ExternalLinks.createLink(link.getDb(), link.getId()));
 			else
 				temp.append(link.toString());
 			
@@ -823,10 +802,10 @@ public final class BioPaxUtil {
 			allxList.add(link.toString());
 		}
 		
-		AttributeUtil.set(network, node, BIOPAX_XREF_IDS, allxList, String.class);
-		AttributeUtil.set(network, node, CyNetwork.HIDDEN_ATTRS, BIOPAX_UNIFICATION_REFERENCES, unifxfList, String.class);
-		AttributeUtil.set(network, node, CyNetwork.HIDDEN_ATTRS, BIOPAX_RELATIONSHIP_REFERENCES, relxList, String.class);
-		AttributeUtil.set(network, node, CyNetwork.HIDDEN_ATTRS, BIOPAX_PUBLICATION_REFERENCES, pubxList, String.class);	
+		Attributes.set(network, node, BIOPAX_XREF_IDS, allxList, String.class);
+		Attributes.set(network, node, CyNetwork.HIDDEN_ATTRS, BIOPAX_UNIFICATION_REFERENCES, unifxfList, String.class);
+		Attributes.set(network, node, CyNetwork.HIDDEN_ATTRS, BIOPAX_RELATIONSHIP_REFERENCES, relxList, String.class);
+		Attributes.set(network, node, CyNetwork.HIDDEN_ATTRS, BIOPAX_PUBLICATION_REFERENCES, pubxList, String.class);	
 	}
 
     
@@ -839,7 +818,7 @@ public final class BioPaxUtil {
                     continue;
                 }
                 temp.append("<li>- ");
-				temp.append(ExternalLinkUtil.createLink(link.getDbName(), link.getId()));
+				temp.append(ExternalLinks.createLink(link.getDbName(), link.getId()));
                 temp.append("</li>");
 			}
 			temp.append("</ul>");
@@ -854,7 +833,7 @@ public final class BioPaxUtil {
 		List<ExternalLink> dbList = xrefToExternalLinks(bpe, Xref.class);
 		
 		if (!synList.isEmpty() || !dbList.isEmpty()) {
-			String htmlLink = ExternalLinkUtil.createIHOPLink(bpe.getModelInterface().getSimpleName(),
+			String htmlLink = ExternalLinks.createIHOPLink(bpe.getModelInterface().getSimpleName(),
 					synList, dbList, BioPaxUtil.getOrganismTaxonomyId(network, bpe));
 			if (htmlLink != null) {
 				return htmlLink;

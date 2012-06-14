@@ -8,7 +8,7 @@ import org.cytoscape.model.CyRow;
 import org.cytoscape.model.CyTable;
 import org.cytoscape.model.CyIdentifiable;
 
-public class AttributeUtil {
+public class Attributes {
 	
 	public static void set(CyNetwork network, CyIdentifiable entry, String name, Object value, Class<?> type) {
 		set(network, entry, CyNetwork.DEFAULT_ATTRS, name, value, type);
