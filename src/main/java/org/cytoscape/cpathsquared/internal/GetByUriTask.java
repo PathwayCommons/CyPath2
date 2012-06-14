@@ -89,8 +89,6 @@ public class GetByUriTask extends AbstractTask {
 			
 			// Get Data: BioPAX and the other format (if required)
 			final String biopaxData = CpsFactory.getRecordsByIds(ids, OutputFormat.BIOPAX);
-			// we gonna need the model to create attributes for non-biopax CyNetworks (e.g., created from SIF) 
-			final Model bpModel = BioPaxUtil.convertFromOwl(new ByteArrayInputStream(biopaxData.getBytes("UTF-8")));
 			
 			final String data = (format == OutputFormat.BIOPAX) 
 				? biopaxData : CpsFactory.getRecordsByIds(ids, format);
@@ -152,7 +150,10 @@ public class GetByUriTask extends AbstractTask {
 				Attributes.set(cyNetwork, cyNetwork, "quickfind.default_index", CyNetwork.NAME, String.class);
 				// Specify that this is a BINARY_NETWORK
 				Attributes.set(cyNetwork, cyNetwork, "BIOPAX_NETWORK", Boolean.TRUE, Boolean.class);
-
+	
+				// we gonna need the full (original biopax) model to create attributes
+				final Model bpModel = BioPaxUtil.convertFromOwl(new ByteArrayInputStream(biopaxData.getBytes("UTF-8")));
+				
 				// Get all node details.
 				createSinNetworkNodeAttributes(cyNetwork, bpModel);
 
