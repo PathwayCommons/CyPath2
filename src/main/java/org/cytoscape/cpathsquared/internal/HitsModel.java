@@ -11,6 +11,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import javax.swing.JPanel;
+
 import org.apache.commons.lang.StringUtils;
 import org.cytoscape.work.Task;
 import org.cytoscape.work.TaskIterator;
@@ -30,6 +32,7 @@ final class HitsModel extends Observable {
     private SearchResponse response; 
     
     final boolean parentPathwaysRequired;
+    final String title;
     
     final Map<String, Integer> numHitsByTypeMap = new TreeMap<String, Integer>();
     final Map<String, Integer> numHitsByOrganismMap = new TreeMap<String, Integer>();
@@ -42,14 +45,16 @@ final class HitsModel extends Observable {
     static enum SearchFor {
     	PATHWAY,
     	INTERACTION,
-    	PHYSICALENTITY;
+    	PHYSICALENTITY,
+    	ENTITYREFERENCE;
     }
 
     volatile SearchFor searchFor = SearchFor.INTERACTION; 
     
     
-    public HitsModel(boolean parentPathwaysUsed) {
+    public HitsModel(String title, boolean parentPathwaysUsed) {
 		this.parentPathwaysRequired = parentPathwaysUsed;
+		this.title = title;
 	}
     
     public int getNumRecords() {
@@ -93,8 +98,9 @@ final class HitsModel extends Observable {
      * Refresh the model and notify all observers INFO_ABOUT it's changed.
      * 
      * @param response
+     * @param context parent panel
      */
-	public synchronized void update(final SearchResponse response) {
+	public synchronized void update(final SearchResponse response, JPanel context) {
 		this.response = response;
 		
 		numHitsByTypeMap.clear();
@@ -108,9 +114,9 @@ final class HitsModel extends Observable {
 			@Override
 			public void run(TaskMonitor taskMonitor) throws Exception {
 				try {
-					taskMonitor.setTitle("cPathSquared Task");
+					taskMonitor.setTitle("cPathSquared App");
 					taskMonitor.setProgress(0.1);
-					taskMonitor.setStatusMessage("Summarizing search hits...");
+					taskMonitor.setStatusMessage("Getting " + title + "...");
 					float i = 0;
 					final int sz = response.getSearchHit().size();
 					for (SearchHit record : response.getSearchHit()) {
@@ -136,7 +142,7 @@ final class HitsModel extends Observable {
 		});
 		
 		// kick task execution
-		CpsFactory.execute(taskIterator);
+		CpsFactory.execute(taskIterator, context);
 	}
 
     
@@ -156,9 +162,19 @@ final class HitsModel extends Observable {
 		
 		html.append("<em>URI='").append(item.getUri()).append("'</em><br/>");
 		
-		// TODO can generate links (to be either opened in system's browser or intercepted/converted to a Task!)
-//		html.append("<a href='").append("Foo").append("'>").append("Bar").append("</a>");
+		//create a link to be intercepted/converted to a (import a sub-model) Task!
+		String linkUrl = CpsFactory.newClient().queryNeighborhood(Collections.singleton(item.getUri()));
+		String linkText = "Click to import (creates the nearest neighborhood network)!";
+		if(searchFor == SearchFor.PATHWAY || searchFor == SearchFor.INTERACTION) { //simply use 'get' query
+			linkUrl = CpsFactory.newClient().queryGet(Collections.singleton(item.getUri()));
+			linkText = "Click to import (makes a new network)!";
+		}
+		html.append("<a href='")
+			.append(linkUrl).append("'>")
+			.append(linkText).append("</a>");
 
+		//TODO may create other links to be opened in the system's browser!
+		
 		String primeExcerpt = item.getExcerpt();
 		if (primeExcerpt != null)
 			html.append("<h3>Excerpt:</h3>")
@@ -184,7 +200,9 @@ final class HitsModel extends Observable {
 		else if(searchFor == SearchFor.INTERACTION)
 			path = "Interaction/participant";
 		else if(searchFor == SearchFor.PHYSICALENTITY)
-				path = "PhysicalEntity/memberPhysicalEntity";		
+				path = "PhysicalEntity/memberPhysicalEntity";
+		else if(searchFor == SearchFor.ENTITYREFERENCE)
+			path = "EntityReference/memberEntityReference";	
 		TraverseResponse members = CpsFactory
 			.traverse(path + ":Named/displayName", Collections.singleton(item.getUri()));
 		

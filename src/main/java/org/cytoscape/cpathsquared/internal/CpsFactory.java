@@ -11,7 +11,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -54,12 +53,11 @@ import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.view.vizmap.VisualMappingManager;
 import org.cytoscape.work.Task;
 import org.cytoscape.work.TaskIterator;
-import org.cytoscape.work.TaskManager;
 import org.cytoscape.work.TaskMonitor;
+import org.cytoscape.work.swing.PanelTaskManager;
 import org.cytoscape.work.undo.UndoSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.client.RestTemplate;
 
 import cpath.client.CPath2Client;
 import cpath.client.util.CPathException;
@@ -79,7 +77,7 @@ public final class CpsFactory {
 	//define the internal singleton class to access current Cy3 OSGi services
 	static class CpsContext {
 		final CySwingApplication application;
-		final TaskManager taskManager;
+		final PanelTaskManager taskManager;
 		final OpenBrowser openBrowser;
 		final CyNetworkManager networkManager;
 		final CyApplicationManager applicationManager;
@@ -93,7 +91,7 @@ public final class CpsFactory {
 		final VisualMappingManager mappingManager;
 		final CyProperty<Properties> cyProperty;
 		
-		public CpsContext(CySwingApplication app, TaskManager tm, OpenBrowser ob, 
+		public CpsContext(CySwingApplication app, PanelTaskManager tm, OpenBrowser ob, 
 				CyNetworkManager nm, CyApplicationManager am, CyNetworkViewManager nvm, 
 				CyNetworkReaderManager nvrm, CyNetworkNaming nn, CyNetworkFactory nf, 
 				CyLayoutAlgorithmManager lam, UndoSupport us, 
@@ -137,17 +135,12 @@ public final class CpsFactory {
     public static String iconFileName = "pc.png";
     public static OutputFormat downloadMode = OutputFormat.BIOPAX;
     
-	// this model is used by the filters panel (left) and hits jlist
-	private static final HitsModel topPathwaysModel = new HitsModel(false);
-	//create top pathways panel (north)
-	private static final TopPathwaysJList tpwJList = new TopPathwaysJList();	
-    
 	// non-instantiable static factory class
 	private CpsFactory() {
 		throw new AssertionError();
 	}
 	
-	static synchronized void init(CySwingApplication app, TaskManager tm, OpenBrowser ob, 
+	static synchronized void init(CySwingApplication app, PanelTaskManager tm, OpenBrowser ob, 
 			CyNetworkManager nm, CyApplicationManager am, CyNetworkViewManager nvm, 
 			CyNetworkReaderManager nvrm, CyNetworkNaming nn, CyNetworkFactory nf, 
 			CyLayoutAlgorithmManager lam, UndoSupport us, 
@@ -159,7 +152,9 @@ public final class CpsFactory {
 			);
 	}
 
-	static void execute(TaskIterator taskIterator) {
+	static void execute(TaskIterator taskIterator, JPanel context) {
+		if(context != null)
+			((PanelTaskManager)ctx.taskManager).setExecutionContext(context);
 		ctx.taskManager.execute(taskIterator);
 	}
 	
@@ -168,29 +163,6 @@ public final class CpsFactory {
         client.setEndPointURL(SERVER_URL);
 		return client;
 	}
-
-	/**
-     * Gets One or more records by Primary ID.
-     * @param ids               Array of URIs.
-     * @param format            Output format.
-     * @return data string.
-     * @throws EmptySetException    Empty Set Error.
-     */
-    static String getRecordsByIds(String[] ids, OutputFormat format) 
-    {
-    	//TODO client to return other formats as well
-    	CPath2Client cli = newClient();
-//    	Model res = cli.get(Arrays.asList(ids));  
-//    	ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//        BioPaxUtil.getBiopaxIO().convertToOWL(res, baos);
-//        
-//        return baos.toString();
-    	
-    	String queryUrl = cli.queryGet(Arrays.asList(ids));
-    	RestTemplate template = new RestTemplate();
-    	
-    	return template.getForObject(queryUrl, String.class);
-    }
 
 
     static Map<String, String> getAvailableOrganisms() {
@@ -400,9 +372,12 @@ public final class CpsFactory {
         // make (south) tabs
         JTabbedPane southPane = new JTabbedPane(); 
         southPane.add("Summary", detailsPanel);
-
-		//  Create the 'off-line' filtering panel
-        final HitsFilterPanel filterPanel = new HitsFilterPanel(tpwJList, topPathwaysModel);
+        
+    	// hits model is used both by the filters panel pathways jlist
+    	final HitsModel topPathwaysModel = new HitsModel("Top Pathways", false);
+    	// create top pathways list
+    	final TopPathwaysJList tpwJList = new TopPathwaysJList();
+    	final HitsFilterPanel filterPanel = new HitsFilterPanel(tpwJList, topPathwaysModel);
         tpwJList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         tpwJList.setPrototypeCellValue("12345678901234567890");
         // define a list item selection listener which updates the details panel, etc..
@@ -429,14 +404,14 @@ public final class CpsFactory {
 					// ignore the "unselect" event.
 					if (selectedIndex >= 0) {
 						SearchHit item = (SearchHit) tpwJList.getModel()
-								.getElementAt(selectedIndex);						
+								.getElementAt(selectedIndex);
 						String uri = item.getUri();
-						//TODO execute download network task
-
+						String queryUrl = CpsFactory.newClient()
+							.queryGet(Collections.singleton(uri));
 				        CpsFactory.ctx.taskManager.execute(new TaskIterator(
-				        	new GetByUriTask(new String[]{uri}, 
-				        		CpsFactory.downloadMode, "Downloading " +
-				        			item.getName())));	
+				        	new CreateNetworkAndViewTask(queryUrl, 
+				        		CpsFactory.downloadMode, 
+				        		item.toString())));	
 					}
 				}
 			}
@@ -462,23 +437,10 @@ public final class CpsFactory {
         hSplit.setDividerLocation(300);
         hSplit.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(hSplit);
+        
         panel.repaint();
-            
-        return panel;
-	}
-
-	
-	/**
-	 * Loads the list of top pathways from the server
-	 * if it hasn't been done already.
-	 * 
-	 * @param topPathwaysModel
-	 * @param tpwJList
-	 */
-	static void initTopPathways() {
-		if(topPathwaysModel.getSearchResponse() != null) 
-			return; // already done!
-		
+        
+        // load pathways from server
 		TaskIterator taskIterator = new TaskIterator(new Task() {
 			@Override
 			public void run(TaskMonitor taskMonitor) throws Exception {
@@ -488,7 +450,7 @@ public final class CpsFactory {
 					taskMonitor.setStatusMessage("Retrieving top pathways...");
 					SearchResponse resp = CpsFactory.newClient().getTopPathways();
 					// reset the model and kick off observers (list and filter panel)
-			        topPathwaysModel.update(resp);
+			        topPathwaysModel.update(resp, panel);
 				} catch (Throwable e) { 
 					//fail on both when there is no data (server error) and runtime/osgi errors
 					throw new RuntimeException(e);
@@ -503,7 +465,9 @@ public final class CpsFactory {
 		});
 		
 		// kick off the task execution
-		CpsFactory.ctx.taskManager.execute(taskIterator);
+		CpsFactory.execute(taskIterator, panel);  
+            
+        return panel;
 	}
 
 	

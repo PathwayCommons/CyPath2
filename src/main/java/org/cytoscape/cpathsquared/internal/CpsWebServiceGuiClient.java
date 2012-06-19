@@ -5,8 +5,6 @@ import java.awt.Dimension;
 
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 
 import org.cytoscape.io.webservice.NetworkImportWebServiceClient;
 import org.cytoscape.io.webservice.SearchWebServiceClient;
@@ -25,24 +23,21 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
     private static final String DISPLAY_NAME = CpsFactory.SERVER_NAME + " Client";
 
     
-    //TODO where it is used? (not in this GUI as far as I can see...)
+    //TODO where it is used?..
+    /**
+     * 
+     * Creates a new network and view using data returned 
+     * from a 'get' or 'graph' web service query URL (with all parameters set)
+     */
 	@Override
-	public TaskIterator createTaskIterator(final Object query) {
+	public TaskIterator createTaskIterator(final Object cpathSquaredQueryUrl) {
 
 		TaskIterator taskIterator = new TaskIterator(new Task() {
 			@Override
 			public void run(TaskMonitor taskMonitor) throws Exception {
-				String idStrs[] = ((String) query).split(" "); //TODO consider using a Collection
-				String ids[] = new String[idStrs.length];
-				for (int i = 0; i < ids.length; i++) {
-					ids[i] = idStrs[i].trim();
-				}
-
-				TaskIterator iterator = new TaskIterator(
-						new GetByUriTask(ids,
-								CpsFactory.downloadMode,
-								CpsFactory.SERVER_NAME));
-				CpsFactory.execute(iterator);
+				CpsFactory.execute(new TaskIterator(
+					new CreateNetworkAndViewTask((String) cpathSquaredQueryUrl,
+						CpsFactory.downloadMode, CpsFactory.SERVER_NAME)), null);
 			}
 
 			@Override
@@ -64,16 +59,6 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
         tabbedPane.add("Search", searchPanel);
         tabbedPane.add("Top Pathways", CpsFactory.createTopPathwaysPanel());
         tabbedPane.add("Options", CpsFactory.createOptionsPane());
-// this was inconvenient...
-//        tabbedPane.addChangeListener(new ChangeListener() {
-//			@Override
-//			public void stateChanged(ChangeEvent ev) {
-//		        JTabbedPane pane = (JTabbedPane)ev.getSource();
-//		        if(pane.getSelectedIndex() == 1)
-//		        	CpsFactory.initTopPathways();
-//			}
-//		});
-        CpsFactory.initTopPathways();
         
     	JPanel mainPanel = new JPanel();
         mainPanel.setPreferredSize(new Dimension (500,400));

@@ -55,7 +55,7 @@ import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskMonitor;
 
 import cpath.client.CPath2Client;
-import cpath.client.util.NoResultsFoundException;
+import cpath.client.util.CPathException;
 import cpath.service.jaxb.SearchHit;
 import cpath.service.jaxb.SearchResponse;
 
@@ -77,7 +77,7 @@ final class SearchPanel extends JPanel
 
 	public SearchPanel() 
     {	   	 	
-		this.hitsModel = new HitsModel(true);
+		this.hitsModel = new HitsModel("Current Search Hits", true);
 		
 		setLayout(new BorderLayout());
 		
@@ -111,7 +111,7 @@ final class SearchPanel extends JPanel
         
         JEditorPane label = new JEditorPane (
         		"text/html", "Examples:  <a href='TP53'>TP53</a>, " +
-                "<a href='BRCA*'>BRCA*</a>, or <a href='SRY'>SRY</a>.");
+                "<a href='BRCA1'>BRCA1</a>, or <a href='SRY'>SRY</a>.");
         label.setEditable(false);
         label.setOpaque(false);
         label.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
@@ -134,15 +134,16 @@ final class SearchPanel extends JPanel
         info.setFocusable(false);
         info.setFont(new Font(info.getFont().getFamily(), info.getFont().getStyle(), info.getFont().getSize()+1));
         info.setForeground(Color.BLUE);
+        info.setMaximumSize(new Dimension(400, 50));
         
-        final JRadioButton button1 = new JRadioButton("pathways");
+        final JRadioButton button1 = new JRadioButton("Pathways");
         button1.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent actionEvent) {
                 hitsModel.searchFor = SearchFor.PATHWAY;
             }
         });
         //default option (2)
-        final JRadioButton button2 = new JRadioButton("interactions");
+        final JRadioButton button2 = new JRadioButton("Interactions");
         button2.setSelected(true);
         hitsModel.searchFor = SearchFor.INTERACTION;
         button2.addActionListener(new ActionListener() {
@@ -150,17 +151,24 @@ final class SearchPanel extends JPanel
             	hitsModel.searchFor = SearchFor.INTERACTION;
             }
         });
-        final JRadioButton button3 = new JRadioButton("physical entities");
+        final JRadioButton button3 = new JRadioButton("Physical Entities (states)");
         button3.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent actionEvent) {
             	hitsModel.searchFor = SearchFor.PHYSICALENTITY;
+            }
+        });
+        final JRadioButton button4 = new JRadioButton("Entity References");
+        button4.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent actionEvent) {
+            	hitsModel.searchFor = SearchFor.ENTITYREFERENCE;
             }
         });
 
         ButtonGroup group = new ButtonGroup();
         group.add(button1);
         group.add(button2);
-        group.add(button3);    
+        group.add(button3);
+        group.add(button4);
         
     	JPanel groupPanel = new JPanel();
         groupPanel.setBorder(new TitledBorder("Search for"));
@@ -178,7 +186,10 @@ final class SearchPanel extends JPanel
         c.gridx = 0;
         c.gridy = 2;
         groupPanel.add(button3, c);
-        groupPanel.setMaximumSize(new Dimension(50, 100));
+        c.gridx = 0;
+        c.gridy = 3;
+        groupPanel.add(button4, c);
+        groupPanel.setMaximumSize(new Dimension(75, 100));
         
         searchQueryPanel.add(groupPanel, BorderLayout.LINE_START);
         searchQueryPanel.add(createOrganismFilterBox(), BorderLayout.CENTER);
@@ -189,7 +200,7 @@ final class SearchPanel extends JPanel
         keywordPane.add(searchButton);
         keywordPane.add(searchField);    
         keywordPane.add(label);
-        keywordPane.setMaximumSize(new Dimension(1000, 15));
+        keywordPane.setMaximumSize(new Dimension(15, 100));
         
         searchQueryPanel.add(keywordPane, BorderLayout.PAGE_START);
         searchQueryPanel.add(info, BorderLayout.PAGE_END);
@@ -209,6 +220,7 @@ final class SearchPanel extends JPanel
         ppwListPane.setLayout(new BorderLayout());
         ppwListScrollPane = new JScrollPane(ppwList);
         ppwListScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
+        ppwListScrollPane.setBorder(new TitledBorder("Double-click to import (creates a new network)"));
         ppwListPane.add(ppwListScrollPane, BorderLayout.CENTER);
                       
         // make (south) tabs
@@ -248,14 +260,14 @@ final class SearchPanel extends JPanel
         // register the jlist as model's observer
         hitsModel.addObserver((Observer) resList);
         
-        JPanel hitListPane = new JPanel();
+        JPanel hitListPane = new JPanel();  
         hitListPane.setLayout(new BorderLayout());
         JScrollPane hitListScrollPane = new JScrollPane(resList);
         hitListScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
         hitListScrollPane.setBorder(new TitledBorder("Double-click to include/exclude an item to/from the network!"));
         // make (north) tabs       
         JSplitPane vSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, hitListScrollPane, southPane);
-        vSplit.setDividerLocation(200);
+        vSplit.setDividerLocation(250);
         hitListPane.add(vSplit, BorderLayout.CENTER);
         
         //  Create search results extra filtering panel
@@ -263,13 +275,20 @@ final class SearchPanel extends JPanel
         
         //  Create the Split Pane
         JSplitPane hSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, filterPanel, hitListPane);
-        hSplit.setDividerLocation(200);
+        hSplit.setDividerLocation(250);
         hSplit.setAlignmentX(Component.LEFT_ALIGNMENT);
         searchResultsPanel.add(hSplit);
         
-        // finish
-        JSplitPane queryAndResults = new JSplitPane(JSplitPane.VERTICAL_SPLIT, searchQueryPanel, searchResultsPanel);
-        queryAndResults.setDividerLocation(160);
+
+        JTabbedPane resultsPane = new JTabbedPane(); 
+        resultsPane.add("Current Search Hits", searchResultsPanel);
+        
+        //TODO add a JList here: hits list for selected ones to download or run a graph query
+        resultsPane.add("Hits Selected to Download or Run a Graph Query", new JPanel());
+        
+        
+        JSplitPane queryAndResults = new JSplitPane(JSplitPane.VERTICAL_SPLIT, searchQueryPanel, resultsPane);
+        queryAndResults.setDividerLocation(180);
         add(queryAndResults);         
     }
 
@@ -303,7 +322,7 @@ final class SearchPanel extends JPanel
         JScrollPane scroll = new JScrollPane(organismList, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scroll.setBorder(new TitledBorder("Limit to organism(s):"));
         
-        CpsFactory.execute(new TaskIterator(task));
+        CpsFactory.execute(new TaskIterator(task), this);
         
         return scroll;
     }
@@ -333,7 +352,7 @@ final class SearchPanel extends JPanel
         JScrollPane scroll = new JScrollPane(dataSourceList, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scroll.setBorder(new TitledBorder("Limit to datasource(s):"));
         
-        CpsFactory.execute(iterator);  
+        CpsFactory.execute(iterator, this);  
         
         return scroll;
     }
@@ -401,17 +420,17 @@ final class SearchPanel extends JPanel
 						
 						SearchResponse searchResponse = (SearchResponse) client.search(keyword);
 						// update hits model (also notifies observers!)
-						hitsModel.update(searchResponse);
+						hitsModel.update(searchResponse, null);
 						info.setText("Hits found:  " + searchResponse.getNumHits() 
 								+ "; retrieved: " + searchResponse.getSearchHit().size()
 								+ " (page: " + searchResponse.getPageNo() + ")");
-					} catch (NoResultsFoundException e) {
-						info.setText("No match for:  " + keyword
-							+ " and current filter values (try again)");
-						hitsModel.update(new SearchResponse()); //clear
+					} catch (CPathException e) {
+						info.setText(e.getError().getErrorMsg()
+							+ " (using query '" + keyword + "' and current filter values)");
+						hitsModel.update(new SearchResponse(), null); //clear
 					} catch (Throwable e) { 
 						// using Throwable helps catch unresolved runtime dependency issues!
-						info.setText("Failed:  " + e);
+						info.setText("Unknown Error!");
 						throw new RuntimeException(e);
 					} finally {
 						taskMonitor.setStatusMessage("Done");
@@ -425,7 +444,7 @@ final class SearchPanel extends JPanel
 				}
 			};
 
-			CpsFactory.execute(new TaskIterator(search));
+			CpsFactory.execute(new TaskIterator(search), this);
 		}
     }    
  

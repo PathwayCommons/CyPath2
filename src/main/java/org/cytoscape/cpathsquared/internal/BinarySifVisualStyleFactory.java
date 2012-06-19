@@ -64,7 +64,12 @@ public final class BinarySifVisualStyleFactory {
 	 * @return VisualStyle Object.
 	 */
 	public VisualStyle getVisualStyle() {
-		synchronized (this) {
+		synchronized (this) {  
+			for(VisualStyle vs : mappingManager.getAllVisualStyles()) {
+				if(BINARY_SIF_VISUAL_STYLE.equals(vs.getTitle()))
+					binarySifStyle = vs;
+			}
+
 			if (binarySifStyle == null) {
 				binarySifStyle = styleFactory.createVisualStyle(BINARY_SIF_VISUAL_STYLE);
 
@@ -94,6 +99,7 @@ public final class BinarySifVisualStyleFactory {
 				mappingManager.addVisualStyle(binarySifStyle);
 			}
 		}
+		
 		return binarySifStyle;
 	}
 

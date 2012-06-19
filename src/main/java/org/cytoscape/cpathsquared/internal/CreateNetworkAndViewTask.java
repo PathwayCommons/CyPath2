@@ -3,10 +3,8 @@ package org.cytoscape.cpathsquared.internal;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import javax.swing.SwingUtilities;
 
 
 import org.biopax.paxtools.model.BioPAXElement;
@@ -31,29 +29,30 @@ import org.cytoscape.work.TaskMonitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import cpath.client.CPath2Client;
 import cpath.service.OutputFormat;
 
 /**
  * Controller for Executing a Get Record(s) by CPath ID(s) command.
  * 
  */
-public class GetByUriTask extends AbstractTask {
-	private String ids[];
+public class CreateNetworkAndViewTask extends AbstractTask {
+	private String queryUrl;
 	private String networkTitle;
 	private boolean haltFlag = false;
 	private OutputFormat format;
 	private final static String CPATH_SERVER_NAME_ATTRIBUTE = "CPATH_SERVER_NAME";
 	private final static String CPATH_SERVER_DETAILS_URL = "CPATH_SERVER_DETAILS_URL";
-	private static final Logger logger = LoggerFactory.getLogger(GetByUriTask.class);
+	private static final Logger logger = LoggerFactory.getLogger(CreateNetworkAndViewTask.class);
 
 	/**.
 	 * Constructor.
-	 * @param ids Array of cPath IDs.
+	 * @param queryUrl cPath2 web service query ('get' or 'graph') URL with all parameters.
 	 * @param format Output Format.
 	 * @param networkTitle Tentative Network Title.
 	 */
-	public GetByUriTask(String[] ids, OutputFormat format, String networkTitle) {
-		this.ids = ids;
+	public CreateNetworkAndViewTask(String queryUrl, OutputFormat format, String networkTitle) {
+		this.queryUrl = queryUrl;
 		this.format = format;
 		this.networkTitle = networkTitle;
 	}
@@ -87,11 +86,12 @@ public class GetByUriTask extends AbstractTask {
 			taskMonitor.setProgress(0);
 			taskMonitor.setStatusMessage("Retrieving BioPAX data...");
 			
-			// Get Data: BioPAX and the other format (if required)
-			final String biopaxData = CpsFactory.getRecordsByIds(ids, OutputFormat.BIOPAX);
-			
-			final String data = (format == OutputFormat.BIOPAX) 
-				? biopaxData : CpsFactory.getRecordsByIds(ids, format);
+			// Get Data: BioPAX and the other format data (not BioPAX if required)
+			CPath2Client cli = CpsFactory.newClient();
+	    	final String biopaxData = cli.executeQuery(queryUrl, OutputFormat.BIOPAX);
+	    	String data = (format == OutputFormat.BIOPAX) 
+	    		? biopaxData : cli.executeQuery(queryUrl, format);
+	    	
 			taskMonitor.setProgress(0.4);
 			if (haltFlag) return;
 			
@@ -116,11 +116,6 @@ public class GetByUriTask extends AbstractTask {
 			
 			// Import data via Cy3 I/O API
 			
-//			//the biopax graph reader used to need the following property to be set...
-//			if (networkTitle != null && networkTitle.length() > 0) {
-//				System.setProperty("biopax.network_view_title", networkTitle);
-//			}
-			
 			CyNetworkReader reader = CpsFactory
 				.context().networkViewReaderManager
 					.getReader(tmpFile.toURI(), tmpFile.getName());	
@@ -143,6 +138,14 @@ public class GetByUriTask extends AbstractTask {
 			if (haltFlag) return;
 			
 			if (format == OutputFormat.BINARY_SIF) {
+				//fix the network name
+				SwingUtilities.invokeLater(new Runnable() {
+					public void run() {
+						String networkTitleWithUnderscores = CpsFactory.context().naming.getSuggestedNetworkTitle(networkTitle);
+						Attributes.set(cyNetwork, cyNetwork, CyNetwork.NAME, networkTitleWithUnderscores, String.class);
+					}
+				});
+				
 				taskMonitor.setStatusMessage("Updating SIF network " +
 					"attributes from corresonding BioPAX data...");				
 				
@@ -154,24 +157,23 @@ public class GetByUriTask extends AbstractTask {
 				// we gonna need the full (original biopax) model to create attributes
 				final Model bpModel = BioPaxUtil.convertFromOwl(new ByteArrayInputStream(biopaxData.getBytes("UTF-8")));
 				
-				// Get all node details.
-				createSinNetworkNodeAttributes(cyNetwork, bpModel);
+				// Set node/edge attributes from the Biopax Model
+				for (CyNode node : cyNetwork.getNodeList()) {
+					CyRow row = cyNetwork.getRow(node);
+					String uri = row.get(CyNetwork.NAME, String.class);
+					BioPAXElement e = bpModel.getByID(uri);// can be null (for generic groups nodes)
+					if(e instanceof EntityReference 
+						|| e instanceof Complex 
+						|| (e != null && e.getModelInterface().equals(PhysicalEntity.class))) 
+						BioPaxUtil.createAttributesFromProperties(e, node, cyNetwork);
+				}
 
-				if (haltFlag) return; //TODO not sure whether it's the best or only place for this check...
+				if (haltFlag) return;
 
 				VisualStyle visualStyle = CpsFactory.context().binarySifVisualStyleUtil.getVisualStyle();
 				CpsFactory.context().mappingManager.setVisualStyle(visualStyle, view);
-
-//				//fix the network name
-//				SwingUtilities.invokeLater(new Runnable() {
-//					public void run() {
-//						String networkTitleWithUnderscores = networkTitle.replaceAll(": ", "");
-//						networkTitleWithUnderscores = networkTitleWithUnderscores.replaceAll(" ", "_");
-//						CyNetworkNaming naming = CpsFactory.getCyNetworkNaming();
-//						networkTitleWithUnderscores = naming.getSuggestedNetworkTitle(networkTitleWithUnderscores);
-//						Attributes.set(cyNetwork, cyNetwork, CyNetwork.NAME, networkTitleWithUnderscores, String.class);
-//					}
-//				});
+				visualStyle.apply(view);
+				view.updateView();
 			} 
 
 			taskMonitor.setProgress(0.8);
@@ -206,85 +208,13 @@ public class GetByUriTask extends AbstractTask {
 		String serverName = CpsFactory.SERVER_NAME;
 		String serverURL = CpsFactory.SERVER_URL;
 		CyRow row = cyNetwork.getRow(cyNetwork);
-		String cPathServerDetailsUrl = row.get(GetByUriTask.CPATH_SERVER_DETAILS_URL, String.class);
+		String cPathServerDetailsUrl = row.get(CreateNetworkAndViewTask.CPATH_SERVER_DETAILS_URL, String.class);
 		if (cPathServerDetailsUrl == null) {
-			Attributes.set(cyNetwork, cyNetwork, GetByUriTask.CPATH_SERVER_NAME_ATTRIBUTE,
+			Attributes.set(cyNetwork, cyNetwork, CreateNetworkAndViewTask.CPATH_SERVER_NAME_ATTRIBUTE,
 					serverName, String.class);
 			String url = serverURL.replaceFirst("webservice.do", "record2.do?id=");
-			Attributes.set(cyNetwork, cyNetwork, GetByUriTask.CPATH_SERVER_DETAILS_URL, url, String.class);
+			Attributes.set(cyNetwork, cyNetwork, CreateNetworkAndViewTask.CPATH_SERVER_DETAILS_URL, url, String.class);
 		}
-	}
-
-	
-	/**
-	 * Create BioPAX attributes for each node in the SIF network
-	 */
-	private void createSinNetworkNodeAttributes(CyNetwork cyNetwork, Model model) {
-		List<List<CyNode>> batchList = createBatchArray(cyNetwork);
-		if (batchList.size() == 0) {
-			logger.info("Skipping node details.  Already have all the details new need.");
-		}
-		
-		for (int i = 0; i < batchList.size(); i++) {
-			if (haltFlag == true)
-				break;
-			
-			List<CyNode> currentList = batchList.get(i);
-			logger.debug("Getting node details, batch:  " + i);
-			String ids[] = new String[currentList.size()];
-			Map<String, CyNode> nodes = new HashMap<String, CyNode>();
-			for (int j = 0; j < currentList.size(); j++) {
-				CyNode node = currentList.get(j);
-				String name = cyNetwork.getRow(node).get(CyNetwork.NAME, String.class);
-				nodes.put(name, node);
-				ids[j] = name;
-			}
-			try {		
-				//map biopax properties to Cy attributes for SIF nodes
-				for (BioPAXElement e : model.getObjects()) {
-					if(e instanceof EntityReference 
-						|| e instanceof Complex 
-						|| e.getModelInterface().equals(PhysicalEntity.class)) 
-					{
-						CyNode node = nodes.get(e.getRDFId());
-						if(node != null)
-							BioPaxUtil.createAttributesFromProperties(e, node, cyNetwork);
-						// - this will also update the 'name' attribute (to a biol. label)
-						else {
-							logger.debug("Oops: no node for " + e.getRDFId());
-						}
-					}
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	private List<List<CyNode>> createBatchArray(CyNetwork cyNetwork) {
-		int max_ids_per_request = 50;
-		List<List<CyNode>> masterList = new ArrayList<List<CyNode>>();
-		List<CyNode> currentList = new ArrayList<CyNode>();
-		int counter = 0;
-		for (CyNode node : cyNetwork.getNodeList()) {
-			CyRow row = cyNetwork.getRow(node);
-			String label = row.get(CyNetwork.NAME, String.class);
-
-			// If we already have details on this node, skip it.
-			if (label == null) {
-				currentList.add(node);
-				counter++;
-			}
-			if (counter > max_ids_per_request) {
-				masterList.add(currentList);
-				currentList = new ArrayList<CyNode>();
-				counter = 0;
-			}
-		}
-		if (currentList.size() > 0) {
-			masterList.add(currentList);
-		}
-		return masterList;
 	}
 
 	

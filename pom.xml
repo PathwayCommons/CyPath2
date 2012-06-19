@@ -35,6 +35,18 @@
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.4</version>
+				<configuration>
+					<archive>
+						<manifestEntries>
+							<Cytoscape-App-Name>Next Generation Pathway Commons App (BioPAX L3)</Cytoscape-App-Name>
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>2.3.2</version>
 				<executions>
@@ -206,7 +218,8 @@
             <groupId>cytoscape-temp</groupId>
             <artifactId>woodstox-core-lgpl</artifactId>
             <version>[4.0.5, 5.0.0)</version>
-        </dependency>
+            <scope>provided</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.osgi</groupId>
 			<artifactId>org.osgi.core</artifactId>
