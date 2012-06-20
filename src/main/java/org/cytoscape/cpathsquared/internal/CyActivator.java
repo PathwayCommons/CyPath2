@@ -1,6 +1,5 @@
 package org.cytoscape.cpathsquared.internal;
 
-import org.cytoscape.work.TaskManager;
 import org.cytoscape.util.swing.OpenBrowser;
 import org.cytoscape.model.CyNetworkManager;
 import org.cytoscape.view.vizmap.VisualMappingManager;
@@ -16,10 +15,6 @@ import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.io.read.CyNetworkReaderManager;
 import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
-
-import org.cytoscape.cpathsquared.internal.CpsFactory;
-
-
 
 import org.osgi.framework.BundleContext;
 
@@ -59,8 +54,8 @@ public final class CyActivator extends AbstractCyActivator {
 				discreteMappingFactoryRef,
 				passthroughMappingFactoryRef);
 		
-		// initialize the internal "God" static factory
-		CpsFactory.init(
+		// Create and register the OSGi service
+		CpsWebServiceGuiClient cPathWebService = new CpsWebServiceGuiClient(
 				cySwingApplicationRef,
 				taskManagerRef,
 				openBrowserRef,
@@ -76,8 +71,6 @@ public final class CyActivator extends AbstractCyActivator {
 				visualMappingManagerRef,
 				cytoscapePropertiesServiceRef);
 		
-		// register the service
-		CpsWebServiceGuiClient cPathWebService = new CpsWebServiceGuiClient();
 		registerAllServices(bc, cPathWebService, new Properties());
 	}
 }

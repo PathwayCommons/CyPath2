@@ -17,6 +17,7 @@ import org.apache.commons.lang.StringUtils;
 import org.cytoscape.work.Task;
 import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskMonitor;
+import org.cytoscape.work.swing.PanelTaskManager;
 
 import cpath.service.jaxb.SearchHit;
 import cpath.service.jaxb.SearchResponse;
@@ -30,6 +31,7 @@ import cpath.service.jaxb.TraverseResponse;
 final class HitsModel extends Observable {
 
     private SearchResponse response; 
+    private final PanelTaskManager taskManager;
     
     final boolean parentPathwaysRequired;
     final String title;
@@ -52,9 +54,10 @@ final class HitsModel extends Observable {
     volatile SearchFor searchFor = SearchFor.INTERACTION; 
     
     
-    public HitsModel(String title, boolean parentPathwaysUsed) {
+    public HitsModel(String title, boolean parentPathwaysUsed, PanelTaskManager taskManager) {
 		this.parentPathwaysRequired = parentPathwaysUsed;
 		this.title = title;
+		this.taskManager = taskManager;
 	}
     
     public int getNumRecords() {
@@ -142,12 +145,13 @@ final class HitsModel extends Observable {
 		});
 		
 		// kick task execution
-		CpsFactory.execute(taskIterator, context);
+		taskManager.setExecutionContext(context);
+		taskManager.execute(taskIterator);
 	}
 
     
     public SearchResponse getSearchResponse() {
-        return CpsFactory.unmodifiableSearchResponce(response);
+        return unmodifiableSearchResponce(response);
     }
 
     
@@ -163,17 +167,17 @@ final class HitsModel extends Observable {
 		html.append("<em>URI='").append(item.getUri()).append("'</em><br/>");
 		
 		//create a link to be intercepted/converted to a (import a sub-model) Task!
-		String linkUrl = CpsFactory.newClient().queryNeighborhood(Collections.singleton(item.getUri()));
-		String linkText = "Click to import (creates the nearest neighborhood network)!";
+		String linkUrl = CpsWebServiceGuiClient.newClient().queryNeighborhood(Collections.singleton(item.getUri()));
+		String linkText = "Click to import (nearest neighborhood network)!";
 		if(searchFor == SearchFor.PATHWAY || searchFor == SearchFor.INTERACTION) { //simply use 'get' query
-			linkUrl = CpsFactory.newClient().queryGet(Collections.singleton(item.getUri()));
-			linkText = "Click to import (makes a new network)!";
+			linkUrl = CpsWebServiceGuiClient.newClient().queryGet(Collections.singleton(item.getUri()));
+			linkText = "Click to import (new network)!";
 		}
 		html.append("<a href='")
 			.append(linkUrl).append("'>")
 			.append(linkText).append("</a>");
 
-		//TODO may create other links to be opened in the system's browser!
+		//TODO may create other links (to e.g. provider's site)
 		
 		String primeExcerpt = item.getExcerpt();
 		if (primeExcerpt != null)
@@ -183,14 +187,26 @@ final class HitsModel extends Observable {
 						.append("</span><br/>");
 		
 		List<String> items = item.getOrganism();
-		if (items != null && !items.isEmpty())
-			html.append("<h3>Organisms:</h3>")
-				.append(StringUtils.join(items, "<br/>"));
+		if (items != null && !items.isEmpty()) {
+			html.append("<h3>Organisms:</h3>").append("<ul>");
+			for(String uri : items) {
+				html.append("<li>")
+					.append(CpsWebServiceGuiClient.uriToOrganismNameMap.get(uri))
+					.append("</li>");
+			}
+			html.append("</ul>");
+		}
 		
 		items = item.getDataSource();
-		if (items != null && !items.isEmpty())
-			html.append("<h3>Data sources:</h3>")
-				.append(StringUtils.join(items, "<br/>"));
+		if (items != null && !items.isEmpty()) {
+			html.append("<h3>Data sources:</h3>").append("<ul>");
+			for(String uri : items) {
+				html.append("<li>")
+					.append(CpsWebServiceGuiClient.uriToDatasourceNameMap.get(uri))
+					.append("</li>");
+			}
+			html.append("</ul>");
+		}
 		
 		String path = null;
 		if("Pathway".equalsIgnoreCase(item.getBiopaxClass()))
@@ -203,7 +219,7 @@ final class HitsModel extends Observable {
 				path = "PhysicalEntity/memberPhysicalEntity";
 		else if(searchFor == SearchFor.ENTITYREFERENCE)
 			path = "EntityReference/memberEntityReference";	
-		TraverseResponse members = CpsFactory
+		TraverseResponse members = CpsWebServiceGuiClient
 			.traverse(path + ":Named/displayName", Collections.singleton(item.getUri()));
 		
 		if (members != null) {
@@ -221,7 +237,7 @@ final class HitsModel extends Observable {
 			// add parent pathways to the Map ("ppw" prefix means "parent pathway's" -)
 			final Collection<NvpListItem> ppws = new TreeSet<NvpListItem>();	
 			final Set<String> ppwUris = new HashSet<String>(item.getPathway()); // a hack for not unique URIs (a cpath2 indexing bug...)
-			TraverseResponse ppwNames = CpsFactory.traverse("Named/displayName", ppwUris);
+			TraverseResponse ppwNames =CpsWebServiceGuiClient.traverse("Named/displayName", ppwUris);
 			if (ppwNames != null) {
 				Map<String, String> ppwUriToNameMap = new HashMap<String, String>();			
 				for (TraverseEntry e : ppwNames.getTraverseEntry()) {
@@ -230,7 +246,7 @@ final class HitsModel extends Observable {
 				}
 				
 				// add ppw component counts to names and wrap/save as NVP, finally:
-				TraverseResponse ppwComponents = CpsFactory.traverse(
+				TraverseResponse ppwComponents = CpsWebServiceGuiClient.traverse(
 						"Pathway/pathwayComponent", ppwUris); // this gets URIs of pathways
 				for (TraverseEntry e : ppwComponents.getTraverseEntry()) {
 					assert ppwUriToNameMap.containsKey(e.getUri());
@@ -241,5 +257,71 @@ final class HitsModel extends Observable {
 			hitsPathwaysMap.put(item.getUri(), ppws);
 		}
 		
+	}
+	
+	
+	private SearchResponse unmodifiableSearchResponce(final SearchResponse resp) {
+		if (resp == null)
+			return null;
+
+		// create a read-only proxy/view
+		SearchResponse imm = new SearchResponse() {
+			@Override
+			public String getComment() {
+				return resp.getComment();
+			}
+
+			@Override
+			public Integer getMaxHitsPerPage() {
+				return resp.getMaxHitsPerPage();
+			}
+
+			@Override
+			public Integer getNumHits() {
+				return resp.getNumHits();
+			}
+
+			@Override
+			public Integer getPageNo() {
+				return resp.getPageNo();
+			}
+
+			@Override
+			public List<SearchHit> getSearchHit() {
+				return Collections.unmodifiableList(resp.getSearchHit());
+			}
+
+			@Override
+			public boolean isEmpty() {
+				return resp.isEmpty();
+			}
+
+			@Override
+			public void setComment(String comment) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public void setMaxHitsPerPage(Integer maxHitsPerPage) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public void setNumHits(Integer numHits) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public void setPageNo(Integer pageNo) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public void setSearchHit(List<SearchHit> searchHit) {
+				throw new UnsupportedOperationException();
+			}
+		};
+
+		return imm;
 	}
 }

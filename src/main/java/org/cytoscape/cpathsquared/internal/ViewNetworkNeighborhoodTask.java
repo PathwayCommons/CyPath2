@@ -4,7 +4,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLEncoder;
 
-import org.cytoscape.cpathsquared.internal.util.BioPaxUtil;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;
 import org.cytoscape.model.CyRow;
@@ -15,7 +14,7 @@ import org.cytoscape.work.TaskMonitor;
 
 //TODO needs updating/re-factoring (or, seems, - re-writing from scratch...)
 @Deprecated
-public class ViewNetworkNeighborhoodTask implements Task {
+class ViewNetworkNeighborhoodTask implements Task {
 
     private static final String PC_WEB_SERVICE_URL = "/webservice.do?version=3.0&cmd=get_neighbors&q=";
     

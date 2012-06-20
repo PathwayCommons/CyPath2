@@ -210,7 +210,6 @@ final class CollapsablePanel extends JPanel {
      */
     private class CollapsableTitledBorder extends TitledBorder {
         JComponent component;
-        //Border border;
 
         public CollapsableTitledBorder(JComponent component) {
             this(null, component, LEFT, TOP);

@@ -1,4 +1,4 @@
-package org.cytoscape.cpathsquared.internal.util;
+package org.cytoscape.cpathsquared.internal;
 
 import java.util.List;
 
@@ -8,7 +8,7 @@ import org.cytoscape.model.CyRow;
 import org.cytoscape.model.CyTable;
 import org.cytoscape.model.CyIdentifiable;
 
-public class Attributes {
+final class Attributes {
 	
 	public static void set(CyNetwork network, CyIdentifiable entry, String name, Object value, Class<?> type) {
 		set(network, entry, CyNetwork.DEFAULT_ATTRS, name, value, type);
