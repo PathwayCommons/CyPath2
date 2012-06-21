@@ -19,6 +19,8 @@ import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.work.swing.PanelTaskManager;
 
+import cpath.client.CPath2Client;
+import cpath.service.GraphType;
 import cpath.service.jaxb.SearchHit;
 import cpath.service.jaxb.SearchResponse;
 import cpath.service.jaxb.TraverseEntry;
@@ -51,13 +53,17 @@ final class HitsModel extends Observable {
     	ENTITYREFERENCE;
     }
 
+    // full-text search query parameter
     volatile SearchFor searchFor = SearchFor.INTERACTION; 
-    
+    // advanced (graph or multiple items import) query parameter 
+    volatile GraphType graphType = null;
+    final CPath2Client graphQueryClient;    
     
     public HitsModel(String title, boolean parentPathwaysUsed, PanelTaskManager taskManager) {
 		this.parentPathwaysRequired = parentPathwaysUsed;
 		this.title = title;
 		this.taskManager = taskManager;
+		this.graphQueryClient = CpsWebServiceGuiClient.newClient();
 	}
     
     public int getNumRecords() {

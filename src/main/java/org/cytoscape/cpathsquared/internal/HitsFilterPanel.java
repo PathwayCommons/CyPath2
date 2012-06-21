@@ -62,7 +62,7 @@ final class HitsFilterPanel extends JPanel implements Observer {
         rootNode.add(dataSourceFilterNode);
         tree = new JTreeWithCheckNodes(rootNode);
         tree.setOpaque(false);
-        filterTreePanel = new CollapsablePanel("BioPAX Filters");
+        filterTreePanel = new CollapsablePanel("BioPAX Filters (offline)");
         filterTreePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         filterTreePanel.getContentPane().add(tree);
 

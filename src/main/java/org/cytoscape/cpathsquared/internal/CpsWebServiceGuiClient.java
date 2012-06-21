@@ -95,7 +95,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import cpath.client.CPath2Client;
+import cpath.client.CPath2Client.Direction;
 import cpath.client.util.CPathException;
+import cpath.service.GraphType;
 import cpath.service.OutputFormat;
 import cpath.service.jaxb.SearchHit;
 import cpath.service.jaxb.SearchResponse;
@@ -147,6 +149,7 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 	final VisualMappingManager mappingManager;
 	final CyProperty<Properties> cyProperty;
 	
+	private JPanel advQueryPanel;
     
     /**
      * Creates a new Web Services client.
@@ -174,18 +177,16 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 		mappingManager = mm;
 		cyProperty = prop;
     	
-    	
-        JTabbedPane tabbedPane = new JTabbedPane();
-    	JPanel searchPanel = createSearchPanel();
-        tabbedPane.add("Search", searchPanel);
+		final JTabbedPane  tabbedPane = new JTabbedPane();
+        tabbedPane.add("Search", createSearchPanel()); //also init. the advQueryPanel
         tabbedPane.add("Top Pathways", createTopPathwaysPanel());
+        tabbedPane.add("Advanced Query", advQueryPanel);
         tabbedPane.add("Options", createOptionsPane());
         
     	JPanel mainPanel = new JPanel();
         mainPanel.setPreferredSize(new Dimension (500,400));
         mainPanel.setLayout (new BorderLayout());
         mainPanel.add(tabbedPane, BorderLayout.CENTER);       
-        searchPanel.requestFocusInWindow();
 
     	gui = mainPanel;
     }
@@ -389,7 +390,8 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 	        
 	    JEditorPane label = new JEditorPane (
 	    		"text/html", "Examples:  <a href='TP53'>TP53</a>, " +
-	            "<a href='BRCA1'>BRCA1</a>, or <a href='SRY'>SRY</a>.");
+	            "<a href='BRCA1'>BRCA1</a>, or <a href='SRY'>SRY</a>. " +
+	            "You can also use Lucene query syntax.");
 	    label.setEditable(false);
 	    label.setOpaque(false);
 	    label.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
@@ -408,7 +410,7 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 	    label.setBorder(new EmptyBorder(5,3,3,3));
 	    label.setAlignmentX(Component.LEFT_ALIGNMENT);
 	     
-	    final JLabel info = new JLabel("", SwingConstants.CENTER);
+	    final JLabel info = new JLabel("", SwingConstants.LEFT);
 	    info.setFocusable(false);
 	    info.setFont(new Font(info.getFont().getFamily(), info.getFont().getStyle(), info.getFont().getSize()+1));
 	    info.setForeground(Color.BLUE);
@@ -573,9 +575,9 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 	        
 		// Assembly the query panel
 		searchQueryPanel.setLayout(new BorderLayout());
-        searchQueryPanel.add(groupPanel, BorderLayout.LINE_START);
+        searchQueryPanel.add(groupPanel, BorderLayout.WEST);
         searchQueryPanel.add(organismFilterBox, BorderLayout.CENTER);
-        searchQueryPanel.add(dataSourceFilterBox, BorderLayout.LINE_END);
+        searchQueryPanel.add(dataSourceFilterBox, BorderLayout.EAST);
 	       
         final JPanel keywordPane = new JPanel();
         keywordPane.setLayout(new FlowLayout(FlowLayout.LEFT));
@@ -584,8 +586,8 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
         keywordPane.add(label);
         keywordPane.setMaximumSize(new Dimension(15, 100));
         
-        searchQueryPanel.add(keywordPane, BorderLayout.PAGE_START);
-        searchQueryPanel.add(info, BorderLayout.PAGE_END);
+        searchQueryPanel.add(keywordPane, BorderLayout.NORTH);
+        searchQueryPanel.add(info, BorderLayout.SOUTH);
 	    	
         // Assembly the results panel
     	final JPanel searchResultsPanel = new JPanel();
@@ -691,7 +693,7 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
         hitListPane.setLayout(new BorderLayout());
         JScrollPane hitListScrollPane = new JScrollPane(resList);
         hitListScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        hitListScrollPane.setBorder(createTitledBorder("Double-click shelves it for an advanced query!"));
+        hitListScrollPane.setBorder(createTitledBorder("Double-click adds it to Advanced Query page!"));
         // make (north) tabs       
         JSplitPane vSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, hitListScrollPane, detailsTabbedPane);
         vSplit.setDividerLocation(250);
@@ -706,26 +708,212 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
         hSplit.setAlignmentX(Component.LEFT_ALIGNMENT);
         searchResultsPanel.add(hSplit);
 	        
-
-        JTabbedPane resultsPane = new JTabbedPane(); 
-        resultsPane.add("Current Search Hits", searchResultsPanel);
-	        
         //create adv. query panel with user picked items list 
-        JPanel advQueryPanel = new JPanel(new BorderLayout());
-        resultsPane.add("Advanced Queries", advQueryPanel);
-        JPanel advQueryCtrlPanel = new JPanel(); 
-        //add download options and button here
-        advQueryCtrlPanel.setPreferredSize(new Dimension(300, 100));
+        advQueryPanel = new JPanel(new BorderLayout());
+        JPanel advQueryCtrlPanel = new JPanel();
+        advQueryCtrlPanel.setLayout(new BoxLayout(advQueryCtrlPanel, BoxLayout.Y_AXIS));
+        advQueryCtrlPanel.setPreferredSize(new Dimension(300, 300));
+        
+        //add radio buttons for different query types
+    	final JPanel queryTypePanel = new JPanel();
+        queryTypePanel.setBorder(new TitledBorder("Query types"));
+        queryTypePanel.setLayout(new GridBagLayout());   
+        
+        //create direction buttons in advance (to disable/enable)
+        final JRadioButton both = new JRadioButton("Both directions");
+        final JRadioButton down = new JRadioButton("Downstream"); 
+        final JRadioButton up = new JRadioButton("Upstream"); 
+        
+	    ButtonGroup bg = new ButtonGroup();
+	    JRadioButton b = new JRadioButton("Get (multiple sub-graphs as one 'network')");	    
+        //default option (1)
+	    b.setSelected(true);
+	    hitsModel.graphType = null;
+	    b.addActionListener(new ActionListener() {
+	        public void actionPerformed(ActionEvent actionEvent) {
+	            hitsModel.graphType = null;
+	        	both.setEnabled(false);
+	        	up.setEnabled(false);
+	        	down.setEnabled(false);
+	        }
+	    });
+	    bg.add(b);
+
+        c = new GridBagConstraints();
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 0.5;
+        c.gridx = 0;
+        c.gridy = 0;
+        queryTypePanel.add(b, c);
+	    
+	    b = new JRadioButton("BioPAX Nearest Neighborhood");
+	    b.addActionListener(new ActionListener() {
+	        public void actionPerformed(ActionEvent actionEvent) {
+	        	hitsModel.graphType = GraphType.NEIGHBORHOOD;
+	        	both.setEnabled(true);
+	        	up.setEnabled(true);
+	        	down.setEnabled(true);
+	        	both.setSelected(true);
+	        	hitsModel.graphQueryClient.setDirection(Direction.BOTHSTREAM);
+	        }
+	    });
+	    bg.add(b);
+        c.gridx = 0;
+        c.gridy = 1;
+        queryTypePanel.add(b, c);
+	    
+	    b = new JRadioButton("BioPAX Common Stream");
+	    b.addActionListener(new ActionListener() {
+	        public void actionPerformed(ActionEvent actionEvent) {
+	           	hitsModel.graphType = GraphType.COMMONSTREAM;
+	        	both.setEnabled(false);
+	        	up.setEnabled(true);
+	        	down.setEnabled(true);
+	        	down.setSelected(true);
+	        	hitsModel.graphQueryClient.setDirection(Direction.DOWNSTREAM);
+	        }
+	    });
+	    bg.add(b);
+        c.gridx = 0;
+        c.gridy = 2;
+        queryTypePanel.add(b, c);
+	    
+	    b = new JRadioButton("BioPAX Paths Beetween");
+	    b.addActionListener(new ActionListener() {
+	        public void actionPerformed(ActionEvent actionEvent) {
+	        	hitsModel.graphType = GraphType.PATHSBETWEEN;
+	        	both.setEnabled(false);
+	        	up.setEnabled(false);
+	        	down.setEnabled(false);
+	        	hitsModel.graphQueryClient.setDirection(null);
+	        }
+	    });
+	    bg.add(b);
+        c.gridx = 0;
+        c.gridy = 3;
+        queryTypePanel.add(b, c);
+	    
+	    b = new JRadioButton("BioPAX Paths From (checked) To (unchecked)");
+	    b.addActionListener(new ActionListener() {
+	        public void actionPerformed(ActionEvent actionEvent) {
+	        	hitsModel.graphType = GraphType.PATHSFROMTO;
+	        	both.setEnabled(false);
+	        	up.setEnabled(false);
+	        	down.setEnabled(false);
+	        	hitsModel.graphQueryClient.setDirection(null);
+	        }
+	    });
+	    bg.add(b);
+        c.gridx = 0;
+        c.gridy = 4;
+        queryTypePanel.add(b, c);
+        
+        queryTypePanel.setMaximumSize(new Dimension(400, 150));           
+        advQueryCtrlPanel.add(queryTypePanel);
+        
+        // add direction, limit options and the 'go' button
 	        
+    	JPanel directionPanel = new JPanel();
+    	directionPanel.setBorder(new TitledBorder("Direction"));
+    	directionPanel.setLayout(new GridBagLayout());
+    	bg = new ButtonGroup();	    
+    	down.addActionListener(new ActionListener() {
+	        public void actionPerformed(ActionEvent actionEvent) {
+	        	hitsModel.graphQueryClient.setDirection(Direction.DOWNSTREAM);
+	        }
+	    });
+	    bg.add(down);
+        c = new GridBagConstraints();
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 0.5;
+        c.gridx = 0;
+        c.gridy = 0;
+        directionPanel.add(down, c);
+	    
+        up.addActionListener(new ActionListener() {
+	        public void actionPerformed(ActionEvent actionEvent) {
+	        	hitsModel.graphQueryClient.setDirection(Direction.UPSTREAM);
+	        }
+	    });
+	    bg.add(up);
+        c.gridx = 0;
+        c.gridy = 1;
+        directionPanel.add(up, c);
+	    
+	    both.addActionListener(new ActionListener() {
+	        public void actionPerformed(ActionEvent actionEvent) {
+	        	hitsModel.graphQueryClient.setDirection(Direction.BOTHSTREAM);
+	        }
+	    });
+	    bg.add(both);
+        c.gridx = 0;
+        c.gridy = 2;
+        directionPanel.add(both, c);
+    		
+        directionPanel.setMaximumSize(new Dimension(400, 100));
+        advQueryCtrlPanel.add(directionPanel);
+      
+        //TODO add limit (combo box) here 
+      
+        
+        // add action button
+	    final JButton advQueryButton = new JButton("GO!");
+	    advQueryButton.setToolTipText("Create a new network from a BioPAX graph query result");
+	    advQueryButton.addActionListener(new ActionListener() {
+	        public void actionPerformed(ActionEvent actionEvent) {
+	        	advQueryButton.setEnabled(false);
+	           	
+	        	//create souce and target lists of URIs
+	        	Set<String> srcs = new HashSet<String>();
+	        	Set<String> tgts = new HashSet<String>();
+	        	for(int i=0; i < userList.getModel().getSize(); i++) {
+	        		String uri = ((NvpListItem) userList.getModel().getElementAt(i)).getValue();
+	        		if(userList.isSelectedIndex(i))
+	        			srcs.add(uri);
+	        		else
+	        			tgts.add(uri);
+	        	}
+	        	
+	        	//hitsModel.graphQueryClient uses direction and limit set by user
+	        	String queryUrl = hitsModel.graphQueryClient.queryGet(srcs);
+	        	
+	        	if(hitsModel.graphType != null)
+	        	switch (hitsModel.graphType) {
+				case NEIGHBORHOOD:
+					queryUrl = hitsModel.graphQueryClient.queryNeighborhood(srcs);
+					break;
+				case COMMONSTREAM:
+					queryUrl = hitsModel.graphQueryClient.queryCommonStream(srcs);
+					break;
+				case PATHSBETWEEN:
+					queryUrl = hitsModel.graphQueryClient.queryPathsBetween(srcs);
+					break;
+				case PATHSFROMTO:
+					queryUrl = hitsModel.graphQueryClient.queryPathsFromTo(srcs, tgts);
+					break;
+				default:
+					break;
+				}
+
+	        	taskManager.setExecutionContext(advQueryPanel);
+	        	taskManager.execute(new TaskIterator(new CpsNetworkAndViewTask(queryUrl, null)));
+	        	
+	        	advQueryButton.setEnabled(true);
+	        }
+	    });
+	    advQueryButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+	    advQueryButton.setMaximumSize(new Dimension(100, 50));
+        advQueryCtrlPanel.add(advQueryButton);        
+    
         // add the picked items list
         JScrollPane advQueryListPane = new JScrollPane(userList);
         advQueryListPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        advQueryListPane.setBorder(createTitledBorder("Check 'source' items (the rest become 'target' for some queries). Double-click to remove!"));
+        advQueryListPane.setBorder(createTitledBorder("Find/add items using Search page. Select items to use in a query. Double-click to delete!"));
         advQueryPanel.add(advQueryCtrlPanel, BorderLayout.LINE_START);
         advQueryPanel.add(advQueryListPane, BorderLayout.CENTER);       
 	        
         // final top-bottom panels arrange -
-        JSplitPane queryAndResults = new JSplitPane(JSplitPane.VERTICAL_SPLIT, searchQueryPanel, resultsPane);
+        JSplitPane queryAndResults = new JSplitPane(JSplitPane.VERTICAL_SPLIT, searchQueryPanel, searchResultsPanel);
         queryAndResults.setDividerLocation(180);
         panel.add(queryAndResults);
 	        

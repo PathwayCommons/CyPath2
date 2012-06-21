@@ -55,7 +55,7 @@ public final class CyActivator extends AbstractCyActivator {
 				passthroughMappingFactoryRef);
 		
 		// Create and register the OSGi service
-		CpsWebServiceGuiClient cPathWebService = new CpsWebServiceGuiClient(
+		CpsWebServiceGuiClient cPathSquaredWebServiceClient = new CpsWebServiceGuiClient(
 				cySwingApplicationRef,
 				taskManagerRef,
 				openBrowserRef,
@@ -71,7 +71,7 @@ public final class CyActivator extends AbstractCyActivator {
 				visualMappingManagerRef,
 				cytoscapePropertiesServiceRef);
 		
-		registerAllServices(bc, cPathWebService, new Properties());
+		registerAllServices(bc, cPathSquaredWebServiceClient, new Properties());
 	}
 }
 
