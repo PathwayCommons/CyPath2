@@ -508,12 +508,7 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 	        		taskManager.setExecutionContext(searchQueryPanel);
 	        		taskManager.execute(new TaskIterator(search));
 	        	}
-	          
-	            if(hitsModel.searchFor == SearchFor.ENTITYREFERENCE)
-	            	//disable parent pathways tab (no cpath2 parent pw index exists for this biopax type)
-	                detailsTabbedPane.setEnabledAt(1, false); 
-	            else
-	               	detailsTabbedPane.setEnabledAt(1, true);   	
+	             	
 	        }
 	    });
 	    searchButton.setAlignmentX(Component.LEFT_ALIGNMENT); 
@@ -1158,7 +1153,9 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 	    			
     			// Get Data: BioPAX and the other format data (not BioPAX if required)
     			CPath2Client cli = CpsWebServiceGuiClient.newClient();
+    			//get data (throws exception if no results or internal error!)
     	    	final String biopaxData = cli.executeQuery(queryUrl, OutputFormat.BIOPAX);
+    	    	
     	    	String data = (downloadMode == OutputFormat.BIOPAX) 
     	    		? biopaxData : cli.executeQuery(queryUrl, downloadMode);
 	    	    	
