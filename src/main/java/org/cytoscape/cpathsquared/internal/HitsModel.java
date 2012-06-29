@@ -16,8 +16,8 @@ import javax.swing.JPanel;
 import org.apache.commons.lang.StringUtils;
 import org.cytoscape.work.Task;
 import org.cytoscape.work.TaskIterator;
+import org.cytoscape.work.TaskManager;
 import org.cytoscape.work.TaskMonitor;
-import org.cytoscape.work.swing.PanelTaskManager;
 
 import cpath.client.CPath2Client;
 import cpath.service.GraphType;
@@ -32,34 +32,26 @@ import cpath.service.jaxb.TraverseResponse;
  */
 final class HitsModel extends Observable {
 
-    private SearchResponse response; 
-    private final PanelTaskManager taskManager;
+    private SearchResponse response;
+    private final TaskManager taskManager;
     
     final boolean parentPathwaysRequired;
     final String title;
     
     final Map<String, Integer> numHitsByTypeMap = new TreeMap<String, Integer>();
     final Map<String, Integer> numHitsByOrganismMap = new TreeMap<String, Integer>();
-    final Map<String, Integer> numHitsByDatasourceMap = new TreeMap<String, Integer>();
-    
+    final Map<String, Integer> numHitsByDatasourceMap = new TreeMap<String, Integer>();    
     final Map<String, String> hitsSummaryMap = new HashMap<String, String>();
     final Map<String, Collection<NvpListItem>> hitsPathwaysMap 
     		= new HashMap<String, Collection<NvpListItem>>();
 
-    static enum SearchFor {
-    	PATHWAY,
-    	INTERACTION,
-    	PHYSICALENTITY,
-    	ENTITYREFERENCE;
-    }
-
     // full-text search query parameter
-    volatile SearchFor searchFor = SearchFor.INTERACTION; 
+    volatile String searchFor = "Interaction"; 
     // advanced (graph or multiple items import) query parameter 
     volatile GraphType graphType = null;
     final CPath2Client graphQueryClient;    
     
-    public HitsModel(String title, boolean parentPathwaysUsed, PanelTaskManager taskManager) {
+    public HitsModel(String title, boolean parentPathwaysUsed, TaskManager taskManager) {
 		this.parentPathwaysRequired = parentPathwaysUsed;
 		this.title = title;
 		this.taskManager = taskManager;
@@ -151,7 +143,6 @@ final class HitsModel extends Observable {
 		});
 		
 		// kick task execution
-		taskManager.setExecutionContext(context);
 		taskManager.execute(taskIterator);
 	}
 
@@ -175,7 +166,8 @@ final class HitsModel extends Observable {
 		//create a link to be intercepted/converted to a (import a sub-model) Task!
 		String linkUrl = CpsWebServiceGuiClient.newClient().queryNeighborhood(Collections.singleton(item.getUri()));
 		String linkText = "Click to import (nearest neighborhood network)!";
-		if(searchFor == SearchFor.PATHWAY || searchFor == SearchFor.INTERACTION) { //simply use 'get' query
+		//TODO in the future, consider subclasses of Interaction as well or limit possible values entered by users -
+		if(searchFor.equalsIgnoreCase("Pathway") || searchFor.equalsIgnoreCase("Interaction")) { //simply use 'get' query
 			linkUrl = CpsWebServiceGuiClient.newClient().queryGet(Collections.singleton(item.getUri()));
 			linkText = "Click to import (new network)!";
 		}
@@ -213,27 +205,30 @@ final class HitsModel extends Observable {
 			}
 			html.append("</ul>");
 		}
-		
+
 		String path = null;
 		if("Pathway".equalsIgnoreCase(item.getBiopaxClass()))
 			path = "Pathway/pathwayComponent";
 		else if("Complex".equalsIgnoreCase(item.getBiopaxClass()))
 				path = "Complex/component";
-		else if(searchFor == SearchFor.INTERACTION)
+		else if(searchFor.equalsIgnoreCase("Interaction"))
 			path = "Interaction/participant";
-		else if(searchFor == SearchFor.PHYSICALENTITY)
+		else if(searchFor.equalsIgnoreCase("PhysicalEntity"))
 				path = "PhysicalEntity/memberPhysicalEntity";
-		else if(searchFor == SearchFor.ENTITYREFERENCE)
-			path = "EntityReference/memberEntityReference";	
+		else if(searchFor.equalsIgnoreCase("EntityReference"))
+			path = "EntityReference/memberEntityReference";
+		
+		assert (path != null);
 		TraverseResponse members = CpsWebServiceGuiClient
-			.traverse(path + ":Named/displayName", Collections.singleton(item.getUri()));
+			.traverse(path + ":Named/displayName", 
+				Collections.singleton(item.getUri()));
 		
 		if (members != null) {
 			List<String> values  = members.getTraverseEntry().get(0).getValue();
 			if (!values.isEmpty())
 				html.append("<h3>Contains ").append(values.size())
-					.append(" (direct) members:</h3>")
-						.append(StringUtils.join(values, "<br/>"));
+				.append(" (direct) members:</h3>")
+				.append(StringUtils.join(values, "<br/>"));
 		}
 
 		html.append("</html>");		

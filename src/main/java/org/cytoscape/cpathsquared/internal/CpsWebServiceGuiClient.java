@@ -32,6 +32,7 @@ import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -65,7 +66,6 @@ import org.biopax.paxtools.model.level3.EntityReference;
 import org.biopax.paxtools.model.level3.PhysicalEntity;
 import org.cytoscape.application.CyApplicationManager;
 import org.cytoscape.application.swing.CySwingApplication;
-import org.cytoscape.cpathsquared.internal.HitsModel.SearchFor;
 import org.cytoscape.io.read.CyNetworkReader;
 import org.cytoscape.io.read.CyNetworkReaderManager;
 import org.cytoscape.io.webservice.NetworkImportWebServiceClient;
@@ -78,6 +78,7 @@ import org.cytoscape.model.CyNode;
 import org.cytoscape.model.CyRow;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.session.CyNetworkNaming;
+import org.cytoscape.util.swing.CheckBoxJList;
 import org.cytoscape.util.swing.OpenBrowser;
 import org.cytoscape.view.layout.CyLayoutAlgorithm;
 import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
@@ -88,8 +89,8 @@ import org.cytoscape.view.vizmap.VisualStyle;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.Task;
 import org.cytoscape.work.TaskIterator;
+import org.cytoscape.work.TaskManager;
 import org.cytoscape.work.TaskMonitor;
-import org.cytoscape.work.swing.PanelTaskManager;
 import org.cytoscape.work.undo.UndoSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,7 +136,7 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 	private static final String CPATH_SERVER_DETAILS_URL = "CPATH_SERVER_DETAILS_URL";
 
 	final CySwingApplication application;
-	final PanelTaskManager taskManager;
+	final TaskManager taskManager;
 	final OpenBrowser openBrowser;
 	final CyNetworkManager networkManager;
 	final CyApplicationManager applicationManager;
@@ -154,7 +155,7 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
     /**
      * Creates a new Web Services client.
      */
-    public CpsWebServiceGuiClient(CySwingApplication app, PanelTaskManager tm, OpenBrowser ob, 
+    public CpsWebServiceGuiClient(CySwingApplication app, TaskManager tm, OpenBrowser ob, 
 			CyNetworkManager nm, CyApplicationManager am, CyNetworkViewManager nvm, 
 			CyNetworkReaderManager nvrm, CyNetworkNaming nn, CyNetworkFactory nf, 
 			CyLayoutAlgorithmManager lam, UndoSupport us, 
@@ -184,7 +185,7 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
         tabbedPane.add("Options", createOptionsPane());
         
     	JPanel mainPanel = new JPanel();
-        mainPanel.setPreferredSize(new Dimension (500,400));
+        mainPanel.setPreferredSize(new Dimension (900,600));
         mainPanel.setLayout (new BorderLayout());
         mainPanel.add(tabbedPane, BorderLayout.CENTER);       
 
@@ -346,8 +347,8 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 	    JPanel filler = new JPanel();
 	    configPanel.add(filler, c);
 	        
-	     panel.add(configPanel);
-	     return new JScrollPane(panel);
+	    panel.add(configPanel);
+	    return new JScrollPane(panel);
 	}
 
 	    
@@ -373,7 +374,6 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 	  	final JTextField searchField = new JTextField(ENTER_TEXT.length());
 	    searchField.setText(ENTER_TEXT);
 	    searchField.setToolTipText(ENTER_TEXT);
-	    searchField.setMaximumSize(new Dimension(200, 9999));
 	    searchField.addFocusListener(new FocusAdapter() {
 	        public void focusGained(FocusEvent focusEvent) {
 	            if (searchField.getText() != null
@@ -386,12 +386,12 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 	    searchField.setBorder (BorderFactory.createCompoundBorder(searchField.getBorder(),
 	    		new PulsatingBorder(searchField)));
 	    searchField.setAlignmentX(Component.LEFT_ALIGNMENT);
-	    searchField.setMaximumSize(new Dimension(1000, 100));
+	    searchField.setMaximumSize(new Dimension(300, 100));
 	        
-	    JEditorPane label = new JEditorPane (
-	    	"text/html", "Examples:  <a href='TP53'>TP53</a>, <a href='BRCA1'>BRCA1</a>, <a href='SRY'>SRY</a>, <br/>" +
-	        "<a href='xrefid:Q16539'>xrefid:Q16539</a>, <a href='name:kinase AND pathway:signal*'>name:kinase AND pathway:signal*</a> <br/>" +
-	        "search fields are (case-sensitive): <em>comment, ecnumber, keyword, name, pathway, term, xrefdb, xrefid, dataSource, organism </em>");
+	    JEditorPane label = new JEditorPane ("text/html", 
+	    	"Examples:  <a href='TP53'>TP53</a>, <a href='BRCA1'>BRCA1</a>, <a href='SRY'>SRY</a>, " +
+	        "<a href='name:kinase AND pathway:signal*'>name:kinase AND pathway:signal*</a> <br/>" +
+	        "search fields: <em>comment, ecnumber, keyword, name, pathway, term, xrefdb, xrefid, dataSource, organism </em>");
 	    label.setEditable(false);
 	    label.setOpaque(false);
 	    label.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
@@ -420,9 +420,14 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 	    final CheckBoxJList organismList = new CheckBoxJList();
 	    //make sorted by name list
 	    SortedSet<NvpListItem> items = new TreeSet<NvpListItem>();
-	    for(String o : uriToOrganismNameMap.keySet()) {
-	    	items.add(new NvpListItem(uriToOrganismNameMap.get(o), o));
-	    }
+//	    for(String o : uriToOrganismNameMap.keySet()) {
+//	    	items.add(new NvpListItem(uriToOrganismNameMap.get(o), o));
+//	    }
+	    //manually add several popular organisms ()
+	    items.add(new NvpListItem("Human", "urn:miriam:taxonomy:9606"));
+	    items.add(new NvpListItem("Mouse", "urn:miriam:taxonomy:10090"));
+	    items.add(new NvpListItem("Yeast", "urn:miriam:taxonomy:4923"));
+	    
 	    DefaultListModel model = new DefaultListModel();
 	    for(NvpListItem nvp : items) {
 	    	model.addElement(nvp);
@@ -434,6 +439,7 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 	    JScrollPane organismFilterBox = new JScrollPane(organismList, 
 	    	JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 	    organismFilterBox.setBorder(new TitledBorder("Organism(s) in:"));
+	    organismFilterBox.setMinimumSize(new Dimension(200, 200));
 	        
 	    // create the filter-list of datasources available on the server
 	    final CheckBoxJList dataSourceList = new CheckBoxJList();   
@@ -448,6 +454,19 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 	    JScrollPane dataSourceFilterBox = new JScrollPane(dataSourceList, 
 	       	JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 	    dataSourceFilterBox.setBorder(new TitledBorder("Datasource(s) in:"));
+	    dataSourceFilterBox.setMinimumSize(new Dimension(200, 200));  
+
+	    //TODO add a Search for a BioPAX Type combo-box
+	    final JComboBox bpTypeComboBox = new JComboBox(
+	    	new NvpListItem[] {
+	    		new NvpListItem("Pathways","Pathway"),
+	    		new NvpListItem("Interactions (all types)", "Interaction"),
+	    		new NvpListItem("Entity states (mol./complex form, location)", "PhysicalEntity"),
+	    		new NvpListItem("Entity references (mol. classes)", "EntityReference")
+	    	}
+	    );
+	    bpTypeComboBox.setSelectedIndex(1);
+	    bpTypeComboBox.setEditable(false);
 	        
 	    // create the search button and action
 	    final JButton searchButton = new JButton("Search");
@@ -455,6 +474,7 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 	    searchButton.addActionListener(new ActionListener() {
 	        public void actionPerformed(ActionEvent actionEvent) {
 	        	searchButton.setEnabled(false);
+	        	hitsModel.searchFor = ((NvpListItem)bpTypeComboBox.getSelectedItem()).getValue();
 	           	final String keyword = searchField.getText();           	
 	            final Set<String> organisms = new HashSet<String>();
 	            for(Object it : organismList.getSelectedValues())
@@ -488,7 +508,7 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 	        				} catch (CPathException e) {
 	        					info.setText(e.getError().getErrorMsg()
 	        						+ " (using query '" + keyword + "' and current filter values)");
-	        					hitsModel.update(new SearchResponse(), null); //clear
+	        					hitsModel.update(new SearchResponse(), searchQueryPanel); //clear
 	        				} catch (Throwable e) { 
 	        					// using Throwable helps catch unresolved runtime dependency issues!
 	        					info.setText("Unknown Error!");
@@ -505,89 +525,31 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 	        			}
 	        		};
 
-	        		taskManager.setExecutionContext(searchQueryPanel);
 	        		taskManager.execute(new TaskIterator(search));
 	        	}
 	             	
 	        }
 	    });
 	    searchButton.setAlignmentX(Component.LEFT_ALIGNMENT); 
-	        
-	    final JRadioButton button1 = new JRadioButton("Pathways");
-	    button1.addActionListener(new ActionListener() {
-	        public void actionPerformed(ActionEvent actionEvent) {
-	            hitsModel.searchFor = SearchFor.PATHWAY;
-	        }
-	    });
-	    //default option (2)
-	    final JRadioButton button2 = new JRadioButton("Interactions");
-	    button2.setSelected(true);
-	    hitsModel.searchFor = SearchFor.INTERACTION;
-	    button2.addActionListener(new ActionListener() {
-	        public void actionPerformed(ActionEvent actionEvent) {
-	        	hitsModel.searchFor = SearchFor.INTERACTION;
-	        }
-	    });
-	    final JRadioButton button3 = new JRadioButton("Physical Entities (states)");
-	    button3.addActionListener(new ActionListener() {
-	        public void actionPerformed(ActionEvent actionEvent) {
-	           	hitsModel.searchFor = SearchFor.PHYSICALENTITY;
-	        }
-	    });
-	    final JRadioButton button4 = new JRadioButton("Entity References");
-	    button4.addActionListener(new ActionListener() {
-	        public void actionPerformed(ActionEvent actionEvent) {
-	        	hitsModel.searchFor = SearchFor.ENTITYREFERENCE;
-	        }
-	    });
-
-	    ButtonGroup group = new ButtonGroup();
-	    group.add(button1);
-	    group.add(button2);
-	    group.add(button3);
-	    group.add(button4);
-	        
-    	JPanel groupPanel = new JPanel();
-        groupPanel.setBorder(new TitledBorder("Search for"));
-        groupPanel.setLayout(new GridBagLayout());
-        GridBagConstraints c = new GridBagConstraints();
-        c = new GridBagConstraints();
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.weightx = 0.5;
-        c.gridx = 0;
-        c.gridy = 0;
-        groupPanel.add(button1, c);
-        c.gridx = 0;
-        c.gridy = 1;
-        groupPanel.add(button2, c);
-        c.gridx = 0;
-        c.gridy = 2;
-        groupPanel.add(button3, c);
-        c.gridx = 0;
-        c.gridy = 3;
-        groupPanel.add(button4, c);
-        groupPanel.setMaximumSize(new Dimension(75, 100));
-	        
-		// Assembly the query panel
-		searchQueryPanel.setLayout(new BorderLayout());
-        searchQueryPanel.add(groupPanel, BorderLayout.WEST);
-        searchQueryPanel.add(organismFilterBox, BorderLayout.CENTER);
-        searchQueryPanel.add(dataSourceFilterBox, BorderLayout.EAST);
-	       
+        
         final JPanel keywordPane = new JPanel();
         keywordPane.setLayout(new FlowLayout(FlowLayout.LEFT));
-        keywordPane.add(searchButton);
-        keywordPane.add(searchField);    
         keywordPane.add(label);
-        keywordPane.setMaximumSize(new Dimension(15, 100));
+        keywordPane.add(searchField);
+        keywordPane.add(bpTypeComboBox);
+        keywordPane.add(searchButton);
+        keywordPane.setMinimumSize(new Dimension(400, 200));
+    
+		searchQueryPanel.setLayout(new BoxLayout(searchQueryPanel, BoxLayout.X_AXIS));
+        searchQueryPanel.add(keywordPane);
+        searchQueryPanel.add(organismFilterBox);
+        searchQueryPanel.add(dataSourceFilterBox);
+
         
-        searchQueryPanel.add(keywordPane, BorderLayout.NORTH);
-        searchQueryPanel.add(info, BorderLayout.SOUTH);
-	    	
         // Assembly the results panel
     	final JPanel searchResultsPanel = new JPanel();
     	searchResultsPanel.setLayout(new BoxLayout(searchResultsPanel, BoxLayout.Y_AXIS));
-	    
+    	searchResultsPanel.add(info);
         //create parent pathways panel (the second tab)
         final JList ppwList = new JList(new DefaultListModel());
         ppwList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -603,7 +565,6 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 						String uri = item.getValue();
 						String queryUrl = newClient()
 							.queryGet(Collections.singleton(uri));
-						taskManager.setExecutionContext(searchResultsPanel);
 				        taskManager.execute(new TaskIterator(
 				        	new CpsNetworkAndViewTask(queryUrl, item.toString())));	
 					}
@@ -618,17 +579,16 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
         ppwListPane.add(ppwListScrollPane, BorderLayout.CENTER);
 
         // picked by user items list (for adv. querying or downloading later)
-        final CheckBoxJList userList = new CheckBoxJList();
+        final JList userList = new JList(new DefaultListModel());
         userList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-        userList.setPrototypeCellValue("12345678901234567890"); 
+        userList.setPrototypeCellValue("123456789012345678901234567890123456789012345678901234567890"); 
         //double-click removes item from list
         userList.addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent e) {
 				if (e.getClickCount() == 2) {
-					int selectedIndex = userList.getSelectedIndex();
-					if (selectedIndex >= 0) {
+					if (userList.getSelectedIndex() >= 0) {
 						DefaultListModel lm = (DefaultListModel) userList.getModel();
-						lm.removeElementAt(selectedIndex);
+						lm.removeElementAt(userList.getSelectedIndex());
 					}
 				}
 			}
@@ -675,7 +635,8 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 							sb.append(" (uri: " + hit.getUri() + ")");
 						NvpListItem nvp = new NvpListItem(sb.toString(), hit.getUri());
 						DefaultListModel lm = (DefaultListModel) userList.getModel();
-						lm.addElement(nvp);
+						if(!lm.contains(nvp))
+							lm.addElement(nvp);
 					}
 				}
 			}
@@ -707,11 +668,11 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
         advQueryPanel = new JPanel(new BorderLayout());
         JPanel advQueryCtrlPanel = new JPanel();
         advQueryCtrlPanel.setLayout(new BoxLayout(advQueryCtrlPanel, BoxLayout.Y_AXIS));
-        advQueryCtrlPanel.setPreferredSize(new Dimension(300, 300));
+        advQueryCtrlPanel.setPreferredSize(new Dimension(400, 300));
         
         //add radio buttons for different query types
     	final JPanel queryTypePanel = new JPanel();
-        queryTypePanel.setBorder(new TitledBorder("Query types"));
+        queryTypePanel.setBorder(new TitledBorder("BioPAX Query Types"));
         queryTypePanel.setLayout(new GridBagLayout());   
         
         //create direction buttons in advance (to disable/enable)
@@ -734,14 +695,14 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 	    });
 	    bg.add(b);
 
-        c = new GridBagConstraints();
+	    GridBagConstraints c = new GridBagConstraints();
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 0.5;
         c.gridx = 0;
         c.gridy = 0;
         queryTypePanel.add(b, c);
 	    
-	    b = new JRadioButton("BioPAX Nearest Neighborhood");
+	    b = new JRadioButton("Nearest Neighborhood");
 	    b.addActionListener(new ActionListener() {
 	        public void actionPerformed(ActionEvent actionEvent) {
 	        	hitsModel.graphType = GraphType.NEIGHBORHOOD;
@@ -757,7 +718,7 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
         c.gridy = 1;
         queryTypePanel.add(b, c);
 	    
-	    b = new JRadioButton("BioPAX Common Stream");
+	    b = new JRadioButton("Common Stream");
 	    b.addActionListener(new ActionListener() {
 	        public void actionPerformed(ActionEvent actionEvent) {
 	           	hitsModel.graphType = GraphType.COMMONSTREAM;
@@ -773,7 +734,7 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
         c.gridy = 2;
         queryTypePanel.add(b, c);
 	    
-	    b = new JRadioButton("BioPAX Paths Beetween");
+	    b = new JRadioButton("Paths Beetween");
 	    b.addActionListener(new ActionListener() {
 	        public void actionPerformed(ActionEvent actionEvent) {
 	        	hitsModel.graphType = GraphType.PATHSBETWEEN;
@@ -788,7 +749,7 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
         c.gridy = 3;
         queryTypePanel.add(b, c);
 	    
-	    b = new JRadioButton("BioPAX Paths From (checked) To (unchecked)");
+	    b = new JRadioButton("Paths From (selected) To (the rest)");
 	    b.addActionListener(new ActionListener() {
 	        public void actionPerformed(ActionEvent actionEvent) {
 	        	hitsModel.graphType = GraphType.PATHSFROMTO;
@@ -845,14 +806,12 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
         c.gridy = 2;
         directionPanel.add(both, c);
     		
-        directionPanel.setMaximumSize(new Dimension(400, 100));
+        directionPanel.setMaximumSize(new Dimension(400, 200));
         advQueryCtrlPanel.add(directionPanel);
-      
-        //TODO add limit (combo box) here 
-      
         
-        // add action button
-	    final JButton advQueryButton = new JButton("GO!");
+        
+        // add "execute" button
+	    final JButton advQueryButton = new JButton("Execute");
 	    advQueryButton.setToolTipText("Create a new network from a BioPAX graph query result");
 	    advQueryButton.addActionListener(new ActionListener() {
 	        public void actionPerformed(ActionEvent actionEvent) {
@@ -890,20 +849,18 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 					break;
 				}
 
-	        	taskManager.setExecutionContext(advQueryPanel);
 	        	taskManager.execute(new TaskIterator(new CpsNetworkAndViewTask(queryUrl, null)));
 	        	
 	        	advQueryButton.setEnabled(true);
 	        }
 	    });
-	    advQueryButton.setAlignmentX(Component.LEFT_ALIGNMENT);
-	    advQueryButton.setMaximumSize(new Dimension(100, 50));
-        advQueryCtrlPanel.add(advQueryButton);        
+	    
+        advQueryCtrlPanel.add(advQueryButton);
     
         // add the picked items list
         JScrollPane advQueryListPane = new JScrollPane(userList);
         advQueryListPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        advQueryListPane.setBorder(createTitledBorder("Find/add items using Search page. Select items to use in a query. Double-click to delete!"));
+        advQueryListPane.setBorder(createTitledBorder("Find/add items using Search page. Select items to use in a query. Double-click to remove!"));
         advQueryPanel.add(advQueryCtrlPanel, BorderLayout.LINE_START);
         advQueryPanel.add(advQueryListPane, BorderLayout.CENTER);       
 	        
@@ -964,7 +921,6 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 						String uri = item.getUri();
 						String queryUrl = newClient()
 							.queryGet(Collections.singleton(uri));
-						taskManager.setExecutionContext(panel);
 				        taskManager.execute(new TaskIterator(
 				        	new CpsNetworkAndViewTask(queryUrl, item.toString())));	
 					}
@@ -1018,7 +974,6 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 		});
 			
 		// kick off the task execution
-		taskManager.setExecutionContext(panel);
 		taskManager.execute(taskIterator);
 	        
         panel.repaint();
@@ -1044,7 +999,6 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
                 	//import data and create network only if a special (name) link clicked
                 	String queryUrl = hyperlinkEvent.getURL().toString();
                     if(queryUrl.startsWith(CpsWebServiceGuiClient.SERVER_URL)) {
-                    		taskManager.setExecutionContext(context);
     				        taskManager.execute(new TaskIterator(
     				        	new CpsNetworkAndViewTask(queryUrl, "")));// TODO a better network title (it'll be changed anyway...)?
                     }
