@@ -389,9 +389,9 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 	    searchField.setMaximumSize(new Dimension(1000, 100));
 	        
 	    JEditorPane label = new JEditorPane (
-	    		"text/html", "Examples:  <a href='TP53'>TP53</a>, " +
-	            "<a href='BRCA1'>BRCA1</a>, or <a href='SRY'>SRY</a>. " +
-	            "You can also use Lucene query syntax.");
+	    	"text/html", "Examples:  <a href='TP53'>TP53</a>, <a href='BRCA1'>BRCA1</a>, <a href='SRY'>SRY</a>, <br/>" +
+	        "<a href='xrefid:Q16539'>xrefid:Q16539</a>, <a href='name:kinase AND pathway:signal*'>name:kinase AND pathway:signal*</a> <br/>" +
+	        "search fields are (case-sensitive): <em>comment, ecnumber, keyword, name, pathway, term, xrefdb, xrefid, dataSource, organism </em>");
 	    label.setEditable(false);
 	    label.setOpaque(false);
 	    label.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
@@ -1255,10 +1255,12 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
     			if (cancelled) return;
     			taskMonitor.setStatusMessage("Running the default layout algorithm...");
 
-    			// apply default layout
-    			CyLayoutAlgorithm layout = layoutManager.getDefaultLayout();
-    			Object context = layout.getDefaultLayoutContext();
-    			insertTasksAfterCurrentTask(layout.createTaskIterator(view, context, CyLayoutAlgorithm.ALL_NODE_VIEWS,""));			
+// biopax/sif app do this!
+//    			// apply default layout
+//    			CyLayoutAlgorithm layout = layoutManager.getDefaultLayout();
+//    			Object context = layout.getDefaultLayoutContext();
+//    			insertTasksAfterCurrentTask(layout.createTaskIterator(view, context, CyLayoutAlgorithm.ALL_NODE_VIEWS,""));	
+    			view.updateView();
 	    			
     		} finally {
     			taskMonitor.setStatusMessage("Done");
