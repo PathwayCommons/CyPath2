@@ -6,7 +6,6 @@
 		<bundle.namespace>org.cytoscape.cpathsquared</bundle.namespace>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<bundle.symbolicName>org.cytoscape.cpathsquared-impl</bundle.symbolicName>
 		<cytoscape.version>3.0.0-beta1</cytoscape.version>
 		<spring.version>3.0.5.RELEASE</spring.version>
 		<osgi.api.version>4.2.0</osgi.api.version>
@@ -14,14 +13,23 @@
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>cpathsquared-impl</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>${bundle.symbolicName} [${bundle.namespace}]</name>
+	<name>CyPath2</name>
+	<description>CyPath2 is a Cytoscape 3 GUI client app 
+	that connects to a cPath2 (cPathSquared) web service (default URL is http://www.pathwaycommons.org/pc2/,
+	a new BioPAX Level3 based server software developed by Pathway Commons team) 
+	to find and visualize biological pathway networks.</description>
+	
+	<organization>
+		<name>Pathway Commons: G.Bader Lab, University of Toronto; and CBIO, MSKCC</name>
+		<url>http://code.google.com/p/pathway-commons/</url>
+	</organization>
 
 	<packaging>bundle</packaging>
 
 	<scm>
-		<connection>scm:svn:http://chianti.ucsd.edu/svn/csplugins/trunk/toronto/rodche/cpathsquared-impl</connection>
-		<developerConnection>scm:svn:svn+ssh://grenache.ucsd.edu/cellar/common/svn/csplugins/trunk/toronto/rodche/cpathsquared-impl</developerConnection>
-		<url>http://chianti.ucsd.edu/svn/csplugins/trunk/toronto/rodche/cpathsquared-impl</url>
+		<connection>scm:git:git://github.com/PathwayCommons/cpath2-cytoscape-app.git</connection>
+		<developerConnection>scm:git:git@github.com:PathwayCommons/cpath2-cytoscape-app.git</developerConnection>
+		<url>https://github.com/PathwayCommons/cpath2-cytoscape-app.git</url>
 	</scm>
 
 
@@ -31,7 +39,6 @@
 				<directory>src/main/resources</directory>
 			</resource>
 		</resources>
-		<!-- Cytoscape requires Java 1.6 -->
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -40,11 +47,37 @@
 				<configuration>
 					<archive>
 						<manifestEntries>
-							<Cytoscape-App-Name>Next Generation Pathway Commons App (BioPAX L3)</Cytoscape-App-Name>
+							<Cytoscape-App-Name>CyPath2</Cytoscape-App-Name>
+                            <Cytoscape-App-Version>0.1</Cytoscape-App-Version>
+                            <Cytoscape-API-Compatibility>3.0</Cytoscape-API-Compatibility>
 						</manifestEntries>
 					</archive>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<version>2.3.7</version>
+				<extensions>true</extensions>
+				<configuration>
+					<instructions>
+						<Bundle-SymbolicName>org.cytoscape.cpathsquared-impl</Bundle-SymbolicName>
+						<Bundle-Name>CyPath2</Bundle-Name>
+						<Bundle-Version>${project.version}</Bundle-Version>
+						<Bundle-Activator>${bundle.namespace}.internal.CyActivator</Bundle-Activator>
+						<Export-Package>${bundle.namespace}</Export-Package>
+						<Private-Package>${bundle.namespace}.internal.*</Private-Package>
+						<Embed-Dependency>
+							*;groupId=org.biopax.paxtools;type=!pom;inline=true;scope=compile|runtime,
+							*;artifactId=cpath-api;type=!pom;inline=true;scope=compile|runtime,
+							*;artifactId=cpath-client;type=!pom;inline=true;scope=compile|runtime,
+							*;groupId=org.springframework;type=!pom;inline=true;scope=compile|runtime
+						</Embed-Dependency>
+						<Import-Package>*;resolution:=optional</Import-Package>
+					</instructions>
+				</configuration>
+			</plugin>
+			<!-- Cytoscape requires Java 1.6 -->		
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -83,29 +116,6 @@
 				<version>2.7.1</version>
 				<configuration>
 					<redirectTestOutputToFile>true</redirectTestOutputToFile>
-				</configuration>
-			</plugin>
-			<!-- Generates the OSGi metadata based on the osgi.bnd file. -->
-			<plugin>
-				<groupId>org.apache.felix</groupId>
-				<artifactId>maven-bundle-plugin</artifactId>
-				<version>2.3.7</version>
-				<extensions>true</extensions>
-				<configuration>
-					<instructions>
-						<Bundle-SymbolicName>${bundle.symbolicName}</Bundle-SymbolicName>
-						<Bundle-Version>${project.version}</Bundle-Version>
-						<Bundle-Activator>${bundle.namespace}.internal.CyActivator</Bundle-Activator>
-						<Export-Package>${bundle.namespace}</Export-Package>
-						<Private-Package>${bundle.namespace}.internal.*</Private-Package>
-						<Embed-Dependency>
-							*;groupId=org.biopax.paxtools;type=!pom;inline=true;scope=compile|runtime,
-							*;artifactId=cpath-api;type=!pom;inline=true;scope=compile|runtime,
-							*;artifactId=cpath-client;type=!pom;inline=true;scope=compile|runtime,
-							*;groupId=org.springframework;type=!pom;inline=true;scope=compile|runtime
-						</Embed-Dependency>
-						<Import-Package>*;resolution:=optional</Import-Package>
-					</instructions>
 				</configuration>
 			</plugin>
 		</plugins>

@@ -55,7 +55,7 @@ final class HitsModel extends Observable {
 		this.parentPathwaysRequired = parentPathwaysUsed;
 		this.title = title;
 		this.taskManager = taskManager;
-		this.graphQueryClient = CpsWebServiceGuiClient.newClient();
+		this.graphQueryClient = CyPath2.newClient();
 	}
     
     public int getNumRecords() {
@@ -164,11 +164,11 @@ final class HitsModel extends Observable {
 		html.append("<em>URI='").append(item.getUri()).append("'</em><br/>");
 		
 		//create a link to be intercepted/converted to a (import a sub-model) Task!
-		String linkUrl = CpsWebServiceGuiClient.newClient().queryNeighborhood(Collections.singleton(item.getUri()));
+		String linkUrl = CyPath2.newClient().queryNeighborhood(Collections.singleton(item.getUri()));
 		String linkText = "Click to import (nearest neighborhood network)!";
 		//TODO in the future, consider subclasses of Interaction as well or limit possible values entered by users -
 		if(searchFor.equalsIgnoreCase("Pathway") || searchFor.equalsIgnoreCase("Interaction")) { //simply use 'get' query
-			linkUrl = CpsWebServiceGuiClient.newClient().queryGet(Collections.singleton(item.getUri()));
+			linkUrl = CyPath2.newClient().queryGet(Collections.singleton(item.getUri()));
 			linkText = "Click to import (new network)!";
 		}
 		html.append("<a href='")
@@ -189,7 +189,7 @@ final class HitsModel extends Observable {
 			html.append("<h3>Organisms:</h3>").append("<ul>");
 			for(String uri : items) {
 				html.append("<li>")
-					.append(CpsWebServiceGuiClient.uriToOrganismNameMap.get(uri))
+					.append(CyPath2.uriToOrganismNameMap.get(uri))
 					.append("</li>");
 			}
 			html.append("</ul>");
@@ -200,7 +200,7 @@ final class HitsModel extends Observable {
 			html.append("<h3>Data sources:</h3>").append("<ul>");
 			for(String uri : items) {
 				html.append("<li>")
-					.append(CpsWebServiceGuiClient.uriToDatasourceNameMap.get(uri))
+					.append(CyPath2.uriToDatasourceNameMap.get(uri))
 					.append("</li>");
 			}
 			html.append("</ul>");
@@ -219,7 +219,7 @@ final class HitsModel extends Observable {
 			path = "EntityReference/memberEntityReference";
 		
 		assert (path != null);
-		TraverseResponse members = CpsWebServiceGuiClient
+		TraverseResponse members = CyPath2
 			.traverse(path + ":Named/displayName", 
 				Collections.singleton(item.getUri()));
 		
@@ -238,7 +238,7 @@ final class HitsModel extends Observable {
 			// add parent pathways to the Map ("ppw" prefix means "parent pathway's" -)
 			final Collection<NvpListItem> ppws = new TreeSet<NvpListItem>();	
 			final Set<String> ppwUris = new HashSet<String>(item.getPathway()); // a hack for not unique URIs (a cpath2 indexing bug...)
-			TraverseResponse ppwNames =CpsWebServiceGuiClient.traverse("Named/displayName", ppwUris);
+			TraverseResponse ppwNames =CyPath2.traverse("Named/displayName", ppwUris);
 			if (ppwNames != null) {
 				Map<String, String> ppwUriToNameMap = new HashMap<String, String>();			
 				for (TraverseEntry e : ppwNames.getTraverseEntry()) {
@@ -247,7 +247,7 @@ final class HitsModel extends Observable {
 				}
 				
 				// add ppw component counts to names and wrap/save as NVP, finally:
-				TraverseResponse ppwComponents = CpsWebServiceGuiClient.traverse(
+				TraverseResponse ppwComponents = CyPath2.traverse(
 						"Pathway/pathwayComponent", ppwUris); // this gets URIs of pathways
 				for (TraverseEntry e : ppwComponents.getTraverseEntry()) {
 					assert ppwUriToNameMap.containsKey(e.getUri());

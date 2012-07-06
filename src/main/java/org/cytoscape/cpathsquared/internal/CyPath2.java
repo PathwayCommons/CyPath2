@@ -105,19 +105,19 @@ import cpath.service.jaxb.SearchResponse;
 import cpath.service.jaxb.TraverseResponse;
 
 /**
- * CPathSquared Web Service UI, integrated into the Cytoscape Web Services Framework.
+ * CyPath2: CPathSquared Web Service client integrated into the Cytoscape Web Services GUI Framework.
  */
-public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient 
+public final class CyPath2 extends AbstractWebServiceGUIClient 
 	implements NetworkImportWebServiceClient, SearchWebServiceClient
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CpsWebServiceGuiClient.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CyPath2.class);
 	
 	static final String JVM_PROPERTY_CPATH2_URL = "cPath2Url";
 	static final String DEFAULT_SERVER_URL = "http://www.pathwaycommons.org/pc2/";	
     static final String SERVER_URL = System.getProperty(JVM_PROPERTY_CPATH2_URL, DEFAULT_SERVER_URL);   
     static final String SERVER_NAME = "Pathway Commons (BioPAX L3)";
     static final String INFO_ABOUT = 
-    	"<b>Pathway Commons 2</b> is a warehouse of " +
+    	"<b>cPath2 (Pathway Commons)</b> is a warehouse of " +
     	"biological pathway information integrated from public databases and " +
     	"persisted in BioPAX Level3 format, which one can search, traverse, download.";
     
@@ -155,7 +155,7 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
     /**
      * Creates a new Web Services client.
      */
-    public CpsWebServiceGuiClient(CySwingApplication app, TaskManager tm, OpenBrowser ob, 
+    public CyPath2(CySwingApplication app, TaskManager tm, OpenBrowser ob, 
 			CyNetworkManager nm, CyApplicationManager am, CyNetworkViewManager nvm, 
 			CyNetworkReaderManager nvrm, CyNetworkNaming nn, CyNetworkFactory nf, 
 			CyLayoutAlgorithmManager lam, UndoSupport us, 
@@ -998,7 +998,7 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 //                	browser.openURL(hyperlinkEvent.getURL().toString());
                 	//import data and create network only if a special (name) link clicked
                 	String queryUrl = hyperlinkEvent.getURL().toString();
-                    if(queryUrl.startsWith(CpsWebServiceGuiClient.SERVER_URL)) {
+                    if(queryUrl.startsWith(CyPath2.SERVER_URL)) {
     				        taskManager.execute(new TaskIterator(
     				        	new CpsNetworkAndViewTask(queryUrl, "")));// TODO a better network title (it'll be changed anyway...)?
                     }
@@ -1099,14 +1099,14 @@ public final class CpsWebServiceGuiClient extends AbstractWebServiceGUIClient
 
     	public void run(TaskMonitor taskMonitor) throws Exception {
     		String title = "Retrieving " + networkTitle + " from " 
-   				+ CpsWebServiceGuiClient.SERVER_NAME + "...";
+   				+ CyPath2.SERVER_NAME + "...";
     		taskMonitor.setTitle(title);
     		try {
     			taskMonitor.setProgress(0);
     			taskMonitor.setStatusMessage("Retrieving BioPAX data...");
 	    			
     			// Get Data: BioPAX and the other format data (not BioPAX if required)
-    			CPath2Client cli = CpsWebServiceGuiClient.newClient();
+    			CPath2Client cli = CyPath2.newClient();
     			//get data (throws exception if no results or internal error!)
     	    	final String biopaxData = cli.executeQuery(queryUrl, OutputFormat.BIOPAX);
     	    	

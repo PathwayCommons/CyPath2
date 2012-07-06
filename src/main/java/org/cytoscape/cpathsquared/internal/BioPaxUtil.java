@@ -608,9 +608,9 @@ final class BioPaxUtil {
 
 			StringBuffer temp = new StringBuffer();
 			
-			if(!"CPATH".equalsIgnoreCase(link.getDb()))
-				temp.append(ExternalLinks.createLink(link.getDb(), link.getId()));
-			else
+//			if(!"CPATH".equalsIgnoreCase(link.getDb()))
+//				temp.append(ExternalLinks.createLink(link.getDb(), link.getId()));
+//			else
 				temp.append(link.toString());
 			
 			if(link instanceof UnificationXref) {

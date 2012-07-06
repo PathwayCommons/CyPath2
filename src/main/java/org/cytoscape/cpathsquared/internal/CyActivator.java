@@ -6,7 +6,6 @@ import org.cytoscape.view.vizmap.VisualMappingManager;
 import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.session.CyNetworkNaming;
 import org.cytoscape.work.swing.DialogTaskManager;
-import org.cytoscape.work.swing.PanelTaskManager;
 import org.cytoscape.work.undo.UndoSupport;
 import org.cytoscape.application.swing.CySwingApplication;
 import org.cytoscape.application.CyApplicationManager;
@@ -56,7 +55,7 @@ public final class CyActivator extends AbstractCyActivator {
 				passthroughMappingFactoryRef);
 		
 		// Create and register the OSGi service
-		CpsWebServiceGuiClient cPathSquaredWebServiceClient = new CpsWebServiceGuiClient(
+		CyPath2 cPathSquaredWebServiceClient = new CyPath2(
 				cySwingApplicationRef,
 				taskManagerRef,
 				openBrowserRef,
