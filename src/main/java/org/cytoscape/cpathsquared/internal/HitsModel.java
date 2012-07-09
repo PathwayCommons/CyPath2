@@ -1,5 +1,6 @@
 package org.cytoscape.cpathsquared.internal;
 
+import java.awt.Window;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -101,7 +102,7 @@ final class HitsModel extends Observable {
      * @param response
      * @param context parent panel
      */
-	public synchronized void update(final SearchResponse response, JPanel context) {
+	public synchronized void update(final SearchResponse response, final JPanel context) {
 		this.response = response;
 		
 		numHitsByTypeMap.clear();
@@ -115,7 +116,7 @@ final class HitsModel extends Observable {
 			@Override
 			public void run(TaskMonitor taskMonitor) throws Exception {
 				try {
-					taskMonitor.setTitle("cPathSquared App");
+					taskMonitor.setTitle("CyPath2");
 					taskMonitor.setProgress(0.1);
 					taskMonitor.setStatusMessage("Getting " + title + "...");
 					float i = 0;
@@ -135,6 +136,9 @@ final class HitsModel extends Observable {
 				} finally {
 					taskMonitor.setStatusMessage("Done");
 					taskMonitor.setProgress(1.0);
+					Window parentWindow = ((Window) context.getRootPane().getParent());
+					context.repaint();
+					parentWindow.toFront();
 				}
 			}
 			@Override

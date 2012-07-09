@@ -4,10 +4,13 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
@@ -80,7 +83,6 @@ import org.cytoscape.property.CyProperty;
 import org.cytoscape.session.CyNetworkNaming;
 import org.cytoscape.util.swing.CheckBoxJList;
 import org.cytoscape.util.swing.OpenBrowser;
-import org.cytoscape.view.layout.CyLayoutAlgorithm;
 import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
 import org.cytoscape.view.model.CyNetworkView;
 import org.cytoscape.view.model.CyNetworkViewManager;
@@ -517,6 +519,9 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	        					taskMonitor.setStatusMessage("Done");
 	        					taskMonitor.setProgress(1);
 	        					searchButton.setEnabled(true);
+	        					Window parentWindow = ((Window) searchQueryPanel.getRootPane().getParent());
+	        					searchQueryPanel.repaint();
+	        					parentWindow.toFront();
 	        				}
 	        			}
 
@@ -966,6 +971,9 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 				} finally {
 					taskMonitor.setStatusMessage("Done");
 					taskMonitor.setProgress(1.0);
+					Window parentWindow = ((Window) panel.getRootPane().getParent());
+					panel.repaint();
+					parentWindow.toFront();
 				}
 			}
 			@Override
