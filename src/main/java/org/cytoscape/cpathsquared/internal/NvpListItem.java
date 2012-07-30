@@ -21,7 +21,7 @@ final class NvpListItem implements Comparable<NvpListItem> {
      */
     public NvpListItem (String name, String value) {
     	if(value == null)
-    		throw new IllegalArgumentException("Value cannot be Null!");
+    		throw new IllegalArgumentException("Value cannot be Null.");
         this.name = (name != null) ? name : value;
         this.value = value;
     }

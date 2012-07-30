@@ -23,7 +23,7 @@ class FilterdJList<T> extends JList {
 		if(m instanceof FilterListModel)
 			super.setModel(m);
 		else 
-			throw new IllegalArgumentException("is not a FilterListMode!");
+			throw new IllegalArgumentException("is not a FilterListMode.");
 	}  	
 	
 	public JTextField getFilterField() {

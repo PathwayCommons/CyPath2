@@ -486,7 +486,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	            	datasources.add(((NvpListItem) it).getValue());
 	            	
 	            if (keyword == null || keyword.trim().length() == 0 || keyword.startsWith(ENTER_TEXT)) {
-	            	info.setText("Error: Please enter a Gene Name or ID!");
+	            	info.setText("Error: Please enter a Gene Name or ID.");
 	        		searchButton.setEnabled(true);
 	        	} else {
 	        		info.setText("");
@@ -513,7 +513,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	        					hitsModel.update(new SearchResponse(), searchQueryPanel); //clear
 	        				} catch (Throwable e) { 
 	        					// using Throwable helps catch unresolved runtime dependency issues!
-	        					info.setText("Unknown Error!");
+	        					info.setText("Unknown Error.");
 	        					throw new RuntimeException(e);
 	        				} finally {
 	        					taskMonitor.setStatusMessage("Done");
@@ -580,7 +580,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
         ppwListPane.setLayout(new BorderLayout());
         final JScrollPane ppwListScrollPane = new JScrollPane(ppwList);
         ppwListScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        ppwListScrollPane.setBorder(createTitledBorder("Double-click to import (a new network)!"));
+        ppwListScrollPane.setBorder(createTitledBorder("Double-click to import (a new network)."));
         ppwListPane.add(ppwListScrollPane, BorderLayout.CENTER);
 
         // picked by user items list (for adv. querying or downloading later)
@@ -654,7 +654,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
         hitListPane.setLayout(new BorderLayout());
         JScrollPane hitListScrollPane = new JScrollPane(resList);
         hitListScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        hitListScrollPane.setBorder(createTitledBorder("Double-click adds it to Advanced Query page!"));
+        hitListScrollPane.setBorder(createTitledBorder("Double-click adds it to Advanced Query page."));
         // make (north) tabs       
         JSplitPane vSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, hitListScrollPane, detailsTabbedPane);
         vSplit.setDividerLocation(250);
@@ -865,7 +865,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
         // add the picked items list
         JScrollPane advQueryListPane = new JScrollPane(userList);
         advQueryListPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        advQueryListPane.setBorder(createTitledBorder("Find/add items using Search page. Select items to use in a query. Double-click to remove!"));
+        advQueryListPane.setBorder(createTitledBorder("Find/add items using Search page. Select items to use in a query. Double-click to remove."));
         advQueryPanel.add(advQueryCtrlPanel, BorderLayout.LINE_START);
         advQueryPanel.add(advQueryListPane, BorderLayout.CENTER);       
 	        
@@ -937,7 +937,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
         
         JPanel tpwFilterListPanel = new JPanel();
         tpwFilterListPanel.setBorder(createTitledBorder("Type in the text field " +
-       		"to filter. Double-click to download (creates a network)!"));
+       		"to filter. Double-click to download (creates a network)."));
         tpwFilterListPanel.setLayout(new BorderLayout());
         JScrollPane tpwListScrollPane = new JScrollPane(tpwJList);
         tpwListScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);

@@ -169,11 +169,11 @@ final class HitsModel extends Observable {
 		
 		//create a link to be intercepted/converted to a (import a sub-model) Task!
 		String linkUrl = CyPath2.newClient().queryNeighborhood(Collections.singleton(item.getUri()));
-		String linkText = "Click to import (nearest neighborhood network)!";
+		String linkText = "Click to import (nearest neighborhood network).";
 		//TODO in the future, consider subclasses of Interaction as well or limit possible values entered by users -
 		if(searchFor.equalsIgnoreCase("Pathway") || searchFor.equalsIgnoreCase("Interaction")) { //simply use 'get' query
 			linkUrl = CyPath2.newClient().queryGet(Collections.singleton(item.getUri()));
-			linkText = "Click to import (new network)!";
+			linkText = "Click to import (new network).";
 		}
 		html.append("<a href='")
 			.append(linkUrl).append("'>")
