@@ -17,6 +17,7 @@ class FilterdJList<T> extends JList {
 	public FilterdJList() {
 		setModel(new FilterListModel<T>());
 		filterField = new FilterField<T>(DEFAULT_FIELD_WIDTH);
+		filterField.setToolTipText("Type something to see only items matching that.");
 	}
 	   	
 	public void setModel(ListModel m) {

@@ -28,7 +28,7 @@ import cpath.service.jaxb.SearchResponse;
 
 final class HitsFilterPanel extends JPanel implements Observer {
 	private static final long serialVersionUID = 1L;
-	private final JLabel matchingItemsLabel;
+//	private final JLabel matchingItemsLabel;
     private final HitsModel hitsFilterModel;
     private final JList hitsJList;
     private final CheckNode rootNode;
@@ -44,16 +44,16 @@ final class HitsFilterPanel extends JPanel implements Observer {
         
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         
-        matchingItemsLabel = new JLabel("Listed: 0");
-        matchingItemsLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        Font font = matchingItemsLabel.getFont();
-        Font newFont = new Font(font.getFamily(), Font.BOLD, font.getSize());
-        matchingItemsLabel.setFont(newFont);
-        matchingItemsLabel.setBorder(new EmptyBorder(5, 10, 5, 5));
-        add(matchingItemsLabel);
+//        matchingItemsLabel = new JLabel("Listed: 0");
+//        matchingItemsLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+//        Font font = matchingItemsLabel.getFont();
+//        Font newFont = new Font(font.getFamily(), Font.BOLD, font.getSize());
+//        matchingItemsLabel.setFont(newFont);
+//        matchingItemsLabel.setBorder(new EmptyBorder(5, 10, 5, 5));
+//        add(matchingItemsLabel);
 
         // create an empty filter tree (barebone)
-        rootNode = new CheckNode("All Filters");
+        rootNode = new CheckNode("All");
         typeFilterNode = new CheckNode("BioPAX Type");
         rootNode.add(typeFilterNode);
         organismFilterNode = new CheckNode("and Organism");
@@ -62,7 +62,7 @@ final class HitsFilterPanel extends JPanel implements Observer {
         rootNode.add(dataSourceFilterNode);
         tree = new JTreeWithCheckNodes(rootNode);
         tree.setOpaque(false);
-        filterTreePanel = new CollapsablePanel("BioPAX Filters (offline)");
+        filterTreePanel = new CollapsablePanel("Filter");
         filterTreePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         filterTreePanel.getContentPane().add(tree);
 
@@ -137,7 +137,7 @@ final class HitsFilterPanel extends JPanel implements Observer {
 		List<SearchHit> passedRecordList = chainedFilter
         	.filter(hitsFilterModel.getSearchResponse().getSearchHit());
 		
-        matchingItemsLabel.setText("Listed: " + passedRecordList.size());
+//        matchingItemsLabel.setText("Listed: " + passedRecordList.size());
 		
    		DefaultListModel listModel = (DefaultListModel) hitsJList.getModel();
    		listModel.clear();
@@ -159,8 +159,8 @@ final class HitsFilterPanel extends JPanel implements Observer {
 		
 		SearchResponse searchResponse = (SearchResponse) arg;
 		
-        matchingItemsLabel.setText("Listed: "
-        	+ searchResponse.getSearchHit().size());
+//        matchingItemsLabel.setText("Listed: "
+//        	+ searchResponse.getSearchHit().size());
 		
         if (hitsFilterModel.getNumRecords() == 0) {
             filterTreePanel.setVisible(false);

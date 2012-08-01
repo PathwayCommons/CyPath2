@@ -48,6 +48,7 @@ class ToolTipsSearchHitsJList extends JList
 		lm.clear();
 		for (SearchHit searchHit : resp.getSearchHit())
 			lm.addElement(searchHit);
+		setSelectedIndex(0);
 	}
 
 	

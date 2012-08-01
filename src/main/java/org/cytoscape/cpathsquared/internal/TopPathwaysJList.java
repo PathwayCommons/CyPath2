@@ -7,8 +7,6 @@ import java.util.Observer;
 
 import javax.swing.ListModel;
 
-import org.cytoscape.cpathsquared.internal.FilterdJList.FilterListModel;
-
 import cpath.service.jaxb.SearchHit;
 import cpath.service.jaxb.SearchResponse;
 

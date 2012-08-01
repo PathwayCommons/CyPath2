@@ -4,10 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.EventQueue;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Window;
@@ -936,8 +934,8 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
         topPathwaysModel.addObserver(tpwJList);
         
         JPanel tpwFilterListPanel = new JPanel();
-        tpwFilterListPanel.setBorder(createTitledBorder("Type in the text field " +
-       		"to filter. Double-click to download (creates a network)."));
+        tpwFilterListPanel.setBorder(createTitledBorder("Type to quickly find a pathway. " +
+       		"Double-click to download (create a network)."));
         tpwFilterListPanel.setLayout(new BorderLayout());
         JScrollPane tpwListScrollPane = new JScrollPane(tpwJList);
         tpwListScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
