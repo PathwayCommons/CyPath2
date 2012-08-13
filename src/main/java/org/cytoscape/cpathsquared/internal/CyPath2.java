@@ -950,39 +950,51 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
         JSplitPane hSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, filterPanel, vSplit);
         hSplit.setDividerLocation(300);
         hSplit.setAlignmentX(Component.LEFT_ALIGNMENT);
-        panel.add(hSplit);        
-	        
-        // load pathways from server
-		TaskIterator taskIterator = new TaskIterator(new Task() {
-			@Override
-			public void run(TaskMonitor taskMonitor) throws Exception {
-				try {
-					taskMonitor.setTitle("cPathSquared Task: Top Pathways");
-					taskMonitor.setProgress(0.1);
-					taskMonitor.setStatusMessage("Retrieving top pathways...");
-					SearchResponse resp = newClient().getTopPathways();
-					// reset the model and kick off observers (list and filter panel)
-			        topPathwaysModel.update(resp, panel);
-				} catch (Throwable e) { 
-					//fail on both when there is no data (server error) and runtime/osgi errors
-					throw new RuntimeException(e);
-				} finally {
-					taskMonitor.setStatusMessage("Done");
-					taskMonitor.setProgress(1.0);
-					Window parentWindow = ((Window) panel.getRootPane().getParent());
-					panel.repaint();
-					parentWindow.toFront();
-				}
-			}
-			@Override
-			public void cancel() {
-			}
-		});
-			
-		// kick off the task execution
-		taskManager.execute(taskIterator);
-	        
+        
+        
+	    // create the update button and action
+	    final JButton updateButton = new JButton("Update Top Pathways");
+	    updateButton.setToolTipText("Get/Update Top Pathways (From the Server)");
+	    updateButton.addActionListener(new ActionListener() {
+	        public void actionPerformed(ActionEvent actionEvent) {
+	        	updateButton.setEnabled(false);	        			
+	            // load pathways from server
+	    		TaskIterator taskIterator = new TaskIterator(new Task() {
+	    			@Override
+	    			public void run(TaskMonitor taskMonitor) throws Exception {
+	    				try {
+	    					taskMonitor.setTitle("cPathSquared Task: Top Pathways");
+	    					taskMonitor.setProgress(0.1);
+	    					taskMonitor.setStatusMessage("Retrieving top pathways...");
+	    					SearchResponse resp = newClient().getTopPathways();
+	    					// reset the model and kick off observers (list and filter panel)
+	    			        topPathwaysModel.update(resp, panel);
+	    				} catch (Throwable e) { 
+	    					//fail on both when there is no data (server error) and runtime/osgi errors
+	    					throw new RuntimeException(e);
+	    				} finally {
+	    					taskMonitor.setStatusMessage("Done");
+	    					taskMonitor.setProgress(1.0);
+	    					Window parentWindow = ((Window) panel.getRootPane().getParent());
+	    					panel.repaint();
+	    					parentWindow.toFront();
+	    					updateButton.setEnabled(true);
+	    				}
+	    			}
+	    			@Override
+	    			public void cancel() {
+	    			}
+	    		});			
+	    		// kick off the task execution
+	    		taskManager.execute(taskIterator);
+	        }
+	    });
+	    updateButton.setAlignmentX(Component.LEFT_ALIGNMENT); 
+               
+        panel.add(updateButton);
+        panel.add(hSplit);	        
         panel.repaint();
+        
         return panel;
 	}
 	
