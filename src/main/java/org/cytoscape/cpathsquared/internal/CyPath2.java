@@ -499,16 +499,16 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	        					client.setType(hitsModel.searchFor.toString());
 	        					if (!datasources.isEmpty())
 	        						client.setDataSources(datasources);       						
-	        					SearchResponse searchResponse = (SearchResponse) client.search(keyword);
-	        					// update hits model (also notifies observers!)
-	        					hitsModel.update(searchResponse, panel);
+	        					final SearchResponse searchResponse = (SearchResponse) client.search(keyword);
+	        					// update hits model (make summaries, notify observers!)
+								hitsModel.update(searchResponse);
 	        					info.setText("Matches:  " + searchResponse.getNumHits() 
 	        						+ "; retrieved: " + searchResponse.getSearchHit().size()
 	        							+ " (page #" + searchResponse.getPageNo() + ")");
 	        				} catch (CPathException e) {
 	        					info.setText(e.getError().getErrorMsg()
 	        						+ " (using query '" + keyword + "' and current filter values)");
-	        					hitsModel.update(new SearchResponse(), searchQueryPanel); //clear
+								hitsModel.update(new SearchResponse()); //clear
 	        				} catch (Throwable e) { 
 	        					// using Throwable helps catch unresolved runtime dependency issues!
 	        					info.setText("Unknown Error.");
@@ -966,9 +966,9 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	    					taskMonitor.setTitle("cPathSquared Task: Top Pathways");
 	    					taskMonitor.setProgress(0.1);
 	    					taskMonitor.setStatusMessage("Retrieving top pathways...");
-	    					SearchResponse resp = newClient().getTopPathways();
+	    					final SearchResponse resp = newClient().getTopPathways();
 	    					// reset the model and kick off observers (list and filter panel)
-	    			        topPathwaysModel.update(resp, panel);
+							topPathwaysModel.update(resp);		    			        
 	    				} catch (Throwable e) { 
 	    					//fail on both when there is no data (server error) and runtime/osgi errors
 	    					throw new RuntimeException(e);

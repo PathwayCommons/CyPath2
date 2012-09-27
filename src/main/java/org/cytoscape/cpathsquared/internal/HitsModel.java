@@ -1,24 +1,14 @@
 package org.cytoscape.cpathsquared.internal;
 
-import java.awt.Window;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Observable;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-
-import javax.swing.JPanel;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
-import org.cytoscape.work.Task;
-import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskManager;
-import org.cytoscape.work.TaskMonitor;
 
 import cpath.client.CPath2Client;
 import cpath.service.GraphType;
@@ -34,17 +24,17 @@ import cpath.service.jaxb.TraverseResponse;
 final class HitsModel extends Observable {
 
     private SearchResponse response;
+    @Deprecated
     private final TaskManager taskManager;
     
     final boolean parentPathwaysRequired;
     final String title;
     
-    final Map<String, Integer> numHitsByTypeMap = new TreeMap<String, Integer>();
-    final Map<String, Integer> numHitsByOrganismMap = new TreeMap<String, Integer>();
-    final Map<String, Integer> numHitsByDatasourceMap = new TreeMap<String, Integer>();    
-    final Map<String, String> hitsSummaryMap = new HashMap<String, String>();
-    final Map<String, Collection<NvpListItem>> hitsPathwaysMap 
-    		= new HashMap<String, Collection<NvpListItem>>();
+    final Map<String, Integer> numHitsByTypeMap =  new ConcurrentSkipListMap<String, Integer>();
+    final Map<String, Integer> numHitsByOrganismMap = new ConcurrentSkipListMap<String, Integer>();
+    final Map<String, Integer> numHitsByDatasourceMap = new ConcurrentSkipListMap<String, Integer>();       
+    final Map<String, String> hitsSummaryMap = new ConcurrentHashMap<String, String>();
+    final Map<String, Collection<NvpListItem>> hitsPathwaysMap = new ConcurrentHashMap<String, Collection<NvpListItem>>();
 
     // full-text search query parameter
     volatile String searchFor = "Interaction"; 
@@ -66,43 +56,14 @@ final class HitsModel extends Observable {
             return -1;
         }
     }
-  
 
-    private void catalog(final SearchHit record) {
-        String type = record.getBiopaxClass();
-        Integer count = numHitsByTypeMap.get(type);
-        if (count != null) {
-        	numHitsByTypeMap.put(type, count + 1);
-        } else {
-        	numHitsByTypeMap.put(type, 1);
-        }
-        
-        for(String org : record.getOrganism()) {
-        	Integer i = numHitsByOrganismMap.get(org);
-            if (i != null) {
-                numHitsByOrganismMap.put(org, i + 1);
-            } else {
-            	numHitsByOrganismMap.put(org, 1);
-            }
-        }
-        
-        for(String ds : record.getDataSource()) {
-        	Integer i = numHitsByDatasourceMap.get(ds);
-            if (i != null) {
-                numHitsByDatasourceMap.put(ds, i + 1);
-            } else {
-            	numHitsByDatasourceMap.put(ds, 1);
-            }
-        }
-    }
     
     /**
      * Refresh the model and notify all observers INFO_ABOUT it's changed.
      * 
      * @param response
-     * @param context parent panel
      */
-	public synchronized void update(final SearchResponse response, final JPanel context) {
+	public synchronized void update(final SearchResponse response) {
 		this.response = response;
 		
 		numHitsByTypeMap.clear();
@@ -110,44 +71,30 @@ final class HitsModel extends Observable {
 		numHitsByDatasourceMap.clear();
 		hitsSummaryMap.clear();
 		hitsPathwaysMap.clear();
-	
-		// get/save info INFO_ABOUT components/participants/members
-		TaskIterator taskIterator = new TaskIterator(new Task() {
-			@Override
-			public void run(TaskMonitor taskMonitor) throws Exception {
-				try {
-					taskMonitor.setTitle("CyPath2");
-					taskMonitor.setProgress(0.1);
-					taskMonitor.setStatusMessage("Getting " + title + "...");
-					float i = 0;
-					final int sz = response.getSearchHit().size();
-					for (SearchHit record : response.getSearchHit()) {
-						catalog(record);
-						summarize(record);
-						taskMonitor.setProgress(++i/sz);
-					}	
-					
-					//notify observers (panels and jlists)
-					HitsModel.this.setChanged();
-					HitsModel.this.notifyObservers(response);
-				} catch (Throwable e) { 
-					//fail on both when there is no data (server error) and runtime/osgi errors
-					throw new RuntimeException(e);
-				} finally {
-					taskMonitor.setStatusMessage("Done");
-					taskMonitor.setProgress(1.0);
-					Window parentWindow = ((Window) context.getRootPane().getParent());
-					context.repaint();
-					parentWindow.toFront();
-				}
-			}
-			@Override
-			public void cancel() {
-			}
-		});
+
+		ExecutorService exec = Executors.newFixedThreadPool(10);
 		
-		// kick task execution
-		taskManager.execute(taskIterator);
+		// get/save info INFO_ABOUT components/participants/members
+		for (final SearchHit record : response.getSearchHit())
+		{
+			exec.submit(new Runnable() {		
+				@Override
+				public void run() {
+					summarize(record);
+				}
+			});
+		}
+
+		exec.shutdown(); //prevents new jobs
+		try {
+			exec.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			throw new RuntimeException("Interrupted unexpectedly!");
+		}
+		
+		// notify observers (panels and jlists)
+		HitsModel.this.setChanged();
+		HitsModel.this.notifyObservers(response);
 	}
 
     
@@ -156,8 +103,36 @@ final class HitsModel extends Observable {
     }
 
     
-    //to be run within a Task (does WS queries)!
 	private void summarize(final SearchHit item) {
+        
+		// do catalog -
+		String type = item.getBiopaxClass();
+        Integer count = numHitsByTypeMap.get(type);
+        if (count != null) {
+        	numHitsByTypeMap.put(type, count + 1);
+        } else {
+        	numHitsByTypeMap.put(type, 1);
+        }
+        
+        for(String org : item.getOrganism()) {
+        	Integer i = numHitsByOrganismMap.get(org);
+            if (i != null) {
+                numHitsByOrganismMap.put(org, i + 1);
+            } else {
+            	numHitsByOrganismMap.put(org, 1);
+            }
+        }
+        
+        for(String ds : item.getDataSource()) {
+        	Integer i = numHitsByDatasourceMap.get(ds);
+            if (i != null) {
+                numHitsByDatasourceMap.put(ds, i + 1);
+            } else {
+            	numHitsByDatasourceMap.put(ds, 1);
+            }
+        }
+		
+		
 		// get/create and show hit's summary
 		StringBuilder html = new StringBuilder();
 		html.append("<html>")
