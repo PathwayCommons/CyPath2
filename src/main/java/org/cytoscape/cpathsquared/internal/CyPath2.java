@@ -424,9 +424,9 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 //	    	items.add(new NvpListItem(uriToOrganismNameMap.get(o), o));
 //	    }
 	    //manually add several popular organisms ()
-	    items.add(new NvpListItem("Human", "urn:miriam:taxonomy:9606"));
-	    items.add(new NvpListItem("Mouse", "urn:miriam:taxonomy:10090"));
-	    items.add(new NvpListItem("Yeast", "urn:miriam:taxonomy:4923"));
+	    items.add(new NvpListItem("Human", "9606"));
+	    items.add(new NvpListItem("Mouse", "10090"));
+	    items.add(new NvpListItem("Yeast", "4923"));
 	    
 	    DefaultListModel model = new DefaultListModel();
 	    for(NvpListItem nvp : items) {
@@ -1227,11 +1227,6 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
     			if (cancelled) return;
     			taskMonitor.setStatusMessage("Running the default layout algorithm...");
 
-// biopax/sif app do this!
-//    			// apply default layout
-//    			CyLayoutAlgorithm layout = layoutManager.getDefaultLayout();
-//    			Object context = layout.getDefaultLayoutContext();
-//    			insertTasksAfterCurrentTask(layout.createTaskIterator(view, context, CyLayoutAlgorithm.ALL_NODE_VIEWS,""));	
     			view.updateView();
 	    			
     		} finally {
