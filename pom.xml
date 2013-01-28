@@ -6,13 +6,13 @@
 		<bundle.namespace>org.cytoscape.cpathsquared</bundle.namespace>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<cytoscape.version>[3.0.0-beta3, 4.0.0)</cytoscape.version>
-		<spring.version>3.0.5.RELEASE</spring.version>
+		<cytoscape.version>[3.0.0, 4.0.0)</cytoscape.version>
+		<spring.version>3.1.2.RELEASE</spring.version>
 		<osgi.api.version>4.2.0</osgi.api.version>
 	</properties>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>cpathsquared-impl</artifactId>
-	<version>0.1.4-SNAPSHOT</version>
+	<version>0.1.5-SNAPSHOT</version>
 	<name>CyPath2</name>
 	<description>CyPath2 is a Cytoscape 3 GUI client app 
 	that connects to a cPath2 (cPathSquared) web service (default URL is http://www.pathwaycommons.org/pc2/,
