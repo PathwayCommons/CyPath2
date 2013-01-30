@@ -6,9 +6,10 @@
 		<bundle.namespace>org.cytoscape.cpathsquared</bundle.namespace>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<cytoscape.version>[3.0.0, 4.0.0)</cytoscape.version>
+		<cytoscape.version>[3.0.0, 4)</cytoscape.version>
 		<spring.version>3.1.2.RELEASE</spring.version>
 		<osgi.api.version>4.2.0</osgi.api.version>
+		<paxtools.version>4.1.6</paxtools.version>
 	</properties>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>cpathsquared-impl</artifactId>
@@ -264,17 +265,12 @@
 		<dependency>
 			<groupId>org.biopax.paxtools</groupId>
 			<artifactId>paxtools-core</artifactId>
-			<version>4.1.5-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>org.biopax.paxtools</groupId>
-			<artifactId>biopax-converter</artifactId>
-			<version>4.1.5-SNAPSHOT</version>
+			<version>${paxtools.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.biopax.paxtools</groupId>
 			<artifactId>sif-converter</artifactId>
-			<version>4.1.5-SNAPSHOT</version>
+			<version>${paxtools.version}</version>
 		</dependency>
 		<!-- Spring Dependencies to embed (temporary; must use/start Spring EBR 
 			bundles instead) -->
