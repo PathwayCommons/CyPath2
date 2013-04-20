@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Observer;
@@ -113,22 +114,20 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
     private static final Logger LOGGER = LoggerFactory.getLogger(CyPath2.class);
 	
 	static final String JVM_PROPERTY_CPATH2_URL = "cPath2Url";
-	static final String DEFAULT_SERVER_URL = "http://www.pathwaycommons.org/pc2/";	
+	static final String DEFAULT_SERVER_URL = "http://purl.org/pc2/current/";	
     static final String SERVER_URL = System.getProperty(JVM_PROPERTY_CPATH2_URL, DEFAULT_SERVER_URL);   
-    static final String SERVER_NAME = "Pathway Commons (BioPAX L3)";
+    static final String SERVER_NAME = "Pathway Commons 2 (BioPAX L3)";
     static final String INFO_ABOUT = 
-    	"<b>cPath2 (Pathway Commons)</b> is a warehouse of " +
-    	"biological pathway information integrated from public databases and " +
-    	"persisted in BioPAX Level3 format, which one can search, traverse, download.";
+    	"An online BioPAX Level 3 warehouse of curated biological pathway and interaction data, " +
+    	"collected from several major data providers (then normalized, partially merged and persisted), " +
+    	"which one can search and traverse over HTTP.";
     
-    static String iconToolTip  = "Import Networks from Pathway Commons Web Services (BioPAX L3)";    
+    static String iconToolTip  = "Import Networks from new Pathway Commons Web Services (BioPAX L3)";    
     static String iconFileName = "pc.png";
-    static OutputFormat downloadMode = OutputFormat.BIOPAX;
+    static OutputFormat downloadMode = OutputFormat.BIOPAX;  
     
-    static Map<String,String> uriToOrganismNameMap = 
-    		Collections.unmodifiableMap(newClient().getValidOrganisms());
-    static Map<String,String> uriToDatasourceNameMap = 
-    		Collections.unmodifiableMap(newClient().getValidDataSources());
+    static final Map<String, String> uriToOrganismNameMap = new HashMap<String, String>();
+    static final Map<String,String> uriToDatasourceNameMap = new HashMap<String, String>();
     
 	// Display name of this client.
     private static final String DISPLAY_NAME = SERVER_NAME + " Client";
@@ -152,7 +151,21 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	
 	private JPanel advQueryPanel;
     
-    /**
+    
+	static {
+		CPath2Client cPath2Client = newClient();
+		cPath2Client.setType("BioSource");
+		for(SearchHit bs : cPath2Client.findAll())
+			uriToOrganismNameMap.put(bs.getUri(), bs.getName());
+
+		cPath2Client = newClient();
+		cPath2Client.setType("Provenance");
+		for(SearchHit bs : cPath2Client.findAll())
+			uriToDatasourceNameMap.put(bs.getUri(), bs.getName());
+	}
+	
+	
+	/**
      * Creates a new Web Services client.
      */
     public CyPath2(CySwingApplication app, TaskManager tm, OpenBrowser ob, 
@@ -444,8 +457,8 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	    // create the filter-list of datasources available on the server
 	    final CheckBoxJList dataSourceList = new CheckBoxJList();   
 	    DefaultListModel dataSourceBoxModel = new DefaultListModel(); 
-	    for(String d : uriToDatasourceNameMap.keySet()) {
-	    	dataSourceBoxModel.addElement(new NvpListItem(uriToDatasourceNameMap.get(d), d));
+	    for(String uri : uriToDatasourceNameMap.keySet()) {
+	    	dataSourceBoxModel.addElement(new NvpListItem(uriToDatasourceNameMap.get(uri), uri));
 	    }		        
 	    dataSourceList.setModel(dataSourceBoxModel);
 	    dataSourceList.setToolTipText("Select Datasources");
@@ -506,7 +519,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	        						+ "; retrieved: " + searchResponse.getSearchHit().size()
 	        							+ " (page #" + searchResponse.getPageNo() + ")");
 	        				} catch (CPathException e) {
-	        					info.setText(e.getError().getErrorMsg()
+	        					info.setText(e.toString()
 	        						+ " (using query '" + keyword + "' and current filter values)");
 								hitsModel.update(new SearchResponse()); //clear
 	        				} catch (Throwable e) { 
