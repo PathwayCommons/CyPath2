@@ -1,4 +1,4 @@
-package org.cytoscape.cpathsquared.internal;
+package org.pathwaycommons.cypath2.internal;
 
 import javax.swing.border.Border;
 import javax.swing.*;

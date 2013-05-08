@@ -23,7 +23,7 @@
  ** Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA;
  ** or find it at http://www.fsf.org/ or http://www.gnu.org.
  **/
-package org.cytoscape.cpathsquared.internal;
+package org.pathwaycommons.cypath2.internal;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -69,10 +69,10 @@ import org.biopax.paxtools.model.level3.XReferrable;
 import org.biopax.paxtools.model.level3.Xref;
 import org.biopax.paxtools.util.ClassFilterSet;
 import org.biopax.paxtools.util.Filter;
-import org.cytoscape.cpathsquared.internal.ExternalLinks.ExternalLink;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;
 import org.cytoscape.model.CyRow;
+import org.pathwaycommons.cypath2.internal.ExternalLinks.ExternalLink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

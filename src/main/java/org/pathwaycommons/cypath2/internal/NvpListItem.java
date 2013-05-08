@@ -1,4 +1,4 @@
-package org.cytoscape.cpathsquared.internal;
+package org.pathwaycommons.cypath2.internal;
 
 /**
  * Immutable name-value pair (String, String) type

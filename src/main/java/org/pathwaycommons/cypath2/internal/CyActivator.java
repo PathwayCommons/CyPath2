@@ -1,4 +1,4 @@
-package org.cytoscape.cpathsquared.internal;
+package org.pathwaycommons.cypath2.internal;
 
 import org.cytoscape.util.swing.OpenBrowser;
 import org.cytoscape.model.CyNetworkManager;
