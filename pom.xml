@@ -9,8 +9,8 @@
 		<cytoscape.version>[3.0.0, 4)</cytoscape.version>
 		<spring.version>3.2.2.RELEASE</spring.version>
 		<osgi.api.version>4.2.0</osgi.api.version>
-		<paxtools.version>4.1.6</paxtools.version>
-		<cpath-client.version>4.0.0-SNAPSHOT</cpath-client.version>
+		<paxtools.version>4.2.0-SNAPSHOT</paxtools.version>
+		<cpath-client.version>4.1.0-SNAPSHOT</cpath-client.version>
 	</properties>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>cpathsquared-impl</artifactId>
