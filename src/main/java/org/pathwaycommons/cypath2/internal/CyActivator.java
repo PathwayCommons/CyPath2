@@ -17,6 +17,8 @@ import org.cytoscape.io.read.CyNetworkReaderManager;
 import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
 
 import org.osgi.framework.BundleContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.cytoscape.service.util.AbstractCyActivator;
 
@@ -24,13 +26,17 @@ import java.util.Properties;
 
 
 public final class CyActivator extends AbstractCyActivator {
+	private static final Logger LOGGER = LoggerFactory.getLogger(CyActivator.class);
+	
+	
 	public CyActivator() {
 		super();
 	}
 
 
 	public void start(BundleContext bc) {
-
+		LOGGER.debug("starting...");
+		
 		CySwingApplication cySwingApplicationRef = getService(bc,CySwingApplication.class);
 		DialogTaskManager taskManagerRef = getService(bc,DialogTaskManager.class);
 		OpenBrowser openBrowserRef = getService(bc,OpenBrowser.class);

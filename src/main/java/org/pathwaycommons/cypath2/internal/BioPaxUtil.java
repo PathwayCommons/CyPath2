@@ -25,8 +25,6 @@
  **/
 package org.pathwaycommons.cypath2.internal;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
@@ -49,7 +47,6 @@ import org.biopax.paxtools.controller.PropertyEditor;
 import org.biopax.paxtools.controller.SimpleEditorMap;
 import org.biopax.paxtools.io.BioPAXIOHandler;
 import org.biopax.paxtools.io.SimpleIOHandler;
-import org.biopax.paxtools.io.sif.SimpleInteractionConverter;
 import org.biopax.paxtools.model.BioPAXElement;
 import org.biopax.paxtools.model.BioPAXLevel;
 import org.biopax.paxtools.model.Model;
@@ -842,37 +839,6 @@ final class BioPaxUtil {
 				? chemicalModification : "");
 	}
 	
-	
-	/**
-	 * Export a BioPAX L3 Model to SIF format.
-	 * 
-	 * @param model
-	 * @param rules
-	 * @return
-	 * @throws IOException
-	 * 
-	 */
-	@Deprecated //TODO this is not currently used anywhere
-	public static String convertToBinarySIF(Model model) throws IOException
-	{
-		String sif = null;
-		SimpleInteractionConverter sic = new SimpleInteractionConverter(
-                new HashMap<String,String>(),
-                new HashSet<String>(), // TODO use a 'blacklist' (to deal with ubiquitous molecules)
-				new org.biopax.paxtools.io.sif.level3.ComponentRule(),
-				new org.biopax.paxtools.io.sif.level3.ConsecutiveCatalysisRule(),
-				new org.biopax.paxtools.io.sif.level3.ControlRule(),
-				new org.biopax.paxtools.io.sif.level3.ControlsTogetherRule(),
-				new org.biopax.paxtools.io.sif.level3.ParticipatesRule()
-		);
-		
-		OutputStream edgeStream = new ByteArrayOutputStream();
-		sic.writeInteractionsInSIF(model, edgeStream);
-		sif = removeDuplicateBinaryInteractions(edgeStream);
-			
-		return sif;
-	}
-
 	
 	/**
 	 * Remove duplicate binary interactions from SIF/SIFNX converter output

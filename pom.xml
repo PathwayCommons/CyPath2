@@ -3,24 +3,24 @@
 
 	<groupId>org.pathwaycommons</groupId>
 	<properties>
-		<bundle.namespace>org.pathwaycommons.cypath2</bundle.namespace>
+		<bundle.namespace>org.pathwaycommons.cypath2.internal</bundle.namespace>
+		<bundle.symbolicName>org.pathwaycommons.cypath2-impl</bundle.symbolicName>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<cytoscape.version>[3.0.0, 4)</cytoscape.version>
-		<spring.version>3.2.2.RELEASE</spring.version>
+		<cytoscape.version>3.0.1</cytoscape.version>
 		<osgi.api.version>4.2.0</osgi.api.version>
 		<paxtools.version>4.2.0-SNAPSHOT</paxtools.version>
-		<cpath-client.version>4.0.0-SNAPSHOT</cpath-client.version>
+		<cpath-client.version>4.1.0-SNAPSHOT</cpath-client.version>
 	</properties>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>cypath2-impl</artifactId>
 	<version>0.2.0-SNAPSHOT</version>
-	<name>CyPath2</name>
+	<name>${bundle.symbolicName}</name>
 	<description>CyPath2 is a Cytoscape 3 GUI client app 
 	that connects to a cPath2 (cPathSquared) web service (default URL is http://www.pathwaycommons.org/pc2/,
 	a new BioPAX Level3 based server software developed by Pathway Commons team) 
 	to find and visualize biological pathway networks.</description>
-	
+
 	<organization>
 		<name>Pathway Commons: G.Bader Lab, University of Toronto; and CBIO, MSKCC</name>
 		<url>http://code.google.com/p/pathway-commons/</url>
@@ -33,7 +33,6 @@
 		<developerConnection>scm:git:git@github.com:PathwayCommons/cpath2-cytoscape-app.git</developerConnection>
 		<url>https://github.com/PathwayCommons/cpath2-cytoscape-app.git</url>
 	</scm>
-
 
 	<build>
 		<resources>
@@ -50,8 +49,8 @@
 					<archive>
 						<manifestEntries>
 							<Cytoscape-App-Name>CyPath2</Cytoscape-App-Name>
-                            <Cytoscape-App-Version>0.2</Cytoscape-App-Version>
-                            <Cytoscape-API-Compatibility>3.0</Cytoscape-API-Compatibility>
+							<Cytoscape-App-Version>0.1</Cytoscape-App-Version>
+							<Cytoscape-API-Compatibility>3.0</Cytoscape-API-Compatibility>
 						</manifestEntries>
 					</archive>
 				</configuration>
@@ -63,61 +62,25 @@
 				<extensions>true</extensions>
 				<configuration>
 					<instructions>
-						<Bundle-SymbolicName>org.pathwaycommons.cypath2-impl</Bundle-SymbolicName>
-						<Bundle-Name>CyPath2</Bundle-Name>
+						<Bundle-SymbolicName>${bundle.symbolicName}</Bundle-SymbolicName>
 						<Bundle-Version>${project.version}</Bundle-Version>
-						<Bundle-Activator>${bundle.namespace}.internal.CyActivator</Bundle-Activator>
-						<Export-Package>${bundle.namespace}</Export-Package>
-						<Private-Package>${bundle.namespace}.internal.*</Private-Package>
-						<Embed-Dependency>
-							*;groupId=org.biopax.paxtools;type=!pom;inline=true;scope=compile|runtime,
-							*;artifactId=cpath-api;type=!pom;inline=true;scope=compile|runtime,
-							*;artifactId=cpath-client;type=!pom;inline=true;scope=compile|runtime,
-							*;groupId=org.springframework;type=!pom;inline=true;scope=compile|runtime
-						</Embed-Dependency>
+						<Bundle-Activator>${bundle.namespace}.CyActivator</Bundle-Activator>
+						<Export-Package>!${bundle.namespace}.*</Export-Package>
+						<Private-Package>${bundle.namespace}.*</Private-Package>
+						<Embed-Dependency>*;type=!pom;inline=true;scope=compile|runtime</Embed-Dependency>
+						<Embed-Transitive>true</Embed-Transitive>
 						<Import-Package>*;resolution:=optional</Import-Package>
 					</instructions>
 				</configuration>
 			</plugin>
-			<!-- Cytoscape requires Java 1.6 -->		
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.3.2</version>
-				<executions>
-					<execution>
-						<id>default-testCompile</id>
-						<phase>test-compile</phase>
-						<goals>
-							<goal>testCompile</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>default-compile</id>
-						<phase>compile</phase>
-						<goals>
-							<goal>compile</goal>
-						</goals>
-					</execution>
-				</executions>
+				<version>3.0</version>
 				<configuration>
 					<source>1.6</source>
 					<target>1.6</target>
 					<optimize>true</optimize>
-					<showWarnings>true</showWarnings>
-					<showDeprecation>true</showDeprecation>
-					<compilerArguments>
-						<Xmaxwarns>10000</Xmaxwarns>
-						<Xmaxerrs>10000</Xmaxerrs>
-					</compilerArguments>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<version>2.7.1</version>
-				<configuration>
-					<redirectTestOutputToFile>true</redirectTestOutputToFile>
 				</configuration>
 			</plugin>
 		</plugins>
@@ -151,7 +114,7 @@
 			<snapshots>
 				<enabled>false</enabled>
 			</snapshots>
-		</repository>		
+		</repository>
 		<repository>
 			<id>cytoscape_thirdparty</id>
 			<snapshots>
@@ -167,111 +130,147 @@
 
 	<dependencyManagement>
 		<dependencies>
-		<dependency>
-			<groupId>org.cytoscape</groupId>
-			<artifactId>model-api</artifactId>
-			<version>${cytoscape.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.cytoscape</groupId>
-			<artifactId>io-api</artifactId>
-			<version>${cytoscape.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.cytoscape</groupId>
-			<artifactId>viewmodel-api</artifactId>
-			<version>${cytoscape.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.cytoscape</groupId>
-			<artifactId>layout-api</artifactId>
-			<version>${cytoscape.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.cytoscape</groupId>
-			<artifactId>presentation-api</artifactId>
-			<version>${cytoscape.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.cytoscape</groupId>
-			<artifactId>swing-util-api</artifactId>
-			<version>${cytoscape.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.cytoscape</groupId>
-			<artifactId>swing-application-api</artifactId>
-			<version>${cytoscape.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.cytoscape</groupId>
-			<artifactId>vizmap-api</artifactId>
-			<version>${cytoscape.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.cytoscape</groupId>
-			<artifactId>webservice-swing-api</artifactId>
-			<version>${cytoscape.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.cytoscape</groupId>
-			<artifactId>service-api</artifactId>
-			<version>${cytoscape.version}</version>
-		</dependency>		
-		<dependency>
-			<groupId>org.ops4j.pax.logging</groupId>
-			<artifactId>pax-logging-api</artifactId>
-			<version>[1.5.2, 2.0.0)</version>
-		</dependency>
-		<dependency>
-            <groupId>cytoscape-temp</groupId>
-            <artifactId>woodstox-core-lgpl</artifactId>
-            <version>[4.0.5, 5.0.0)</version>
-		</dependency>
-		<dependency>
-			<groupId>org.osgi</groupId>
-			<artifactId>org.osgi.core</artifactId>
-			<version>${osgi.api.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>pathwaycommons.cpath</groupId>
-			<artifactId>cpath-client</artifactId>
-			<version>${cpath-client.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.biopax.paxtools</groupId>
-			<artifactId>paxtools-core</artifactId>
-			<version>${paxtools.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.biopax.paxtools</groupId>
-			<artifactId>sif-converter</artifactId>
-			<version>${paxtools.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-context</artifactId>
-			<version>${spring.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-core</artifactId>
-			<version>${spring.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-oxm</artifactId>
-			<version>${spring.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-web</artifactId>
-			<version>${spring.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-beans</artifactId>
-			<version>${spring.version}</version>
-		</dependency>	
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>model-api</artifactId>
+				<version>${cytoscape.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>io-api</artifactId>
+				<version>${cytoscape.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>viewmodel-api</artifactId>
+				<version>${cytoscape.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>layout-api</artifactId>
+				<version>${cytoscape.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>presentation-api</artifactId>
+				<version>${cytoscape.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>swing-util-api</artifactId>
+				<version>${cytoscape.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>swing-application-api</artifactId>
+				<version>${cytoscape.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>vizmap-api</artifactId>
+				<version>${cytoscape.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>webservice-swing-api</artifactId>
+				<version>${cytoscape.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>service-api</artifactId>
+				<version>${cytoscape.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.ops4j.pax.logging</groupId>
+				<artifactId>pax-logging-api</artifactId>
+				<version>1.5.2</version>
+			</dependency>
+			<dependency>
+				<groupId>cytoscape-temp</groupId>
+				<artifactId>woodstox-core-lgpl</artifactId>
+				<version>4.0.5</version>
+			</dependency>
+			<dependency>
+				<groupId>org.osgi</groupId>
+				<artifactId>org.osgi.core</artifactId>
+				<version>${osgi.api.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>pathwaycommons.cpath</groupId>
+				<artifactId>cpath-client</artifactId>
+				<version>${cpath-client.version}</version>
+<!-- 				<exclusions> -->
+<!-- 					<exclusion> -->
+<!-- 						<groupId>commons-logging</groupId> -->
+<!-- 						<artifactId>commons-logging</artifactId> -->
+<!-- 					</exclusion> -->
+<!-- 					<exclusion> -->
+<!-- 						<groupId>org.slf4j</groupId> -->
+<!-- 						<artifactId>jcl-over-slf4j</artifactId> -->
+<!-- 					</exclusion> -->
+<!-- 					<exclusion> -->
+<!-- 						<groupId>org.slf4j</groupId> -->
+<!-- 						<artifactId>slf4j-log4j12</artifactId> -->
+<!-- 					</exclusion> -->
+<!-- 				</exclusions>					 -->
+			</dependency>
+			<dependency>
+				<groupId>org.biopax.paxtools</groupId>
+				<artifactId>paxtools-core</artifactId>
+				<version>${paxtools.version}</version>
+<!-- 				<exclusions> -->
+<!-- 					<exclusion> -->
+<!-- 						<groupId>commons-logging</groupId> -->
+<!-- 						<artifactId>commons-logging</artifactId> -->
+<!-- 					</exclusion> -->
+<!-- 				</exclusions> -->
+			</dependency>
+			<dependency>
+				<groupId>org.biopax.paxtools</groupId>
+				<artifactId>sif-converter</artifactId>
+				<version>${paxtools.version}</version>
+<!-- 				<exclusions> -->
+<!-- 					<exclusion> -->
+<!-- 						<groupId>commons-logging</groupId> -->
+<!-- 						<artifactId>commons-logging</artifactId> -->
+<!-- 					</exclusion> -->
+<!-- 				</exclusions>				 -->
+			</dependency>
+			<dependency>
+				<groupId>commons-lang</groupId>
+				<artifactId>commons-lang</artifactId>
+				<version>2.6</version>
+			</dependency>
+			<dependency>
+				<groupId>log4j</groupId>
+				<artifactId>log4j</artifactId>
+				<version>1.2.17</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-oxm</artifactId>
+				<version>3.2.2.RELEASE</version>
+				<scope>runtime</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-web</artifactId>
+				<version>3.2.2.RELEASE</version>
+				<scope>runtime</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-log4j12</artifactId>
+				<version>1.6.6</version>
+				<scope>runtime</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>jcl-over-slf4j</artifactId>
+				<version>1.6.6</version>
+				<scope>runtime</scope>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
@@ -326,16 +325,16 @@
 			<groupId>org.cytoscape</groupId>
 			<artifactId>service-api</artifactId>
 			<scope>provided</scope>
-		</dependency>		
+		</dependency>
 		<dependency>
 			<groupId>org.ops4j.pax.logging</groupId>
 			<artifactId>pax-logging-api</artifactId>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-            <groupId>cytoscape-temp</groupId>
-            <artifactId>woodstox-core-lgpl</artifactId>
-            <scope>provided</scope>
+			<groupId>cytoscape-temp</groupId>
+			<artifactId>woodstox-core-lgpl</artifactId>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.osgi</groupId>
@@ -349,35 +348,14 @@
 			<groupId>org.biopax.paxtools</groupId>
 			<artifactId>paxtools-core</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>org.biopax.paxtools</groupId>
-			<artifactId>sif-converter</artifactId>
-		</dependency>
-		<!-- Spring Dependencies to embed (temporary; must use/start Spring EBR 
-			bundles instead) -->
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-context</artifactId>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-core</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-oxm</artifactId>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-web</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-beans</artifactId>
-			<scope>runtime</scope>
-		</dependency>
+<!-- 		<dependency> -->
+<!-- 			<groupId>org.slf4j</groupId> -->
+<!-- 			<artifactId>slf4j-log4j12</artifactId> -->
+<!-- 		</dependency> -->
+<!-- 		<dependency> -->
+<!-- 			<groupId>org.slf4j</groupId> -->
+<!-- 			<artifactId>jcl-over-slf4j</artifactId> -->
+<!-- 		</dependency> -->
 	</dependencies>
 
 </project>
