@@ -9,7 +9,7 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<cytoscape.version>3.0.1</cytoscape.version>
 		<osgi.api.version>4.2.0</osgi.api.version>
-		<paxtools.version>4.2.0-SNAPSHOT</paxtools.version>
+		<paxtools.version>4.2.0</paxtools.version>
 		<cpath-client.version>4.1.0-SNAPSHOT</cpath-client.version>
 	</properties>
 	<modelVersion>4.0.0</modelVersion>
