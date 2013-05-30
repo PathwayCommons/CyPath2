@@ -10,7 +10,8 @@
 		<cytoscape.version>3.0.1</cytoscape.version>
 		<osgi.api.version>4.2.0</osgi.api.version>
 		<paxtools.version>4.2.0</paxtools.version>
-		<cpath-client.version>4.1.0-SNAPSHOT</cpath-client.version>
+		<cpath2.version>4.1.0-SNAPSHOT</cpath2.version>
+		<spring.version>3.2.3.RELEASE</spring.version>
 	</properties>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>cypath2-impl</artifactId>
@@ -49,7 +50,7 @@
 					<archive>
 						<manifestEntries>
 							<Cytoscape-App-Name>CyPath2</Cytoscape-App-Name>
-							<Cytoscape-App-Version>0.1</Cytoscape-App-Version>
+							<Cytoscape-App-Version>0.2</Cytoscape-App-Version>
 							<Cytoscape-API-Compatibility>3.0</Cytoscape-API-Compatibility>
 						</manifestEntries>
 					</archive>
@@ -67,7 +68,7 @@
 						<Bundle-Activator>${bundle.namespace}.CyActivator</Bundle-Activator>
 						<Export-Package>!${bundle.namespace}.*</Export-Package>
 						<Private-Package>${bundle.namespace}.*</Private-Package>
-						<Embed-Dependency>*;type=!pom;inline=true;scope=compile|runtime</Embed-Dependency>
+						<Embed-Dependency>*;scope=runtime|compile;optional=false</Embed-Dependency>
 						<Embed-Transitive>true</Embed-Transitive>
 						<Import-Package>*;resolution:=optional</Import-Package>
 					</instructions>
@@ -198,82 +199,31 @@
 			<dependency>
 				<groupId>pathwaycommons.cpath</groupId>
 				<artifactId>cpath-client</artifactId>
-				<version>${cpath-client.version}</version>
-<!-- 				<exclusions> -->
-<!-- 					<exclusion> -->
-<!-- 						<groupId>commons-logging</groupId> -->
-<!-- 						<artifactId>commons-logging</artifactId> -->
-<!-- 					</exclusion> -->
-<!-- 					<exclusion> -->
-<!-- 						<groupId>org.slf4j</groupId> -->
-<!-- 						<artifactId>jcl-over-slf4j</artifactId> -->
-<!-- 					</exclusion> -->
-<!-- 					<exclusion> -->
-<!-- 						<groupId>org.slf4j</groupId> -->
-<!-- 						<artifactId>slf4j-log4j12</artifactId> -->
-<!-- 					</exclusion> -->
-<!-- 				</exclusions>					 -->
+				<version>${cpath2.version}</version>
+				<exclusions>
+					<exclusion>
+						<groupId>commons-logging</groupId>
+						<artifactId>commons-logging</artifactId>
+					</exclusion>
+				</exclusions>								
 			</dependency>
 			<dependency>
 				<groupId>org.biopax.paxtools</groupId>
 				<artifactId>paxtools-core</artifactId>
 				<version>${paxtools.version}</version>
-<!-- 				<exclusions> -->
-<!-- 					<exclusion> -->
-<!-- 						<groupId>commons-logging</groupId> -->
-<!-- 						<artifactId>commons-logging</artifactId> -->
-<!-- 					</exclusion> -->
-<!-- 				</exclusions> -->
-			</dependency>
-			<dependency>
-				<groupId>org.biopax.paxtools</groupId>
-				<artifactId>sif-converter</artifactId>
-				<version>${paxtools.version}</version>
-<!-- 				<exclusions> -->
-<!-- 					<exclusion> -->
-<!-- 						<groupId>commons-logging</groupId> -->
-<!-- 						<artifactId>commons-logging</artifactId> -->
-<!-- 					</exclusion> -->
-<!-- 				</exclusions>				 -->
-			</dependency>
-			<dependency>
-				<groupId>commons-lang</groupId>
-				<artifactId>commons-lang</artifactId>
-				<version>2.6</version>
-			</dependency>
-			<dependency>
-				<groupId>log4j</groupId>
-				<artifactId>log4j</artifactId>
-				<version>1.2.17</version>
-				<scope>provided</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.springframework</groupId>
-				<artifactId>spring-oxm</artifactId>
-				<version>3.2.2.RELEASE</version>
-				<scope>runtime</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.springframework</groupId>
-				<artifactId>spring-web</artifactId>
-				<version>3.2.2.RELEASE</version>
-				<scope>runtime</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.slf4j</groupId>
-				<artifactId>slf4j-log4j12</artifactId>
-				<version>1.6.6</version>
-				<scope>runtime</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.slf4j</groupId>
-				<artifactId>jcl-over-slf4j</artifactId>
-				<version>1.6.6</version>
-				<scope>runtime</scope>
-			</dependency>
+				<exclusions>
+					<exclusion>
+						<groupId>log4j</groupId>
+						<artifactId>log4j</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>commons-logging</groupId>
+						<artifactId>commons-logging</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>															
 		</dependencies>
 	</dependencyManagement>
-
 
 	<dependencies>
 		<dependency>
@@ -348,14 +298,6 @@
 			<groupId>org.biopax.paxtools</groupId>
 			<artifactId>paxtools-core</artifactId>
 		</dependency>
-<!-- 		<dependency> -->
-<!-- 			<groupId>org.slf4j</groupId> -->
-<!-- 			<artifactId>slf4j-log4j12</artifactId> -->
-<!-- 		</dependency> -->
-<!-- 		<dependency> -->
-<!-- 			<groupId>org.slf4j</groupId> -->
-<!-- 			<artifactId>jcl-over-slf4j</artifactId> -->
-<!-- 		</dependency> -->
 	</dependencies>
 
 </project>

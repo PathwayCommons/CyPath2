@@ -31,6 +31,7 @@ public final class CyActivator extends AbstractCyActivator {
 	
 	public CyActivator() {
 		super();
+		LOGGER.debug("creating...");
 	}
 
 
@@ -52,7 +53,7 @@ public final class CyActivator extends AbstractCyActivator {
 		VisualStyleFactory visualStyleFactoryRef = getService(bc,VisualStyleFactory.class);
 		VisualMappingFunctionFactory discreteMappingFactoryRef = getService(bc,VisualMappingFunctionFactory.class,"(mapping.type=discrete)");
 		VisualMappingFunctionFactory passthroughMappingFactoryRef = getService(bc,VisualMappingFunctionFactory.class,"(mapping.type=passthrough)");
-		CyProperty cytoscapePropertiesServiceRef = getService(bc, CyProperty.class, "(cyPropertyName=cytoscape3.props)");
+		CyProperty<Properties> cytoscapePropertiesServiceRef = getService(bc, CyProperty.class, "(cyPropertyName=cytoscape3.props)");
 		
 		BinarySifVisualStyleFactory binarySifVisualStyleUtil = new BinarySifVisualStyleFactory(
 				visualStyleFactoryRef,
@@ -76,6 +77,9 @@ public final class CyActivator extends AbstractCyActivator {
 				binarySifVisualStyleUtil,
 				visualMappingManagerRef,
 				cytoscapePropertiesServiceRef);
+		
+		// initialize (build the UI, etc. heavy calls)
+		cPathSquaredWebServiceClient.init();
 		
 		registerAllServices(bc, cPathSquaredWebServiceClient, new Properties());
 	}

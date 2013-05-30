@@ -22,12 +22,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Observer;
 import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -126,7 +129,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
     static String iconFileName = "pc.png";
     static OutputFormat downloadMode = OutputFormat.BIOPAX;  
     
-    static final Map<String, String> uriToOrganismNameMap = new HashMap<String, String>();
+    static final Map<String,String> uriToOrganismNameMap = new HashMap<String, String>();
     static final Map<String,String> uriToDatasourceNameMap = new HashMap<String, String>();
     
 	// Display name of this client.
@@ -150,20 +153,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	final CyProperty<Properties> cyProperty;
 	
 	private JPanel advQueryPanel;
-    
-    
-	static {
-		CPath2Client cPath2Client = newClient();
-		cPath2Client.setType("BioSource");
-		for(SearchHit bs : cPath2Client.findAll())
-			uriToOrganismNameMap.put(bs.getUri(), bs.getName());
-
-		cPath2Client = newClient();
-		cPath2Client.setType("Provenance");
-		for(SearchHit bs : cPath2Client.findAll())
-			uriToDatasourceNameMap.put(bs.getUri(), bs.getName());
-	}
-	
+    	
 	
 	/**
      * Creates a new Web Services client.
@@ -190,20 +180,52 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 		binarySifVisualStyleUtil = bsvsf;
 		mappingManager = mm;
 		cyProperty = prop;
-    	
+		
+		JPanel mainPanel = new JPanel();
+		gui = mainPanel; 
+		
+    }
+ 
+    /**
+     * Creates the UI and loads 
+     * some initial data from the server.
+     * 
+     */
+    public void init() {
+       	
 		final JTabbedPane  tabbedPane = new JTabbedPane();
         tabbedPane.add("Search", createSearchPanel()); //also init. the advQueryPanel
         tabbedPane.add("Top Pathways", createTopPathwaysPanel());
         tabbedPane.add("Advanced Query", advQueryPanel);
-        tabbedPane.add("Options", createOptionsPane());
-        
-    	JPanel mainPanel = new JPanel();
+        tabbedPane.add("Options", createOptionsPane());        
+    	JPanel mainPanel = (JPanel) gui;
         mainPanel.setPreferredSize(new Dimension (900,600));
         mainPanel.setLayout (new BorderLayout());
         mainPanel.add(tabbedPane, BorderLayout.CENTER);       
-
-    	gui = mainPanel;
-    }
+    	
+    	// init datasources and org. maps (in a separate thread)
+        ExecutorService exec = Executors.newSingleThreadExecutor();
+        exec.execute(new Runnable() {		
+			@Override
+			public void run() {
+				CPath2Client cPath2Client = newClient();
+				cPath2Client.setType("Provenance");
+				List<SearchHit> hits = cPath2Client.findAll();
+				for(SearchHit bs : hits) {
+					uriToDatasourceNameMap.put(bs.getUri(), bs.getName());
+				}
+				
+				hits = null; cPath2Client = null;
+				
+		     	cPath2Client = newClient();
+		        cPath2Client.setType("BioSource");
+		        hits = cPath2Client.findAll();
+		        for(SearchHit bs : hits) {
+		        	uriToOrganismNameMap.put(bs.getUri(), bs.getName());
+		        }
+			}
+		});
+    }   
     
     
     //TODO where it is used?..
@@ -250,8 +272,8 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 		try {
 			res = client.traverse(uris);;
 		} catch (CPathException e) {
-			LOGGER.error("getting " + path + 
-				" failed; uri:" + uris.toString(), e);
+			LOGGER.error("traverse: " + path + 
+				" failed; uris:" + uris.toString(), e);
 		}
 				
        	return res;
@@ -436,10 +458,12 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 //	    for(String o : uriToOrganismNameMap.keySet()) {
 //	    	items.add(new NvpListItem(uriToOrganismNameMap.get(o), o));
 //	    }
-	    //manually add several popular organisms ()
+	    //manually add supported organisms
+	    //only human is currently (05/2013) supported, but there are other
+	    // disease/experimental organisms present in the data
 	    items.add(new NvpListItem("Human", "9606"));
-	    items.add(new NvpListItem("Mouse", "10090"));
-	    items.add(new NvpListItem("Yeast", "4923"));
+//	    items.add(new NvpListItem("Mouse", "10090"));
+//	    items.add(new NvpListItem("Yeast", "4923"));
 	    
 	    DefaultListModel model = new DefaultListModel();
 	    for(NvpListItem nvp : items) {
@@ -1248,6 +1272,6 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
     		}
     	}
 	    		
-    }	
+    }
 
 }

@@ -24,8 +24,6 @@ import cpath.service.jaxb.TraverseResponse;
 final class HitsModel extends Observable {
 
     private SearchResponse response;
-    @Deprecated
-    private final TaskManager taskManager;
     
     final boolean parentPathwaysRequired;
     final String title;
@@ -45,7 +43,6 @@ final class HitsModel extends Observable {
     public HitsModel(String title, boolean parentPathwaysUsed, TaskManager taskManager) {
 		this.parentPathwaysRequired = parentPathwaysUsed;
 		this.title = title;
-		this.taskManager = taskManager;
 		this.graphQueryClient = CyPath2.newClient();
 	}
     
@@ -71,10 +68,10 @@ final class HitsModel extends Observable {
 		numHitsByDatasourceMap.clear();
 		hitsSummaryMap.clear();
 		hitsPathwaysMap.clear();
-
-		ExecutorService exec = Executors.newFixedThreadPool(10);
 		
-		// get/save info INFO_ABOUT components/participants/members
+		// get/save info INFO_ABOUT components/participants/members;
+		// run in a few separate threads
+		ExecutorService exec = Executors.newFixedThreadPool(10);
 		for (final SearchHit record : response.getSearchHit())
 		{
 			exec.submit(new Runnable() {		
@@ -198,10 +195,15 @@ final class HitsModel extends Observable {
 			path = "EntityReference/memberEntityReference";
 		
 		assert (path != null);
-		TraverseResponse members = CyPath2
-			.traverse(path + ":Named/displayName", 
+		
+		// get names
+		TraverseResponse members = CyPath2.traverse(path + ":Named/displayName", 
 				Collections.singleton(item.getUri()));
 		
+		if (members == null)
+		// no names? - get uris then
+			members = CyPath2.traverse(path, Collections.singleton(item.getUri()));
+			
 		if (members != null) {
 			List<String> values  = members.getTraverseEntry().get(0).getValue();
 			if (!values.isEmpty())
@@ -217,7 +219,7 @@ final class HitsModel extends Observable {
 			// add parent pathways to the Map ("ppw" prefix means "parent pathway's" -)
 			final Collection<NvpListItem> ppws = new TreeSet<NvpListItem>();	
 			final Set<String> ppwUris = new HashSet<String>(item.getPathway()); // a hack for not unique URIs (a cpath2 indexing bug...)
-			TraverseResponse ppwNames =CyPath2.traverse("Named/displayName", ppwUris);
+			TraverseResponse ppwNames = CyPath2.traverse("Named/displayName", ppwUris);
 			if (ppwNames != null) {
 				Map<String, String> ppwUriToNameMap = new HashMap<String, String>();			
 				for (TraverseEntry e : ppwNames.getTraverseEntry()) {
