@@ -29,8 +29,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -102,6 +100,7 @@ import org.slf4j.LoggerFactory;
 import cpath.client.CPath2Client;
 import cpath.client.CPath2Client.Direction;
 import cpath.client.util.CPathException;
+import cpath.service.Cmd;
 import cpath.service.GraphType;
 import cpath.service.OutputFormat;
 import cpath.service.jaxb.SearchHit;
@@ -116,9 +115,9 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(CyPath2.class);
 	
-	static final String JVM_PROPERTY_CPATH2_URL = "cPath2Url";
-	static final String DEFAULT_SERVER_URL = "http://purl.org/pc2/current/";	
-    static final String SERVER_URL = System.getProperty(JVM_PROPERTY_CPATH2_URL, DEFAULT_SERVER_URL);   
+    static final String SERVER_URL = System.getProperty(
+    	CPath2Client.JVM_PROPERTY_ENDPOINT_URL, CPath2Client.DEFAULT_ENDPOINT_URL);
+    
     static final String SERVER_NAME = "Pathway Commons 2 (BioPAX L3)";
     static final String INFO_ABOUT = 
     	"An online BioPAX Level 3 warehouse of curated biological pathway and interaction data, " +
@@ -136,6 +135,10 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
     private static final String DISPLAY_NAME = SERVER_NAME + " Client";
 	private static final String CPATH_SERVER_NAME_ATTRIBUTE = "CPATH_SERVER_NAME";
 	private static final String CPATH_SERVER_DETAILS_URL = "CPATH_SERVER_DETAILS_URL";
+	
+	// dynamic map - one cpath-client per property path (used by multiple thread)
+	private static final Map<String, CPath2Client> proprtyPathToClientMap 
+		= Collections.synchronizedMap(new HashMap<String, CPath2Client>());
 
 	final CySwingApplication application;
 	final TaskManager taskManager;
@@ -192,7 +195,21 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
      * 
      */
     public void init() {
-       	
+    	
+    	// init datasources and org. maps (in a separate thread)
+		CPath2Client cPath2Client = newClient();
+		cPath2Client.setType("Provenance");
+		List<SearchHit> hits = cPath2Client.findAll();
+		for(SearchHit bs : hits) {
+			uriToDatasourceNameMap.put(bs.getUri(), bs.getName());
+		}
+        cPath2Client.setType("BioSource");
+        hits = cPath2Client.findAll();
+        for(SearchHit bs : hits) {
+        	uriToOrganismNameMap.put(bs.getUri(), bs.getName());
+        }    	
+    	
+        // create the UI
 		final JTabbedPane  tabbedPane = new JTabbedPane();
         tabbedPane.add("Search", createSearchPanel()); //also init. the advQueryPanel
         tabbedPane.add("Top Pathways", createTopPathwaysPanel());
@@ -202,47 +219,22 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
         mainPanel.setPreferredSize(new Dimension (900,600));
         mainPanel.setLayout (new BorderLayout());
         mainPanel.add(tabbedPane, BorderLayout.CENTER);       
-    	
-    	// init datasources and org. maps (in a separate thread)
-        ExecutorService exec = Executors.newSingleThreadExecutor();
-        exec.execute(new Runnable() {		
-			@Override
-			public void run() {
-				CPath2Client cPath2Client = newClient();
-				cPath2Client.setType("Provenance");
-				List<SearchHit> hits = cPath2Client.findAll();
-				for(SearchHit bs : hits) {
-					uriToDatasourceNameMap.put(bs.getUri(), bs.getName());
-				}
-				
-				hits = null; cPath2Client = null;
-				
-		     	cPath2Client = newClient();
-		        cPath2Client.setType("BioSource");
-		        hits = cPath2Client.findAll();
-		        for(SearchHit bs : hits) {
-		        	uriToOrganismNameMap.put(bs.getUri(), bs.getName());
-		        }
-			}
-		});
     }   
     
     
-    //TODO where it is used?..
     /**
-     * 
      * Creates a new network and view using data returned 
-     * from a 'get' or 'graph' web service query URL (with all parameters set)
+     * from the cpath2 '/get' by URI (or bio-identifier) query.
      */
 	@Override
-	public TaskIterator createTaskIterator(final Object cpathSquaredQueryUrl) {
+	public TaskIterator createTaskIterator(final Object uri) {
 
 		TaskIterator taskIterator = new TaskIterator(new Task() {
 			@Override
 			public void run(TaskMonitor taskMonitor) throws Exception {
 				taskManager.setExecutionContext(null);
 				taskManager.execute(new TaskIterator(
-					new CpsNetworkAndViewTask((String) cpathSquaredQueryUrl, "")));
+					new CpsNetworkAndViewTask(newClient(), (String) uri, "")));
 			}
 
 			@Override
@@ -256,7 +248,6 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 		
     static CPath2Client newClient() {
         CPath2Client client = CPath2Client.newInstance();
-        client.setEndPointURL(SERVER_URL);
 		return client;
 	}
 
@@ -265,12 +256,17 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	   {
 	   	if(LOGGER.isDebugEnabled())
 	   		LOGGER.debug("traverse: path=" + path);
-        CPath2Client client = newClient();
-        client.setPath(path);
+	   		
+	   	CPath2Client client = proprtyPathToClientMap.get(path);
+	   	if(client == null) {
+	   		client = newClient();
+	   		client.setPath(path);
+	   		proprtyPathToClientMap.put(path, client);
+	   	}
 	        
         TraverseResponse res = null;
 		try {
-			res = client.traverse(uris);;
+			res = client.traverse(uris);
 		} catch (CPathException e) {
 			LOGGER.error("traverse: " + path + 
 				" failed; uris:" + uris.toString(), e);
@@ -603,10 +599,8 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 						NvpListItem item = (NvpListItem) ppwList.getModel()
 								.getElementAt(selectedIndex);
 						String uri = item.getValue();
-						String queryUrl = newClient()
-							.queryGet(Collections.singleton(uri));
 				        taskManager.execute(new TaskIterator(
-				        	new CpsNetworkAndViewTask(queryUrl, item.toString())));	
+				        	new CpsNetworkAndViewTask(hitsModel.graphQueryClient, uri, item.toString())));	
 					}
 				}
 			}
@@ -646,10 +640,9 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
                 if (!listSelectionEvent.getValueIsAdjusting()) {
                     if (selectedIndex >=0) {
                     	SearchHit item = (SearchHit)resList.getModel().getElementAt(selectedIndex);
-                		// get/create and show hit's summary
+                		// show current hit's summary
                 		String summary = hitsModel.hitsSummaryMap.get(item.getUri());
-                		detailsPanel.getTextPane().setText(summary);
-                		detailsPanel.getTextPane().setCaretPosition(0);               		
+                    	detailsPanel.setCurrentItem(item, summary);
                 		// update pathways list
                 		DefaultListModel ppwListModel = (DefaultListModel) ppwList.getModel();
 						ppwListModel.clear();
@@ -850,14 +843,14 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
         advQueryCtrlPanel.add(directionPanel);
         
         
-        // add "execute" button
+        // add "execute" (an advanced query) button
 	    final JButton advQueryButton = new JButton("Execute");
 	    advQueryButton.setToolTipText("Create a new network from a BioPAX graph query result");
 	    advQueryButton.addActionListener(new ActionListener() {
 	        public void actionPerformed(ActionEvent actionEvent) {
 	        	advQueryButton.setEnabled(false);
 	           	
-	        	//create souce and target lists of URIs
+	        	//create source and target lists of URIs
 	        	Set<String> srcs = new HashSet<String>();
 	        	Set<String> tgts = new HashSet<String>();
 	        	for(int i=0; i < userList.getModel().getSize(); i++) {
@@ -868,28 +861,19 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	        			tgts.add(uri);
 	        	}
 	        	
-	        	//hitsModel.graphQueryClient uses direction and limit set by user
-	        	String queryUrl = hitsModel.graphQueryClient.queryGet(srcs);
-	        	
-	        	if(hitsModel.graphType != null)
-	        	switch (hitsModel.graphType) {
-				case NEIGHBORHOOD:
-					queryUrl = hitsModel.graphQueryClient.queryNeighborhood(srcs);
-					break;
-				case COMMONSTREAM:
-					queryUrl = hitsModel.graphQueryClient.queryCommonStream(srcs);
-					break;
-				case PATHSBETWEEN:
-					queryUrl = hitsModel.graphQueryClient.queryPathsBetween(srcs);
-					break;
-				case PATHSFROMTO:
-					queryUrl = hitsModel.graphQueryClient.queryPathsFromTo(srcs, tgts);
-					break;
-				default:
-					break;
-				}
-
-	        	taskManager.execute(new TaskIterator(new CpsNetworkAndViewTask(queryUrl, null)));
+	        	//TODO set organism and datasource filters for the GRAPH query too
+	        	// ...
+	        	        	
+	        	if(hitsModel.graphType == null)
+	        		taskManager.execute(new TaskIterator(
+	        			new CpsNetworkAndViewTask(hitsModel.graphQueryClient, 
+	        					Cmd.GET, null, srcs, null, "")
+	        			));
+	        	else
+	        		taskManager.execute(new TaskIterator(
+	        			new CpsNetworkAndViewTask(hitsModel.graphQueryClient, 
+	        					Cmd.GRAPH, hitsModel.graphType, srcs, tgts, "")
+		        		));
 	        	
 	        	advQueryButton.setEnabled(true);
 	        }
@@ -959,10 +943,8 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 						SearchHit item = (SearchHit) tpwJList.getModel()
 								.getElementAt(selectedIndex);
 						String uri = item.getUri();
-						String queryUrl = newClient()
-							.queryGet(Collections.singleton(uri));
 				        taskManager.execute(new TaskIterator(
-				        	new CpsNetworkAndViewTask(queryUrl, item.toString())));	
+				        	new CpsNetworkAndViewTask(topPathwaysModel.graphQueryClient, uri, item.toString())));	
 					}
 				}
 			}
@@ -1003,7 +985,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	    					taskMonitor.setTitle("cPathSquared Task: Top Pathways");
 	    					taskMonitor.setProgress(0.1);
 	    					taskMonitor.setStatusMessage("Retrieving top pathways...");
-	    					final SearchResponse resp = newClient().getTopPathways();
+	    					final SearchResponse resp = topPathwaysModel.graphQueryClient.getTopPathways();
 	    					// reset the model and kick off observers (list and filter panel)
 							topPathwaysModel.update(resp);		    			        
 	    				} catch (Throwable e) { 
@@ -1041,28 +1023,32 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
      *
      * @return JTextPane Object.
      */
-    private JTextPane createHtmlTextPane(final JPanel context) {
+    private JTextPane createHtmlTextPane(final DetailsPanel detailsPanel) {
         final JTextPane textPane = new JTextPane();
         textPane.setEditable(false);
         textPane.setBorder(new EmptyBorder(7,7,7,7));
         textPane.setContentType("text/html");
         textPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
+        final CPath2Client client = newClient(); //handles user's clicks on biopax URIs
         textPane.addHyperlinkListener(new HyperlinkListener() {
             public void hyperlinkUpdate(HyperlinkEvent hyperlinkEvent) {
                 if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-//                	browser.openURL(hyperlinkEvent.getURL().toString());
-                	//import data and create network only if a special (name) link clicked
-                	String queryUrl = hyperlinkEvent.getURL().toString();
-                    if(queryUrl.startsWith(CyPath2.SERVER_URL)) {
-    				        taskManager.execute(new TaskIterator(
-    				        	new CpsNetworkAndViewTask(queryUrl, "")));// TODO a better network title (it'll be changed anyway...)?
-                    }
+                	//import/create a network if the special (fake) link is clicked
+               		SearchHit currentItem = detailsPanel.getCurrentItem();
+               		String uri = currentItem.getUri();
+               		if(!currentItem.getBiopaxClass().equalsIgnoreCase("Pathway")) {
+               			taskManager.execute(new TaskIterator(
+                   			new CpsNetworkAndViewTask(client, Cmd.GRAPH, 
+                   				GraphType.NEIGHBORHOOD, Collections.singleton(uri), null, "")));
+               		} else { // use '/get' command
+               			taskManager.execute(new TaskIterator(
+                   			new CpsNetworkAndViewTask(client, uri, "")));
+               		}
                 }
             }
         });
 
-        HTMLDocument htmlDoc = (HTMLDocument) textPane.getDocument();
-        StyleSheet styleSheet = htmlDoc.getStyleSheet();
+        StyleSheet styleSheet = ((HTMLDocument) textPane.getDocument()).getStyleSheet();
         styleSheet.addRule("h2 {color:  #663333; font-size: 102%; font-weight: bold; "
             + "margin-bottom:3px}");
         styleSheet.addRule("h3 {color: #663333; font-size: 95%; font-weight: bold;"
@@ -1076,6 +1062,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
         styleSheet.addRule(".excerpt {font-size: 90%;}");
         // highlight matching fragments
         styleSheet.addRule(".hitHL {background-color: #FFFF00;}");
+        
         return textPane;
     }
 
@@ -1087,6 +1074,8 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
     final class DetailsPanel extends JPanel {
         private final Document doc;
         private final JTextPane textPane;
+        
+        private SearchHit current;
 
         /**
          * Constructor.
@@ -1101,6 +1090,22 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
         }
 
         /**
+         * Sets the current item and HTML to display
+         * 
+         * @param item
+         * @param summary
+         */
+        public void setCurrentItem(SearchHit item, String summary) {
+			current = item;
+    		getTextPane().setText(summary);
+    		getTextPane().setCaretPosition(0); 
+		}
+
+        public SearchHit getCurrentItem() {
+			return current;
+		}
+        
+		/**
          * Gets the summary document model.
          * @return Document object.
          */
@@ -1135,43 +1140,77 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
      * creates a new Cytoscape network and view.
      * 
      * @author rodche
-     *
      */
     class CpsNetworkAndViewTask extends AbstractTask {
-    	private String queryUrl;
-    	private String networkTitle;
+    	
+    	private final String networkTitle;
+    	private final GraphType graphType;
+    	private final Set<String> sources;
+    	private final Set<String> targets;
+    	private final Cmd command;
+    	private final CPath2Client client;
 
     	/**
-    	 * Constructor.
+    	 * Constructor 
+    	 * (for a simple get-by-URI query).
     	 * 
-    	 * @param queryUrl cPath2 URL (HTTP GET) query
+    	 * @param uri of a pathway or interaction
     	 * @param networkTitle optional name for the new network
     	 */
-    	public CpsNetworkAndViewTask(String queryUrl, String networkTitle) {
-    		this.queryUrl = queryUrl;
+    	public CpsNetworkAndViewTask(CPath2Client client, String uri, String networkTitle) {
     		this.networkTitle = networkTitle;
+    		this.graphType = null; //  if null, will use the cpath2 '/get' (by URIs) command
+    		this.sources = Collections.singleton(uri);
+    		this.targets = null;
+    		this.command = Cmd.GET;
+    		this.client = client;
+    	}
+    	
+    	/**
+    	 * Constructor 
+    	 * (advanced, for all get, traverse, and graph queries).
+    	 * 
+    	 * @param command
+    	 * @param graphType
+    	 * @param srcs
+    	 * @param tgts
+    	 * @param networkTitle
+    	 */
+    	public CpsNetworkAndViewTask(CPath2Client client, Cmd command, GraphType graphType, 
+    			Set<String> srcs, Set<String> tgts, String networkTitle) 
+    	{
+    		this.networkTitle = networkTitle;
+    		this.sources = srcs;
+    		this.targets = tgts;
+    		this.graphType = graphType; 
+    		this.command = command;
+    		this.client = client;
     	}
 
     	public void run(TaskMonitor taskMonitor) throws Exception {
-    		String title = "Retrieving " + networkTitle + " from " 
+    		String title = "Retrieving a network " + networkTitle + " from " 
    				+ CyPath2.SERVER_NAME + "...";
     		taskMonitor.setTitle(title);
     		try {
     			taskMonitor.setProgress(0);
     			taskMonitor.setStatusMessage("Retrieving BioPAX data...");
-	    			
-    			// Get Data: BioPAX and the other format data (not BioPAX if required)
-    			CPath2Client cli = CyPath2.newClient();
-    			//get data (throws exception if no results or internal error!)
-    	    	final String biopaxData = cli.executeQuery(queryUrl, OutputFormat.BIOPAX);
+    			
+    			//retrieve biopax data (throws exception if failed)
+    	    	final String biopaxData = client.doPost(command, String.class, 
+    	    		client.buildRequest(command, graphType, sources, targets, OutputFormat.BIOPAX));
     	    	
-    	    	String data = (downloadMode == OutputFormat.BIOPAX) 
-    	    		? biopaxData : cli.executeQuery(queryUrl, downloadMode);
-	    	    	
-    			taskMonitor.setProgress(0.4);
-    			if (cancelled) return;
+    	    	// if required, - second query to get SIF formatted data
+    	    	final String data = (downloadMode == OutputFormat.BIOPAX) 
+    	    		? biopaxData  
+    	    		: client.doPost(command, String.class, 
+    	    	    	client.buildRequest(command, graphType, sources, targets, downloadMode));
+    	    	
+    	    	// done.
+    			taskMonitor.setProgress(0.4);    			
+    			if (cancelled) 
+    				return;
 	    			
-    			// Store BioPAX to Temp File
+    			// Save the BioPAX or SIF data to a temporary local file
     			String tmpDir = System.getProperty("java.io.tmpdir");			
     			// Branch based on download mode setting.
     			File tmpFile;
@@ -1190,8 +1229,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
     			if (cancelled) return;
     			taskMonitor.setStatusMessage("Creating Cytoscape Network from BioPAX Data...");
 	    			
-    			// Import data via Cy3 I/O API
-	    			
+    			// Import data via Cy3 I/O API	    			
     			CyNetworkReader reader =  networkViewReaderManager
    					.getReader(tmpFile.toURI(), tmpFile.getName());	
     			reader.run(taskMonitor);
@@ -1257,7 +1295,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
     			String cPathServerDetailsUrl = row.get(CPATH_SERVER_DETAILS_URL, String.class);
     			if (cPathServerDetailsUrl == null) {
     				Attributes.set(cyNetwork, cyNetwork, CPATH_SERVER_NAME_ATTRIBUTE, SERVER_NAME, String.class);
-    				Attributes.set(cyNetwork, cyNetwork, CPATH_SERVER_DETAILS_URL, SERVER_URL, String.class);
+    				Attributes.set(cyNetwork, cyNetwork, CPATH_SERVER_DETAILS_URL, client.getEndPointURL(), String.class);
     			}
 	    			
     			taskMonitor.setProgress(0.9);
@@ -1271,7 +1309,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
     			taskMonitor.setProgress(1.0);
     		}
     	}
-	    		
+    
     }
-
+    
 }

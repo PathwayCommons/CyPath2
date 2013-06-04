@@ -100,10 +100,10 @@ final class HitsModel extends Observable {
     }
 
     
-	private void summarize(final SearchHit item) {
+	private void summarize(final SearchHit hit) {
         
 		// do catalog -
-		String type = item.getBiopaxClass();
+		String type = hit.getBiopaxClass();
         Integer count = numHitsByTypeMap.get(type);
         if (count != null) {
         	numHitsByTypeMap.put(type, count + 1);
@@ -111,7 +111,7 @@ final class HitsModel extends Observable {
         	numHitsByTypeMap.put(type, 1);
         }
         
-        for(String org : item.getOrganism()) {
+        for(String org : hit.getOrganism()) {
         	Integer i = numHitsByOrganismMap.get(org);
             if (i != null) {
                 numHitsByOrganismMap.put(org, i + 1);
@@ -120,7 +120,7 @@ final class HitsModel extends Observable {
             }
         }
         
-        for(String ds : item.getDataSource()) {
+        for(String ds : hit.getDataSource()) {
         	Integer i = numHitsByDatasourceMap.get(ds);
             if (i != null) {
                 numHitsByDatasourceMap.put(ds, i + 1);
@@ -133,59 +133,57 @@ final class HitsModel extends Observable {
 		// get/create and show hit's summary
 		StringBuilder html = new StringBuilder();
 		html.append("<html>")
-			.append("<h2>").append(item.getBiopaxClass()).append("</h2>");
-		if (item.getName() != null)
-			html.append("<b>").append(item.getName()).append("</b><br/>");
+			.append("<h2>").append(hit.getBiopaxClass()).append("</h2>");
+		if (hit.getName() != null)
+			html.append("<b>").append(hit.getName()).append("</b><br/>");
 		
-		html.append("<em>URI='").append(item.getUri()).append("'</em><br/>");
+		final String uri = hit.getUri();
+		html.append("<em>URI='").append(uri).append("'</em><br/>");
 		
-		//create a link to be intercepted/converted to a (import a sub-model) Task!
-		String linkUrl = CyPath2.newClient().queryNeighborhood(Collections.singleton(item.getUri()));
-		String linkText = "Click to import (nearest neighborhood network).";
-		//TODO in the future, consider subclasses of Interaction as well or limit possible values entered by users -
-		if(searchFor.equalsIgnoreCase("Pathway") || searchFor.equalsIgnoreCase("Interaction")) { //simply use 'get' query
-			linkUrl = CyPath2.newClient().queryGet(Collections.singleton(item.getUri()));
-			linkText = "Click to import (new network).";
-		}
-		html.append("<a href='")
-			.append(linkUrl).append("'>")
-			.append(linkText).append("</a>");
+		//create a fake link to be intercepted when clicked
+		String linkText = "Click to Import (a sub-network or neighborhood network).";
+//		if(searchFor.equalsIgnoreCase("Pathway") || searchFor.equalsIgnoreCase("Interaction")) { //simply use 'get' query
+//			linkText = "Click to Import.";
+//		}
+		html.append("<a href='#'>").append(linkText).append("</a>");
 
 		//TODO may create other links (to e.g. provider's site)
 		
-		String primeExcerpt = item.getExcerpt();
+		String primeExcerpt = hit.getExcerpt();
 		if (primeExcerpt != null)
 			html.append("<h3>Excerpt:</h3>")
 				.append("<span class='excerpt'>")
 					.append(primeExcerpt)
 						.append("</span><br/>");
-		
-		List<String> items = item.getOrganism();
+		//get organism URIs
+		List<String> items = hit.getOrganism();
 		if (items != null && !items.isEmpty()) {
 			html.append("<h3>Organisms:</h3>").append("<ul>");
-			for(String uri : items) {
+			for(String it : items) {
+				String name = CyPath2.uriToOrganismNameMap.get(it);
 				html.append("<li>")
-					.append(CyPath2.uriToOrganismNameMap.get(uri))
+					.append(name)
 					.append("</li>");
 			}
 			html.append("</ul>");
 		}
-		
-		items = item.getDataSource();
+		//get datasource URIs
+		items = hit.getDataSource();
 		if (items != null && !items.isEmpty()) {
 			html.append("<h3>Data sources:</h3>").append("<ul>");
-			for(String uri : items) {
+			for(String it : items) {
+				String name = CyPath2.uriToDatasourceNameMap.get(it);
 				html.append("<li>")
-					.append(CyPath2.uriToDatasourceNameMap.get(uri))
+					.append(name)
 					.append("</li>");
 			}
 			html.append("</ul>");
 		}
 
 		String path = null;
-		if("Pathway".equalsIgnoreCase(item.getBiopaxClass()))
+		if("Pathway".equalsIgnoreCase(hit.getBiopaxClass()))
 			path = "Pathway/pathwayComponent";
-		else if("Complex".equalsIgnoreCase(item.getBiopaxClass()))
+		else if("Complex".equalsIgnoreCase(hit.getBiopaxClass()))
 				path = "Complex/component";
 		else if(searchFor.equalsIgnoreCase("Interaction"))
 			path = "Interaction/participant";
@@ -198,11 +196,11 @@ final class HitsModel extends Observable {
 		
 		// get names
 		TraverseResponse members = CyPath2.traverse(path + ":Named/displayName", 
-				Collections.singleton(item.getUri()));
+				Collections.singleton(uri));
 		
 		if (members == null)
 		// no names? - get uris then
-			members = CyPath2.traverse(path, Collections.singleton(item.getUri()));
+			members = CyPath2.traverse(path, Collections.singleton(uri));
 			
 		if (members != null) {
 			List<String> values  = members.getTraverseEntry().get(0).getValue();
@@ -213,12 +211,12 @@ final class HitsModel extends Observable {
 		}
 
 		html.append("</html>");		
-		hitsSummaryMap.put(item.getUri(), html.toString());
+		hitsSummaryMap.put(hit.getUri(), html.toString());
 		
-		if(this.parentPathwaysRequired && !item.getPathway().isEmpty()) {
+		if(this.parentPathwaysRequired && !hit.getPathway().isEmpty()) {
 			// add parent pathways to the Map ("ppw" prefix means "parent pathway's" -)
 			final Collection<NvpListItem> ppws = new TreeSet<NvpListItem>();	
-			final Set<String> ppwUris = new HashSet<String>(item.getPathway()); // a hack for not unique URIs (a cpath2 indexing bug...)
+			final Set<String> ppwUris = new HashSet<String>(hit.getPathway()); // a hack for not unique URIs (a cpath2 indexing bug...)
 			TraverseResponse ppwNames = CyPath2.traverse("Named/displayName", ppwUris);
 			if (ppwNames != null) {
 				Map<String, String> ppwUriToNameMap = new HashMap<String, String>();			
@@ -236,7 +234,7 @@ final class HitsModel extends Observable {
 					ppws.add(new NvpListItem(name + " (" + e.getValue().size() + " processes)", e.getUri()));
 				}
 			}
-			hitsPathwaysMap.put(item.getUri(), ppws);
+			hitsPathwaysMap.put(hit.getUri(), ppws);
 		}
 		
 	}
