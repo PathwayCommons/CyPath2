@@ -406,9 +406,9 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	    organismList.setSelectedIndex(0); //always selected as long as there is only one organism (human)
 	        
 	    JScrollPane organismFilterBox = new JScrollPane(organismList, 
-	    	JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+	    	JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 	    organismFilterBox.setBorder(new TitledBorder("Organism(s) in:"));
-	    organismFilterBox.setMinimumSize(new Dimension(200, 200));
+//	    organismFilterBox.setMinimumSize(new Dimension(200, 200));
 	        
 	    // create the filter-list of datasources available on the server  
 	    DefaultListModel dataSourceBoxModel = new DefaultListModel(); 
@@ -420,17 +420,17 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	    dataSourceList.setAlignmentX(Component.LEFT_ALIGNMENT);
 	        
 	    JScrollPane dataSourceFilterBox = new JScrollPane(dataSourceList, 
-	       	JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+	       	JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 	    dataSourceFilterBox.setBorder(new TitledBorder("Datasource(s) in:"));
-	    dataSourceFilterBox.setMinimumSize(new Dimension(200, 200)); 
+//	    dataSourceFilterBox.setMinimumSize(new Dimension(200, 200)); 
 
 	    JPanel filtersPane = new JPanel();
 	    filtersPane.setBorder(new TitledBorder("Filter Options"));
 	    filtersPane.setLayout(new FlowLayout(FlowLayout.LEFT));
 	 // this filter is temporarily DISABLED (Human is the only supported and always selected)
-	    filtersPane.add(organismFilterBox);
+//	    filtersPane.add(organismFilterBox);
 	    filtersPane.add(dataSourceFilterBox);
-	    filtersPane.setMinimumSize(new Dimension(300, 200));
+	    filtersPane.setMinimumSize(new Dimension(400, 200));
 	    panel.add(filtersPane);
 	    
 	    return new JScrollPane(panel);

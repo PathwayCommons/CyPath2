@@ -4,7 +4,7 @@
 	<groupId>org.pathwaycommons</groupId>
 	<properties>
 		<bundle.namespace>org.pathwaycommons.cypath2.internal</bundle.namespace>
-		<bundle.symbolicName>org.pathwaycommons.cypath2-impl</bundle.symbolicName>
+		<bundle.symbolicName>CyPath2</bundle.symbolicName>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<cytoscape.version>3.0.1</cytoscape.version>
