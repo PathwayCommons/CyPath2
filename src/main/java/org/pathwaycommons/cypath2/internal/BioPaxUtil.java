@@ -69,6 +69,7 @@ import org.biopax.paxtools.util.Filter;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;
 import org.cytoscape.model.CyRow;
+import org.cytoscape.model.subnetwork.CyRootNetwork;
 import org.pathwaycommons.cypath2.internal.ExternalLinks.ExternalLink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -525,7 +526,8 @@ final class BioPaxUtil {
 			setChemicalModificationAttributes(network, node, chemicalModificationsWrapper);	
 		}
 		// update the name (also used for node's label and quick find)
-		Attributes.set(network, node, CyNetwork.NAME, name, String.class);		
+		Attributes.set(network, node, CyNetwork.NAME, name, String.class);
+		Attributes.set(network, node, CyRootNetwork.SHARED_NAME, name, String.class);
 		
 		// traverse to create the rest of attr.
 		bpeAutoMapper.traverse(element, null);

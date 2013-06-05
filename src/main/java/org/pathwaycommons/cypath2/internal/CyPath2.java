@@ -61,10 +61,12 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.text.Document;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.StyleSheet;
+import javax.xml.bind.annotation.adapters.CollapsedStringAdapter;
 
 import org.biopax.paxtools.model.BioPAXElement;
 import org.biopax.paxtools.model.Model;
 import org.biopax.paxtools.model.level3.Complex;
+import org.biopax.paxtools.model.level3.Entity;
 import org.biopax.paxtools.model.level3.EntityReference;
 import org.biopax.paxtools.model.level3.PhysicalEntity;
 import org.cytoscape.application.CyApplicationManager;
@@ -79,6 +81,7 @@ import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.CyNetworkManager;
 import org.cytoscape.model.CyNode;
 import org.cytoscape.model.CyRow;
+import org.cytoscape.model.subnetwork.CyRootNetwork;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.session.CyNetworkNaming;
 import org.cytoscape.util.swing.CheckBoxJList;
@@ -94,6 +97,7 @@ import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskManager;
 import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.work.undo.UndoSupport;
+import org.pathwaycommons.cypath2.internal.BioPaxUtil.StaxHack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,7 +160,9 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	final CyProperty<Properties> cyProperty;
 	
 	private JPanel advQueryPanel;
-    	
+	
+	private final CheckBoxJList organismList;
+    private final CheckBoxJList dataSourceList; 
 	
 	/**
      * Creates a new Web Services client.
@@ -183,6 +189,10 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 		binarySifVisualStyleUtil = bsvsf;
 		mappingManager = mm;
 		cyProperty = prop;
+		
+		//filter value lists
+		organismList = new CheckBoxJList();
+		dataSourceList = new CheckBoxJList(); 
 		
 		JPanel mainPanel = new JPanel();
 		gui = mainPanel; 
@@ -310,7 +320,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	 * 
 	 * @return
 	 */
-	static JScrollPane createOptionsPane() {
+	JScrollPane createOptionsPane() {
 	   	JPanel panel = new JPanel();
 	   	panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 	    	
@@ -377,8 +387,52 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	    c.weighty = 1.0;
 	    JPanel filler = new JPanel();
 	    configPanel.add(filler, c);
+	    
+	    panel.add(configPanel);	    
+	    
+		// Initialize the organisms filter-list:
+	    // manually add choice(s): only human is currently supported
+	    // (other are disease/experimental organisms data)
+//	    SortedSet<NvpListItem> items = new TreeSet<NvpListItem>(); //sorted by name
+//	    items.add(new NvpListItem("Human", "9606"));	    
+	    DefaultListModel model = new DefaultListModel();
+//	    for(NvpListItem nvp : items) {
+//	    	model.addElement(nvp);
+//	    }
+	    model.addElement(new NvpListItem("Human", "9606"));
+	    organismList.setModel(model);
+	    organismList.setToolTipText("Select Organisms");
+	    organismList.setAlignmentX(Component.LEFT_ALIGNMENT);
+	    organismList.setSelectedIndex(0); //always selected as long as there is only one organism (human)
 	        
-	    panel.add(configPanel);
+	    JScrollPane organismFilterBox = new JScrollPane(organismList, 
+	    	JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+	    organismFilterBox.setBorder(new TitledBorder("Organism(s) in:"));
+	    organismFilterBox.setMinimumSize(new Dimension(200, 200));
+	        
+	    // create the filter-list of datasources available on the server  
+	    DefaultListModel dataSourceBoxModel = new DefaultListModel(); 
+	    for(String uri : uriToDatasourceNameMap.keySet()) {
+	    	dataSourceBoxModel.addElement(new NvpListItem(uriToDatasourceNameMap.get(uri), uri));
+	    }		        
+	    dataSourceList.setModel(dataSourceBoxModel);
+	    dataSourceList.setToolTipText("Select Datasources");
+	    dataSourceList.setAlignmentX(Component.LEFT_ALIGNMENT);
+	        
+	    JScrollPane dataSourceFilterBox = new JScrollPane(dataSourceList, 
+	       	JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+	    dataSourceFilterBox.setBorder(new TitledBorder("Datasource(s) in:"));
+	    dataSourceFilterBox.setMinimumSize(new Dimension(200, 200)); 
+
+	    JPanel filtersPane = new JPanel();
+	    filtersPane.setBorder(new TitledBorder("Filter Options"));
+	    filtersPane.setLayout(new FlowLayout(FlowLayout.LEFT));
+	 // this filter is temporarily DISABLED (Human is the only supported and always selected)
+	    filtersPane.add(organismFilterBox);
+	    filtersPane.add(dataSourceFilterBox);
+	    filtersPane.setMinimumSize(new Dimension(300, 200));
+	    panel.add(filtersPane);
+	    
 	    return new JScrollPane(panel);
 	}
 
@@ -447,54 +501,12 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	    info.setForeground(Color.BLUE);
 	    info.setMaximumSize(new Dimension(400, 50));        
 
-		// create the filter-list of organisms available on the server
-	    final CheckBoxJList organismList = new CheckBoxJList();
-	    //make sorted by name list
-	    SortedSet<NvpListItem> items = new TreeSet<NvpListItem>();
-//	    for(String o : uriToOrganismNameMap.keySet()) {
-//	    	items.add(new NvpListItem(uriToOrganismNameMap.get(o), o));
-//	    }
-	    //manually add supported organisms
-	    //only human is currently (05/2013) supported, but there are other
-	    // disease/experimental organisms present in the data
-	    items.add(new NvpListItem("Human", "9606"));
-//	    items.add(new NvpListItem("Mouse", "10090"));
-//	    items.add(new NvpListItem("Yeast", "4923"));
-	    
-	    DefaultListModel model = new DefaultListModel();
-	    for(NvpListItem nvp : items) {
-	    	model.addElement(nvp);
-	    }
-	    organismList.setModel(model);
-	    organismList.setToolTipText("Select Organisms");
-	    organismList.setAlignmentX(Component.LEFT_ALIGNMENT);
-	        
-	    JScrollPane organismFilterBox = new JScrollPane(organismList, 
-	    	JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-	    organismFilterBox.setBorder(new TitledBorder("Organism(s) in:"));
-	    organismFilterBox.setMinimumSize(new Dimension(200, 200));
-	        
-	    // create the filter-list of datasources available on the server
-	    final CheckBoxJList dataSourceList = new CheckBoxJList();   
-	    DefaultListModel dataSourceBoxModel = new DefaultListModel(); 
-	    for(String uri : uriToDatasourceNameMap.keySet()) {
-	    	dataSourceBoxModel.addElement(new NvpListItem(uriToDatasourceNameMap.get(uri), uri));
-	    }		        
-	    dataSourceList.setModel(dataSourceBoxModel);
-	    dataSourceList.setToolTipText("Select Datasources");
-	    dataSourceList.setAlignmentX(Component.LEFT_ALIGNMENT);
-	        
-	    JScrollPane dataSourceFilterBox = new JScrollPane(dataSourceList, 
-	       	JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-	    dataSourceFilterBox.setBorder(new TitledBorder("Datasource(s) in:"));
-	    dataSourceFilterBox.setMinimumSize(new Dimension(200, 200));  
-
 	    //TODO add a Search for a BioPAX Type combo-box
 	    final JComboBox bpTypeComboBox = new JComboBox(
 	    	new NvpListItem[] {
 	    		new NvpListItem("Pathways","Pathway"),
 	    		new NvpListItem("Interactions (all types)", "Interaction"),
-	    		new NvpListItem("Entity states (mol./complex form, location)", "PhysicalEntity"),
+	    		new NvpListItem("Entity states (form, location)", "PhysicalEntity"),
 	    		new NvpListItem("Entity references (mol. classes)", "EntityReference")
 	    	}
 	    );
@@ -578,9 +590,6 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
     
 		searchQueryPanel.setLayout(new BoxLayout(searchQueryPanel, BoxLayout.X_AXIS));
         searchQueryPanel.add(keywordPane);
-        searchQueryPanel.add(organismFilterBox);
-        searchQueryPanel.add(dataSourceFilterBox);
-
         
         // Assembly the results panel
     	final JPanel searchResultsPanel = new JPanel();
@@ -675,7 +684,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 			}
 		});  
 	        
-        // register the jlist as model's observer
+        // register the JList as model's observer
         hitsModel.addObserver((Observer) resList);
         
         JPanel hitListPane = new JPanel();  
@@ -800,8 +809,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
         queryTypePanel.setMaximumSize(new Dimension(400, 150));           
         advQueryCtrlPanel.add(queryTypePanel);
         
-        // add direction, limit options and the 'go' button
-	        
+        // add direction, limit options and the 'go' button to the panel	        
     	JPanel directionPanel = new JPanel();
     	directionPanel.setBorder(new TitledBorder("Direction"));
     	directionPanel.setLayout(new GridBagLayout());
@@ -861,18 +869,25 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	        			tgts.add(uri);
 	        	}
 	        	
-	        	//TODO set organism and datasource filters for the GRAPH query too
-	        	// ...
+	        	//use same organism and datasource filters for the GRAPH query
+	        	final Set<String> organisms = new HashSet<String>();
+	        	for(Object it : organismList.getSelectedValues())
+	               	organisms.add(((NvpListItem) it).getValue());                
+	            final Set<String> datasources = new HashSet<String>();
+	            for(Object it : dataSourceList.getSelectedValues())
+	            	datasources.add(((NvpListItem) it).getValue());
+	        	hitsModel.graphQueryClient.setOrganisms(organisms);
+	        	hitsModel.graphQueryClient.setDataSources(datasources);
 	        	        	
 	        	if(hitsModel.graphType == null)
 	        		taskManager.execute(new TaskIterator(
 	        			new CpsNetworkAndViewTask(hitsModel.graphQueryClient, 
-	        					Cmd.GET, null, srcs, null, "")
+	        					Cmd.GET, null, srcs, null, "Biopax sub-model")
 	        			));
 	        	else
 	        		taskManager.execute(new TaskIterator(
 	        			new CpsNetworkAndViewTask(hitsModel.graphQueryClient, 
-	        					Cmd.GRAPH, hitsModel.graphType, srcs, tgts, "")
+	        					Cmd.GRAPH, hitsModel.graphType, srcs, tgts, "Biopax " + hitsModel.graphType)
 		        		));
 	        	
 	        	advQueryButton.setEnabled(true);
@@ -1039,7 +1054,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
                		if(!currentItem.getBiopaxClass().equalsIgnoreCase("Pathway")) {
                			taskManager.execute(new TaskIterator(
                    			new CpsNetworkAndViewTask(client, Cmd.GRAPH, 
-                   				GraphType.NEIGHBORHOOD, Collections.singleton(uri), null, "")));
+                   				GraphType.NEIGHBORHOOD, Collections.singleton(uri), null, "Biopax NEIGHBORHOOD")));
                		} else { // use '/get' command
                			taskManager.execute(new TaskIterator(
                    			new CpsNetworkAndViewTask(client, uri, "")));
@@ -1193,17 +1208,11 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
     		taskMonitor.setTitle(title);
     		try {
     			taskMonitor.setProgress(0);
-    			taskMonitor.setStatusMessage("Retrieving BioPAX data...");
-    			
-    			//retrieve biopax data (throws exception if failed)
-    	    	final String biopaxData = client.doPost(command, String.class, 
-    	    		client.buildRequest(command, graphType, sources, targets, OutputFormat.BIOPAX));
+    			taskMonitor.setStatusMessage("Retrieving data...");
     	    	
-    	    	// if required, - second query to get SIF formatted data
-    	    	final String data = (downloadMode == OutputFormat.BIOPAX) 
-    	    		? biopaxData  
-    	    		: client.doPost(command, String.class, 
-    	    	    	client.buildRequest(command, graphType, sources, targets, downloadMode));
+    	    	// do query, get data as string
+    	    	final String data = client.doPost(command, String.class, 
+    	    	    client.buildRequest(command, graphType, sources, targets, downloadMode));
     	    	
     	    	// done.
     			taskMonitor.setProgress(0.4);    			
@@ -1247,12 +1256,14 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
     			taskMonitor.setProgress(0.7);
     			if (cancelled) return;
 	    			
+    			//post-process SIF network (retrieve biopax attributes from the server)
     			if (downloadMode == OutputFormat.BINARY_SIF) {
     				//fix the network name
     				SwingUtilities.invokeLater(new Runnable() {
     					public void run() {
     						String networkTitleWithUnderscores = naming.getSuggestedNetworkTitle(networkTitle);
     						Attributes.set(cyNetwork, cyNetwork, CyNetwork.NAME, networkTitleWithUnderscores, String.class);
+    						Attributes.set(cyNetwork, cyNetwork, CyRootNetwork.SHARED_NAME, networkTitleWithUnderscores, String.class);
     					}
     				});
 	    				
@@ -1264,18 +1275,56 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
     				// Specify that this is a BINARY_NETWORK
     				Attributes.set(cyNetwork, cyNetwork, "BIOPAX_NETWORK", Boolean.TRUE, Boolean.class);
     	
-    				// we gonna need the full (original biopax) model to create attributes
-    				final Model bpModel = BioPaxUtil.convertFromOwl(new ByteArrayInputStream(biopaxData.getBytes("UTF-8")));
+    				// we need the biopax sub-model to create node/edge attributes
+    				final Set<String> uris = new HashSet<String>();
+    				// Set node/edge attributes from the Biopax Model
+    				for (CyNode node : cyNetwork.getNodeList()) {
+    					String uri = cyNetwork.getRow(node).get(CyNetwork.NAME, String.class);
+    					if(!uri.contains("/group/")) {
+    						uris.add(uri);
+    					} else {
+							Attributes.set(cyNetwork, node, BioPaxUtil.BIOPAX_ENTITY_TYPE, "(Generic/Group)", String.class);
+							Attributes.set(cyNetwork, node, BioPaxUtil.BIOPAX_RDF_ID, uri, String.class);
+							Attributes.set(cyNetwork, node, CyRootNetwork.SHARED_NAME, "(Group)", String.class);
+							Attributes.set(cyNetwork, node, CyNetwork.NAME, "(Group)", String.class);
+    					}
+    				}
+    				if (cancelled) return;
+    				
+    				//retrieve the model (using a STAX hack)
+    				final Model[] callback = new Model[1];
+    				StaxHack.runWithHack(new Runnable() {
+    					@Override
+    					public void run() {
+    						try {
+    							callback[0] = client.get(uris);
+    						} catch (Throwable e) {
+    							LOGGER.warn("Import failed: " + e);
+    						}
+    					}
+    				});
+    				final Model bpModel = callback[0];
     				
     				// Set node/edge attributes from the Biopax Model
     				for (CyNode node : cyNetwork.getNodeList()) {
-    					CyRow row = cyNetwork.getRow(node);
-    					String uri = row.get(CyNetwork.NAME, String.class);
-    					BioPAXElement e = bpModel.getByID(uri);// can be null (for generic groups nodes)
-    					if(e instanceof EntityReference 
-    						|| e instanceof Complex 
-    						|| (e != null && e.getModelInterface().equals(PhysicalEntity.class))) 
+    					String uri = cyNetwork.getRow(node).get(CyNetwork.NAME, String.class);
+    					BioPAXElement e = bpModel.getByID(uri);// can be null (for generic/group nodes)
+    					if(e instanceof EntityReference || e instanceof Entity) 
+    					{
+    						//note: in fact, SIF formatted data contains only ERs, PEs (no sub-classes), and Complexes.
     						BioPaxUtil.createAttributesFromProperties(e, node, cyNetwork);
+    					} else if (e != null){
+   							LOGGER.warn("SIF network has an unexpected node: " + uri 
+   								+ " of type " + e.getModelInterface());
+    					} else { //e == null
+    						assert uri.contains("/group/") : "URI, which is not a generated " +
+    							"generic/group's one, is not found on the server: " + uri;
+    						
+    						if(!uri.contains("/group/")) {
+    							LOGGER.warn("URI, which is not a generated " +
+    								"generic/group's one, is not found on the server: " + uri);
+    						}
+    					}
     				}
 
     				if (cancelled) return;

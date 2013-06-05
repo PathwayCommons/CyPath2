@@ -161,6 +161,7 @@ final class HitsModel extends Observable {
 			html.append("<h3>Organisms:</h3>").append("<ul>");
 			for(String it : items) {
 				String name = CyPath2.uriToOrganismNameMap.get(it);
+				name = (name == null || name.isEmpty()) ? it : name;
 				html.append("<li>")
 					.append(name)
 					.append("</li>");
@@ -173,6 +174,7 @@ final class HitsModel extends Observable {
 			html.append("<h3>Data sources:</h3>").append("<ul>");
 			for(String it : items) {
 				String name = CyPath2.uriToDatasourceNameMap.get(it);
+				name = (name == null || name.isEmpty()) ? it : name;
 				html.append("<li>")
 					.append(name)
 					.append("</li>");
