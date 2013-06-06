@@ -4,7 +4,8 @@
 	<groupId>org.pathwaycommons</groupId>
 	<properties>
 		<bundle.namespace>org.pathwaycommons.cypath2.internal</bundle.namespace>
-		<bundle.symbolicName>CyPath2</bundle.symbolicName>
+		<bundle.symbolicName>org.pathwaycommons.cypath2-impl</bundle.symbolicName>
+		<bundle.Name>CyPath2</bundle.Name>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<cytoscape.version>3.0.1</cytoscape.version>
@@ -16,7 +17,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>cypath2-impl</artifactId>
 	<version>0.2.0-SNAPSHOT</version>
-	<name>${bundle.symbolicName}</name>
+	<name>${bundle.Name}</name>
 	<description>CyPath2 is a Cytoscape 3 GUI client app 
 	that connects to a cPath2 (cPathSquared) web service (default URL is http://www.pathwaycommons.org/pc2/,
 	a new BioPAX Level3 based server software developed by Pathway Commons team) 
@@ -64,6 +65,7 @@
 				<configuration>
 					<instructions>
 						<Bundle-SymbolicName>${bundle.symbolicName}</Bundle-SymbolicName>
+						<Bundle-Name>${bundle.Name}</Bundle-Name>
 						<Bundle-Version>${project.version}</Bundle-Version>
 						<Bundle-Activator>${bundle.namespace}.CyActivator</Bundle-Activator>
 						<Export-Package>!${bundle.namespace}.*</Export-Package>
