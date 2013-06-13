@@ -16,7 +16,7 @@
 	</properties>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>cypath2-impl</artifactId>
-	<version>0.2.0-SNAPSHOT</version>
+	<version>0.2.1-SNAPSHOT</version>
 	<name>${bundle.Name}</name>
 	<description>CyPath2 is a Cytoscape 3 GUI client app 
 	that connects to a cPath2 (cPathSquared) web service (default URL is http://www.pathwaycommons.org/pc2/,
@@ -40,6 +40,13 @@
 		<resources>
 			<resource>
 				<directory>src/main/resources</directory>
+				<excludes><exclude>*.properties</exclude></excludes>
+				<filtering>false</filtering>
+			</resource>		
+			<resource>
+				<directory>src/main/resources</directory>
+				<includes><include>*.properties</include></includes>
+				<filtering>true</filtering>
 			</resource>
 		</resources>
 		<plugins>
@@ -54,7 +61,7 @@
 							<Cytoscape-App-Version>0.2</Cytoscape-App-Version>
 							<Cytoscape-API-Compatibility>3.0</Cytoscape-API-Compatibility>
 						</manifestEntries>
-					</archive>
+					</archive>					
 				</configuration>
 			</plugin>
 			<plugin>

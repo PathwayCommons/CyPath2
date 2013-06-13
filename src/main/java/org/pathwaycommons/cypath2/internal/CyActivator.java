@@ -22,11 +22,16 @@ import org.slf4j.LoggerFactory;
 
 import org.cytoscape.service.util.AbstractCyActivator;
 
+import cpath.client.CPath2Client;
+
+import java.io.IOException;
 import java.util.Properties;
 
 
 public final class CyActivator extends AbstractCyActivator {
 	private static final Logger LOGGER = LoggerFactory.getLogger(CyActivator.class);
+	private static final String PROP_CPATH2_SERVER_URL = "cypath2.server.url";
+	private static final String PROPERTIES_LOCATION = "/cypath2.properties"; //classpath
 	
 	
 	public CyActivator() {
@@ -61,8 +66,23 @@ public final class CyActivator extends AbstractCyActivator {
 				discreteMappingFactoryRef,
 				passthroughMappingFactoryRef);
 		
-		// Create and register the OSGi service
-		CyPath2 cPathSquaredWebServiceClient = new CyPath2(
+		// read current configuration properties
+		Properties props = new Properties();
+		try {
+			props.load(getClass().getResourceAsStream(PROPERTIES_LOCATION));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		String url = cytoscapePropertiesServiceRef.getProperties().getProperty(PROP_CPATH2_SERVER_URL);
+		if(url == null || url.isEmpty()) {
+			url = System.getProperty(CPath2Client.JVM_PROPERTY_ENDPOINT_URL, CPath2Client.DEFAULT_ENDPOINT_URL);
+		    cytoscapePropertiesServiceRef.getProperties().setProperty(PROP_CPATH2_SERVER_URL, url);
+		}    
+	    final String name = "Pathway Commons 2 (BioPAX L3)";
+	    final String description = props.getProperty("cypath2.description");			
+		
+		// Create a new app instance
+		CyPath2 cPathSquaredWebServiceClient = new CyPath2(url, name, description,
 				cySwingApplicationRef,
 				taskManagerRef,
 				openBrowserRef,
@@ -81,6 +101,7 @@ public final class CyActivator extends AbstractCyActivator {
 		// initialize (build the UI, etc. heavy calls)
 		cPathSquaredWebServiceClient.init();
 		
+		// Register as OSGi service
 		registerAllServices(bc, cPathSquaredWebServiceClient, new Properties());
 	}
 }
