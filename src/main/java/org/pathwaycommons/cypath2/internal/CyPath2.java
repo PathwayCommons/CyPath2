@@ -474,7 +474,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	    info.setForeground(Color.BLUE);
 	    info.setMaximumSize(new Dimension(400, 50));        
 
-	    //TODO add a Search for a BioPAX Type combo-box
+	    //BioPAX sub-class combo-box ('type' filter values)
 	    final JComboBox bpTypeComboBox = new JComboBox(
 	    	new NvpListItem[] {
 	    		new NvpListItem("Pathways","Pathway"),

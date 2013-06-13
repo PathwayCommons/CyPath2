@@ -35,9 +35,9 @@ final class HitsFilterPanel extends JPanel implements Observer {
     private final boolean typeFilterEnabled;
     private final boolean organismFilterEnabled;
     private final boolean datasourceFilterEnabled;
-	
-    //TODO add boolean options to enable/disable each filter (by type, org., datasource)
-	public HitsFilterPanel(final JList hitsJList, final HitsModel hitsModel, 
+
+
+    public HitsFilterPanel(final JList hitsJList, final HitsModel hitsModel, 
 		boolean typeFilterEnabled, boolean organismFilterEnabled, boolean datasourceFilterEnabled) 
 	{
         this.hitsFilterModel = hitsModel;
