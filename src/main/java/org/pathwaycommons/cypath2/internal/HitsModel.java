@@ -9,8 +9,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
 import org.cytoscape.work.TaskManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import cpath.client.CPath2Client;
+import cpath.client.util.CPathException;
 import cpath.service.GraphType;
 import cpath.service.jaxb.SearchHit;
 import cpath.service.jaxb.SearchResponse;
@@ -38,12 +41,20 @@ final class HitsModel extends Observable {
     volatile String searchFor = "Interaction"; 
     // advanced (graph or multiple items import) query parameter 
     volatile GraphType graphType = null;
-    final CPath2Client graphQueryClient;    
+    final CPath2Client graphQueryClient; 
     
-    public HitsModel(String title, boolean parentPathwaysUsed, TaskManager taskManager) {
+	// dynamic map - one cpath-client instance per biopax property path (used by multiple thread)
+	private static final Map<String, CPath2Client> proprtyPathToClientMap 
+		= Collections.synchronizedMap(new HashMap<String, CPath2Client>());
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(HitsModel.class);
+    
+    public HitsModel(String title, boolean parentPathwaysUsed, 
+    		TaskManager taskManager, CPath2Client graphQueryClient) 
+    {
 		this.parentPathwaysRequired = parentPathwaysUsed;
 		this.title = title;
-		this.graphQueryClient = CyPath2.newClient();
+		this.graphQueryClient = graphQueryClient;
 	}
     
     public int getNumRecords() {
@@ -96,7 +107,7 @@ final class HitsModel extends Observable {
 
     
     public SearchResponse getSearchResponse() {
-        return unmodifiableSearchResponce(response);
+        return response;
     }
 
     
@@ -197,12 +208,12 @@ final class HitsModel extends Observable {
 		assert (path != null);
 		
 		// get names
-		TraverseResponse members = CyPath2.traverse(path + ":Named/displayName", 
+		TraverseResponse members = traverse(path + ":Named/displayName", 
 				Collections.singleton(uri));
 		
 		if (members == null)
 		// no names? - get uris then
-			members = CyPath2.traverse(path, Collections.singleton(uri));
+			members = traverse(path, Collections.singleton(uri));
 			
 		if (members != null) {
 			List<String> values  = members.getTraverseEntry().get(0).getValue();
@@ -219,7 +230,7 @@ final class HitsModel extends Observable {
 			// add parent pathways to the Map ("ppw" prefix means "parent pathway's" -)
 			final Collection<NvpListItem> ppws = new TreeSet<NvpListItem>();	
 			final Set<String> ppwUris = new HashSet<String>(hit.getPathway()); // a hack for not unique URIs (a cpath2 indexing bug...)
-			TraverseResponse ppwNames = CyPath2.traverse("Named/displayName", ppwUris);
+			TraverseResponse ppwNames = traverse("Named/displayName", ppwUris);
 			if (ppwNames != null) {
 				Map<String, String> ppwUriToNameMap = new HashMap<String, String>();			
 				for (TraverseEntry e : ppwNames.getTraverseEntry()) {
@@ -228,8 +239,7 @@ final class HitsModel extends Observable {
 				}
 				
 				// add ppw component counts to names and wrap/save as NVP, finally:
-				TraverseResponse ppwComponents = CyPath2.traverse(
-						"Pathway/pathwayComponent", ppwUris); // this gets URIs of pathways
+				TraverseResponse ppwComponents = traverse("Pathway/pathwayComponent", ppwUris); // this gets URIs of pathways
 				for (TraverseEntry e : ppwComponents.getTraverseEntry()) {
 					assert ppwUriToNameMap.containsKey(e.getUri());
 					String name = ppwUriToNameMap.get(e.getUri());
@@ -242,68 +252,26 @@ final class HitsModel extends Observable {
 	}
 	
 	
-	private SearchResponse unmodifiableSearchResponce(final SearchResponse resp) {
-		if (resp == null)
-			return null;
-
-		// create a read-only proxy/view
-		SearchResponse imm = new SearchResponse() {
-			@Override
-			public String getComment() {
-				return resp.getComment();
-			}
-
-			@Override
-			public Integer getMaxHitsPerPage() {
-				return resp.getMaxHitsPerPage();
-			}
-
-			@Override
-			public Integer getNumHits() {
-				return resp.getNumHits();
-			}
-
-			@Override
-			public Integer getPageNo() {
-				return resp.getPageNo();
-			}
-
-			@Override
-			public List<SearchHit> getSearchHit() {
-				return Collections.unmodifiableList(resp.getSearchHit());
-			}
-
-			@Override
-			public boolean isEmpty() {
-				return resp.isEmpty();
-			}
-
-			@Override
-			public void setComment(String comment) {
-				throw new UnsupportedOperationException();
-			}
-
-			@Override
-			public void setMaxHitsPerPage(Integer maxHitsPerPage) {
-				throw new UnsupportedOperationException();
-			}
-
-			@Override
-			public void setNumHits(Integer numHits) {
-				throw new UnsupportedOperationException();
-			}
-
-			@Override
-			public void setPageNo(Integer pageNo) {
-				throw new UnsupportedOperationException();
-			}
-
-			@Override
-			public void setSearchHit(List<SearchHit> searchHit) {
-				throw new UnsupportedOperationException();
-			}
-		};
-
-		return imm;
+	private TraverseResponse traverse(String path, Set<String> uris) {
+		if(LOGGER.isDebugEnabled())
+	   		LOGGER.debug("traverse: path=" + path);
+	   		
+	   	CPath2Client client = proprtyPathToClientMap.get(path);
+	   	if(client == null) {
+	   		client = CPath2Client.newInstance(graphQueryClient.getActualEndPointURL());
+	   		client.setPath(path);
+	   		proprtyPathToClientMap.put(path, client);
+	   	}
+	        
+        TraverseResponse res = null;
+		try {
+			res = client.traverse(uris);
+		} catch (CPathException e) {
+			LOGGER.error("traverse: " + path + 
+				" failed; uris:" + uris.toString(), e);
+		}
+				
+       	return res;
 	}
+
 }

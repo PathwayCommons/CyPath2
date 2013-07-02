@@ -104,7 +104,6 @@ import cpath.service.GraphType;
 import cpath.service.OutputFormat;
 import cpath.service.jaxb.SearchHit;
 import cpath.service.jaxb.SearchResponse;
-import cpath.service.jaxb.TraverseResponse;
 
 /**
  * CyPath2: CPathSquared Web Service client integrated into the Cytoscape Web Services GUI Framework.
@@ -122,10 +121,6 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
     private static final String CPATH_SERVER_NAME_ATTR = "CPATH_SERVER_NAME";
     private static final String CPATH_SERVER_URL_ATTR = "CPATH_SERVER_URL";
 	
-	// dynamic map - one cpath-client instance per biopax property path (used by multiple thread)
-	private static final Map<String, CPath2Client> proprtyPathToClientMap 
-		= Collections.synchronizedMap(new HashMap<String, CPath2Client>());
-
 	private final CySwingApplication application;
 	private final TaskManager taskManager;
 	private final OpenBrowser openBrowser;
@@ -191,14 +186,14 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
      */
     public void init() {   	
     	// init datasources and org. maps (in a separate thread)
-		CPath2Client cPath2Client = newClient();
-		cPath2Client.setType("Provenance");
-		List<SearchHit> hits = cPath2Client.findAll();
+		CPath2Client client = newClient();
+		client.setType("Provenance");
+		List<SearchHit> hits = client.findAll();
 		for(SearchHit bs : hits) {
 			uriToDatasourceNameMap.put(bs.getUri(), bs.getName());
 		}
-        cPath2Client.setType("BioSource");
-        hits = cPath2Client.findAll();
+        client.setType("BioSource");
+        hits = client.findAll();
         for(SearchHit bs : hits) {
         	uriToOrganismNameMap.put(bs.getUri(), bs.getName());
         }    	
@@ -216,7 +211,11 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
     }   
     
     
-    /**
+    private CPath2Client newClient() {
+		return CPath2Client.newInstance(getServiceLocation().toString());
+	}
+
+	/**
      * Creates a new network and view using data returned 
      * from the cpath2 '/get' by URI (or bio-identifier) query.
      */
@@ -238,36 +237,6 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 
 		return taskIterator;
 	}
-	
-		
-    static CPath2Client newClient() {
-        CPath2Client client = CPath2Client.newInstance();
-		return client;
-	}
-
-    
-    static TraverseResponse traverse(String path, Collection<String> uris) 
-	   {
-	   	if(LOGGER.isDebugEnabled())
-	   		LOGGER.debug("traverse: path=" + path);
-	   		
-	   	CPath2Client client = proprtyPathToClientMap.get(path);
-	   	if(client == null) {
-	   		client = newClient();
-	   		client.setPath(path);
-	   		proprtyPathToClientMap.put(path, client);
-	   	}
-	        
-        TraverseResponse res = null;
-		try {
-			res = client.traverse(uris);
-		} catch (CPathException e) {
-			LOGGER.error("traverse: " + path + 
-				" failed; uris:" + uris.toString(), e);
-		}
-				
-       	return res;
-    }
 
 	
 	/**
@@ -414,7 +383,8 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	{	   	 	
 		final JPanel panel = new JPanel();
 	    	
-	   	final HitsModel hitsModel = new HitsModel("Current Search Hits", true, taskManager);
+	   	final HitsModel hitsModel = new HitsModel("Current Search Hits", true, 
+	   			taskManager, newClient());
 	   	panel.setLayout(new BorderLayout());
 			
 	    // create tabs pane for the hit details and parent pathways sun-panels
@@ -518,14 +488,18 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	        					if (!datasources.isEmpty())
 	        						client.setDataSources(datasources);       						
 	        					final SearchResponse searchResponse = (SearchResponse) client.search(keyword);
-	        					// update hits model (make summaries, notify observers!)
-								hitsModel.update(searchResponse);
-	        					info.setText("Matches:  " + searchResponse.getNumHits() 
-	        						+ "; retrieved: " + searchResponse.getSearchHit().size()
+	        					if(searchResponse != null) {
+	        						// update hits model (make summaries, notify observers!)
+	        						hitsModel.update(searchResponse);
+	        						info.setText("Matches:  " + searchResponse.getNumHits() 
+	        							+ "; retrieved: " + searchResponse.getSearchHit().size()
 	        							+ " (page #" + searchResponse.getPageNo() + ")");
+	        					} else {
+	        						info.setText("No Matches Found");
+	        						JOptionPane.showMessageDialog(gui, "No Matches Found");
+	        					}
 	        				} catch (CPathException e) {
-	        					JOptionPane.showMessageDialog(gui, "Error: " + e + 
-	        						" (using query '" + keyword + "' and current filter values)");
+	        					JOptionPane.showMessageDialog(gui, "Error: " + e);
 								hitsModel.update(new SearchResponse()); //clear
 	        				} catch (Throwable e) { 
 	        					// using Throwable helps catch unresolved runtime dependency issues!
@@ -906,7 +880,8 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
         southPane.add("Summary", detailsPanel);
 	        
     	// hits model is used both by the filters panel pathways jlist
-    	final HitsModel topPathwaysModel = new HitsModel("Top Pathways", false, taskManager);
+    	final HitsModel topPathwaysModel = new HitsModel("Top Pathways", false, 
+    			taskManager, newClient());
     	// create top pathways list
     	final TopPathwaysJList tpwJList = new TopPathwaysJList();
     	// as for current version, enable only the filter by data source (type is always Pathway, organisms - human + unspecified)

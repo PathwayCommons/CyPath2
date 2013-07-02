@@ -73,9 +73,13 @@ public final class CyActivator extends AbstractCyActivator {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+		// (normally not needed but) one can switch between cpath2 servers by updating the property
+		// in the user's CytoscapeConfiguration directory. If it's set, this app will use it; 
+		// othervise, the default will be used/set -
 		String url = cytoscapePropertiesServiceRef.getProperties().getProperty(PROP_CPATH2_SERVER_URL);
-		if(url == null || url.isEmpty()) {
-			url = System.getProperty(CPath2Client.JVM_PROPERTY_ENDPOINT_URL, CPath2Client.DEFAULT_ENDPOINT_URL);
+		//to set a new or update the deprecated from v0.2.2 PURL...
+		if(url == null || url.isEmpty() || url.contains("purl.org/pc2/current")) { 
+			url = CPath2Client.newInstance().getActualEndPointURL();
 		    cytoscapePropertiesServiceRef.getProperties().setProperty(PROP_CPATH2_SERVER_URL, url);
 		}    
 	    final String name = "Pathway Commons 2 (BioPAX L3)";

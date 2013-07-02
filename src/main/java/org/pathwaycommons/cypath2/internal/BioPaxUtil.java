@@ -26,14 +26,12 @@
 package org.pathwaycommons.cypath2.internal;
 
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -249,7 +247,7 @@ final class BioPaxUtil {
 				if (invoke != null) {
 					// return value can be collection or Object
 					if (invoke instanceof Collection) {
-						col.addAll((Collection) invoke);
+						col.addAll((Collection<?>) invoke);
 					} else {
 						col.add(invoke);
 					}
@@ -417,6 +415,7 @@ final class BioPaxUtil {
 	public static void createAttributesFromProperties(final BioPAXElement element,
 			final CyNode node, final CyNetwork network) 
 	{
+		@SuppressWarnings("rawtypes")
 		Filter<PropertyEditor> filter = new Filter<PropertyEditor>() {
 			@Override
 			// skips for entity-range properties 
@@ -425,7 +424,7 @@ final class BioPaxUtil {
 			// (for which we do not want generate attributes or do another way)
 			public boolean filter(PropertyEditor editor) {
 				if(editor instanceof ObjectPropertyEditor) {
-					Class c = editor.getRange();
+					Class<?> c = editor.getRange();
 					String prop = editor.getProperty();
 					if( Entity.class.isAssignableFrom(c)
 						|| "name".equals(prop) //display/standard name is enough
@@ -443,8 +442,6 @@ final class BioPaxUtil {
 		@SuppressWarnings("unchecked")
 		AbstractTraverser bpeAutoMapper = new AbstractTraverser(SimpleEditorMap.L3, filter) 
 		{
-			final Logger log = LoggerFactory.getLogger(AbstractTraverser.class);
-
 			@SuppressWarnings("rawtypes")
 			@Override
 			protected void visit(Object obj, BioPAXElement bpe, Model model,
@@ -458,10 +455,11 @@ final class BioPaxUtil {
 						if (editor.isMultipleCardinality()) {
 							CyRow row = network.getRow(node);
 							List vals = new ArrayList<String>();
+							Class<?> listElementType = String.class;
 							// consider existing attribute values
 							if (row.isSet(attrName)) {
-								Class<?> listElementType = row.getTable()
-										.getColumn(attrName).getListElementType();
+								listElementType = row.getTable()
+									.getColumn(attrName).getListElementType();
 								List prevList = row.getList(attrName, listElementType);
 								if (prevList != null)
 									vals = prevList;
@@ -470,7 +468,7 @@ final class BioPaxUtil {
 							if(!vals.contains(value)) 
 								vals.add(value);
 
-							Attributes.set(network, node, attrName, vals, String.class);
+							Attributes.set(network, node, attrName, vals, listElementType);
 						} else {
 							Attributes.set(network, node, attrName, value, String.class);
 						}
@@ -646,25 +644,6 @@ final class BioPaxUtil {
 		Attributes.set(network, node, CyNetwork.HIDDEN_ATTRS, BIOPAX_PUBLICATION_REFERENCES, pubxList, String.class);	
 	}
 
-    
-	private static String addXRefs(List<ExternalLink> xrefList) {
-		if (!xrefList.isEmpty()) {
-			StringBuffer temp = new StringBuffer("<ul>");
-			for (ExternalLink link : xrefList) {
-                //  Ignore cPath Link.
-                if (link.getDbName() != null && link.getDbName().equalsIgnoreCase("CPATH")) {
-                    continue;
-                }
-                temp.append("<li>- ");
-				temp.append(ExternalLinks.createLink(link.getDbName(), link.getId()));
-                temp.append("</li>");
-			}
-			temp.append("</ul>");
-			return temp.toString();
-		}
-
-		return null;
-	}
 	
 	private static String addIHOPLinks(CyNetwork network, BioPAXElement bpe) {
 		List<String> synList = new ArrayList<String>(BioPaxUtil.getSynonyms(bpe));
@@ -715,8 +694,7 @@ final class BioPaxUtil {
 			String source = null;
 			
 			db = x.getDb();
-			String ver = x.getIdVersion();
-			id = x.getId(); // + ((ver!=null) ? "_" + ver : "");
+			id = x.getId();
 			if(x instanceof RelationshipXref) {
 				RelationshipTypeVocabulary v = ((RelationshipXref)x).getRelationshipType();
 				if(v != null) relType = v.getTerm().toString();
@@ -839,28 +817,6 @@ final class BioPaxUtil {
 		// outta here
 		return (((chemicalModification != null) && (chemicalModification.length() > 0))
 				? chemicalModification : "");
-	}
-	
-	
-	/**
-	 * Remove duplicate binary interactions from SIF/SIFNX converter output
-	 *
-	 * @param edgeStream OutputStream from converter
-	 * @return String
-	 */
-	private static String removeDuplicateBinaryInteractions(OutputStream edgeStream) {
-
-		StringBuffer toReturn = new StringBuffer();
-		HashSet<String> interactions = new HashSet<String>();
-		for (String interaction : edgeStream.toString().split("\n")) {
-			interactions.add(interaction);
-		}
-		Iterator<String> iterator = interactions.iterator();
-		while (iterator.hasNext()) {
-			toReturn.append(iterator.next() + "\n");
-		}
-		
-		return toReturn.toString();
 	}
 	
 	

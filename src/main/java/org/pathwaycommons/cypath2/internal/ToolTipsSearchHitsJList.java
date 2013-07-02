@@ -42,7 +42,7 @@ class ToolTipsSearchHitsJList extends JList
 	}
 
 	@Override
-	public void update(Observable o, Object arg) {
+	public synchronized void update(Observable o, Object arg) {
 		SearchResponse resp = (SearchResponse) arg;
 		DefaultListModel lm = (DefaultListModel) this.getModel();
 		lm.clear();

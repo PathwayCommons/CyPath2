@@ -73,7 +73,7 @@ class FilterdJList<T> extends JList {
 
 		@Override
 		public Object getElementAt(int index) {
-			if (index < filterItems().size())
+			if (index >= 0 && index < filterItems().size())
 				return filterItems().get(index);
 			else
 				return null;

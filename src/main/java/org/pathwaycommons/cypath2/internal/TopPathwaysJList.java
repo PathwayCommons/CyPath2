@@ -33,7 +33,7 @@ class TopPathwaysJList extends FilterdJList<SearchHit> implements Observer {
 	}
 
 	@Override
-	public void update(Observable o, Object arg) {
+	public synchronized void update(Observable o, Object arg) {
 		SearchResponse resp = (SearchResponse) arg;
 		FilterListModel<SearchHit> lm = (FilterListModel<SearchHit>) this.getModel();
 		lm.clear();
