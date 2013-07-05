@@ -8,6 +8,7 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -26,6 +27,8 @@ import java.util.Map;
 import java.util.Observer;
 import java.util.Properties;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -262,10 +265,10 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	 * 
 	 * @return
 	 */
-	JScrollPane createOptionsPane() {
+	Component createOptionsPane() {
 	   	JPanel panel = new JPanel();
-	   	panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-	    	
+	   	panel.setLayout(new GridLayout(2, 1));
+	   	
 	    // download oprions group
 	    final JRadioButton button1 = new JRadioButton("Download BioPAX");
 	    button1.setSelected(true);
@@ -335,67 +338,73 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 		// Initialize the organisms filter-list:
 	    // manually add choice(s): only human is currently supported
 	    // (other are disease/experimental organisms data)
-//	    SortedSet<NvpListItem> items = new TreeSet<NvpListItem>(); //sorted by name
-//	    items.add(new NvpListItem("Human", "9606"));	    
+	    //TODO add more org. as they become suppored/available (from web service, uriToOrganismNameMap) 
+	    SortedSet<NvpListItem> items = new TreeSet<NvpListItem>(); //sorted by name
+	    items.add(new NvpListItem("Human", "9606"));   
 	    DefaultListModel model = new DefaultListModel();
-//	    for(NvpListItem nvp : items) {
-//	    	model.addElement(nvp);
-//	    }
-	    model.addElement(new NvpListItem("Human", "9606"));
+	    for(NvpListItem nvp : items) {
+	    	model.addElement(nvp);
+	    }
 	    organismList.setModel(model);
-	    organismList.setToolTipText("Select Organisms");
+	    organismList.setToolTipText("Organism(s) include:");
 	    organismList.setAlignmentX(Component.LEFT_ALIGNMENT);
-	    organismList.setSelectedIndex(0); //always selected as long as there is only one organism (human)
 	        
 	    JScrollPane organismFilterBox = new JScrollPane(organismList, 
 	    	JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-	    organismFilterBox.setBorder(new TitledBorder("Organism(s) in:"));
-//	    organismFilterBox.setMinimumSize(new Dimension(200, 200));
+	    organismFilterBox.setBorder(new TitledBorder("Organism(s) include:"));
+	    organismFilterBox.setPreferredSize(new Dimension(300, 200));
+	    organismFilterBox.setMinimumSize(new Dimension(200, 100));
 	        
 	    // create the filter-list of datasources available on the server  
 	    DefaultListModel dataSourceBoxModel = new DefaultListModel(); 
 	    for(String uri : uriToDatasourceNameMap.keySet()) {
-	    	dataSourceBoxModel.addElement(new NvpListItem(uriToDatasourceNameMap.get(uri), uri));
+	    	String name = uriToDatasourceNameMap.get(uri);
+	    	dataSourceBoxModel.addElement(new NvpListItem(name, name));
 	    }		        
 	    dataSourceList.setModel(dataSourceBoxModel);
-	    dataSourceList.setToolTipText("Select Datasources");
+	    dataSourceList.setToolTipText("Datasource(s) include:");
 	    dataSourceList.setAlignmentX(Component.LEFT_ALIGNMENT);
 	        
 	    JScrollPane dataSourceFilterBox = new JScrollPane(dataSourceList, 
 	       	JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-	    dataSourceFilterBox.setBorder(new TitledBorder("Datasource(s) in:"));
-//	    dataSourceFilterBox.setMinimumSize(new Dimension(200, 200)); 
+	    dataSourceFilterBox.setBorder(new TitledBorder("Datasource(s) include:"));
+	    dataSourceFilterBox.setPreferredSize(new Dimension(300, 200));
+	    dataSourceFilterBox.setMinimumSize(new Dimension(200, 100));
 
-	    JPanel filtersPane = new JPanel();
-	    filtersPane.setBorder(new TitledBorder("Filter Options"));
-	    filtersPane.setLayout(new FlowLayout(FlowLayout.LEFT));
-	 // this filter is temporarily DISABLED (Human is the only supported and always selected)
-//	    filtersPane.add(organismFilterBox);
-	    filtersPane.add(dataSourceFilterBox);
-	    filtersPane.setMinimumSize(new Dimension(400, 200));
+	    JSplitPane filtersPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, dataSourceFilterBox, organismFilterBox);
+	    filtersPane.setBorder(new TitledBorder("Global Filters (for search and graph queries)"));
+	    filtersPane.setDividerLocation(400);
+	    filtersPane.setResizeWeight(0.5f);
+	    filtersPane.setAlignmentX(Component.LEFT_ALIGNMENT);
+	    filtersPane.setPreferredSize(new Dimension(500, 250));
+	    filtersPane.setMinimumSize(new Dimension(250, 200));
+	    
 	    panel.add(filtersPane);
 	    
-	    return new JScrollPane(panel);
+	    return panel; //new JScrollPane(panel);
 	}
 
 	    
-	private JPanel createSearchPanel() 
+	private Component createSearchPanel() 
 	{	   	 	
-		final JPanel panel = new JPanel();
+//		final JPanel panel = new JPanel();
 	    	
 	   	final HitsModel hitsModel = new HitsModel("Current Search Hits", true, 
 	   			taskManager, newClient());
-	   	panel.setLayout(new BorderLayout());
+//	   	panel.setLayout(new BorderLayout());
 			
 	    // create tabs pane for the hit details and parent pathways sun-panels
 	    final JTabbedPane detailsTabbedPane = new JTabbedPane();
-	    final DetailsPanel detailsPanel = new DetailsPanel(openBrowser);
+	    final DetailsPanel detailsPanel = new DetailsPanel(openBrowser, hitsModel.graphQueryClient);
 	    detailsTabbedPane.add("Summary", detailsPanel);
 	    //parent pathways list pane (its content to be added below)
 	    JPanel ppwListPane = new JPanel();
 	    detailsTabbedPane.add("Parent Pathways", ppwListPane);
+	    detailsTabbedPane.setPreferredSize(new Dimension(300, 250));
+	    detailsTabbedPane.setMinimumSize(new Dimension(200, 150));
 	        
 	    final JPanel searchQueryPanel = new JPanel();
+	    searchQueryPanel.setMinimumSize(new Dimension(400, 100));
 	        
 	  	// create the query field and examples label
 	    final String ENTER_TEXT = "Enter a keyword (e.g., gene/protein name or ID)";
@@ -457,6 +466,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	    bpTypeComboBox.setEditable(false);
 	        
 	    // create the search button and action
+	    final CPath2Client searchClient = newClient();
 	    final JButton searchButton = new JButton("Search");
 	    searchButton.setToolTipText("Full-Text Search");
 	    searchButton.addActionListener(new ActionListener() {
@@ -464,13 +474,6 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	        	searchButton.setEnabled(false);
 	        	hitsModel.searchFor = ((NvpListItem)bpTypeComboBox.getSelectedItem()).getValue();
 	           	final String keyword = searchField.getText();           	
-	            final Set<String> organisms = new HashSet<String>();
-	            for(Object it : organismList.getSelectedValues())
-	               	organisms.add(((NvpListItem) it).getValue());                
-	            final Set<String> datasources = new HashSet<String>();
-	            for(Object it : dataSourceList.getSelectedValues())
-	            	datasources.add(((NvpListItem) it).getValue());
-	            	
 	            if (keyword == null || keyword.trim().length() == 0 || keyword.startsWith(ENTER_TEXT)) {
 	            	JOptionPane.showMessageDialog(gui, "Please enter something into the search box.");
 	        		searchButton.setEnabled(true);
@@ -482,12 +485,10 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	        				try {
 	        					taskMonitor.setProgress(0);
 	        					taskMonitor.setStatusMessage("Executing search for " + keyword);
-	        					CPath2Client client = newClient();
-	        					client.setOrganisms(organisms);
-	        					client.setType(hitsModel.searchFor.toString());
-	        					if (!datasources.isEmpty())
-	        						client.setDataSources(datasources);       						
-	        					final SearchResponse searchResponse = (SearchResponse) client.search(keyword);
+	        					
+	        					searchClient.setType(hitsModel.searchFor.toString());
+	        					updateFilterValues(searchClient);	        					
+	        					final SearchResponse searchResponse = (SearchResponse) searchClient.search(keyword);
 	        					if(searchResponse != null) {
 	        						// update hits model (make summaries, notify observers!)
 	        						hitsModel.update(searchResponse);
@@ -533,13 +534,15 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
         keywordPane.add(searchField);
         keywordPane.add(bpTypeComboBox);
         keywordPane.add(searchButton);
-        keywordPane.setMinimumSize(new Dimension(400, 200));
+        keywordPane.setPreferredSize(new Dimension(400, 100));
+        keywordPane.setMinimumSize(new Dimension(400, 100));
     
 		searchQueryPanel.setLayout(new BoxLayout(searchQueryPanel, BoxLayout.X_AXIS));
         searchQueryPanel.add(keywordPane);
         
         // Assembly the results panel
     	final JPanel searchResultsPanel = new JPanel();
+    	searchResultsPanel.setMinimumSize(new Dimension(400, 350));
     	searchResultsPanel.setLayout(new BoxLayout(searchResultsPanel, BoxLayout.Y_AXIS));
     	searchResultsPanel.add(info);
         //create parent pathways panel (the second tab)
@@ -580,9 +583,9 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 						DefaultListModel lm = (DefaultListModel) userList.getModel();
 						lm.removeElementAt(userList.getSelectedIndex());
 					}
-				}
+				} 
 			}
-		});  
+		});
 	        
         // search hits list
         final JList resList = new ToolTipsSearchHitsJList();
@@ -634,22 +637,27 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
         // register the JList as model's observer
         hitsModel.addObserver((Observer) resList);
         
-        JPanel hitListPane = new JPanel();  
+        JPanel hitListPane = new JPanel();
+        hitListPane.setMinimumSize(new Dimension(300, 150));
         hitListPane.setLayout(new BorderLayout());
         JScrollPane hitListScrollPane = new JScrollPane(resList);
         hitListScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
         hitListScrollPane.setBorder(createTitledBorder("Double-click adds it to Advanced Query page."));
+        hitListScrollPane.setPreferredSize(new Dimension(300, 150));
         // make (north) tabs       
         JSplitPane vSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, hitListScrollPane, detailsTabbedPane);
-        vSplit.setDividerLocation(250);
+        vSplit.setDividerLocation(150);
+        vSplit.setResizeWeight(0.5f);
         hitListPane.add(vSplit, BorderLayout.CENTER);
 	        
         //  Create search results extra filtering panel
-        HitsFilterPanel filterPanel = new HitsFilterPanel(resList, hitsModel, true, false, false);
-	        
+        HitsFilterPanel filterPanel = new HitsFilterPanel(resList, hitsModel, true, false, true);
+        filterPanel.setMinimumSize(new Dimension(250, 300));
+	    filterPanel.setPreferredSize(new Dimension(300, 400));
         //  Create the Split Pane
         JSplitPane hSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, filterPanel, hitListPane);
         hSplit.setDividerLocation(250);
+        hSplit.setResizeWeight(0.33f);
         hSplit.setAlignmentX(Component.LEFT_ALIGNMENT);
         searchResultsPanel.add(hSplit);
 	        
@@ -824,14 +832,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	        	}
 	        	
 	        	//use same organism and datasource filters for the GRAPH query
-	        	final Set<String> organisms = new HashSet<String>();
-	        	for(Object it : organismList.getSelectedValues())
-	               	organisms.add(((NvpListItem) it).getValue());                
-	            final Set<String> datasources = new HashSet<String>();
-	            for(Object it : dataSourceList.getSelectedValues())
-	            	datasources.add(((NvpListItem) it).getValue());
-	        	hitsModel.graphQueryClient.setOrganisms(organisms);
-	        	hitsModel.graphQueryClient.setDataSources(datasources);
+	        	updateFilterValues(hitsModel.graphQueryClient);
 	        	        	
 	        	if(hitsModel.graphType == null)
 	        		taskManager.execute(new TaskIterator(
@@ -859,10 +860,11 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	        
         // final top-bottom panels arrange -
         JSplitPane queryAndResults = new JSplitPane(JSplitPane.VERTICAL_SPLIT, searchQueryPanel, searchResultsPanel);
-        queryAndResults.setDividerLocation(180);
-        panel.add(queryAndResults);
-	        
-        return panel;
+        queryAndResults.setResizeWeight(0.25f);
+        queryAndResults.setDividerLocation(150);
+//        panel.add(queryAndResults);
+
+        return queryAndResults; //panel;
     }
 	    
 	    
@@ -871,17 +873,18 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 		final JPanel panel = new JPanel(); // to return       
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
+    	// hits model is used both by the filters panel pathways jlist
+    	final HitsModel topPathwaysModel = new HitsModel("Top Pathways", false, 
+    			taskManager, newClient());
+		
         //  Create Info Panel (the first tab)
-        final DetailsPanel detailsPanel = new DetailsPanel(openBrowser);
+        final DetailsPanel detailsPanel = new DetailsPanel(openBrowser, topPathwaysModel.graphQueryClient);
         final JTextPane summaryTextPane = detailsPanel.getTextPane();
 	        
         // make (south) tabs
         JTabbedPane southPane = new JTabbedPane(); 
         southPane.add("Summary", detailsPanel);
 	        
-    	// hits model is used both by the filters panel pathways jlist
-    	final HitsModel topPathwaysModel = new HitsModel("Top Pathways", false, 
-    			taskManager, newClient());
     	// create top pathways list
     	final TopPathwaysJList tpwJList = new TopPathwaysJList();
     	// as for current version, enable only the filter by data source (type is always Pathway, organisms - human + unspecified)
@@ -936,12 +939,13 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	        
         JSplitPane vSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tpwFilterListPanel, southPane);
         vSplit.setDividerLocation(300);
+        vSplit.setResizeWeight(0.5f);
 	        
         //  Create the Split Pane
         JSplitPane hSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, filterPanel, vSplit);
         hSplit.setDividerLocation(300);
         hSplit.setAlignmentX(Component.LEFT_ALIGNMENT);
-        
+        hSplit.setResizeWeight(0.33f);
         
 	    // create the update button and action
 	    final JButton updateButton = new JButton("Update Top Pathways");
@@ -990,18 +994,16 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	}
 	
 		
-    /**
-     * Creates a JTextPane with correct line wrap settings.
-     *
-     * @return JTextPane Object.
+    /*
+     * Creates a JTextPane with correct line wrap settings
+     * and hyperlink action.
      */
-    private JTextPane createHtmlTextPane(final DetailsPanel detailsPanel) {
+    private JTextPane createHtmlTextPane(final DetailsPanel detailsPanel, final CPath2Client client) {
         final JTextPane textPane = new JTextPane();
         textPane.setEditable(false);
         textPane.setBorder(new EmptyBorder(7,7,7,7));
         textPane.setContentType("text/html");
         textPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
-        final CPath2Client client = newClient(); //handles user's clicks on biopax URIs
         textPane.addHyperlinkListener(new HyperlinkListener() {
             public void hyperlinkUpdate(HyperlinkEvent hyperlinkEvent) {
                 if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
@@ -1009,6 +1011,8 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
                		SearchHit currentItem = detailsPanel.getCurrentItem();
                		String uri = currentItem.getUri();
                		if(!currentItem.getBiopaxClass().equalsIgnoreCase("Pathway")) {
+        	        	//use global organism and datasource filters for the query
+               			updateFilterValues(client);  			
                			taskManager.execute(new TaskIterator(
                    			new CpsNetworkAndViewTask(client, Cmd.GRAPH, 
                    				GraphType.NEIGHBORHOOD, Collections.singleton(uri), null, 
@@ -1040,7 +1044,21 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
     }
 
 	    
-    /**
+    void updateFilterValues(CPath2Client client) {
+    	//use global organism and datasource filters for the query
+    	Set<String> values = new HashSet<String>();
+    	for(Object it : organismList.getSelectedValues())
+    		values.add(((NvpListItem) it).getValue()); 
+    	client.setOrganisms(values);
+    	
+    	values= new HashSet<String>();
+        for(Object it : dataSourceList.getSelectedValues())
+        	values.add(((NvpListItem) it).getValue());
+    	client.setDataSources(values);
+	}
+
+
+	/**
      * Summary Panel.
      *
      */
@@ -1054,9 +1072,9 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
          * Constructor.
          * @param browser 
          */
-        public DetailsPanel(OpenBrowser openBrowser) {
+        public DetailsPanel(OpenBrowser openBrowser, CPath2Client client) {
             this.setLayout(new BorderLayout());
-            textPane = createHtmlTextPane(this);
+            textPane = createHtmlTextPane(this, client);
             doc = textPane.getDocument();
             JScrollPane scrollPane = encloseInJScrollPane (textPane);
             add(scrollPane, BorderLayout.CENTER);

@@ -1,7 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
-	<groupId>org.pathwaycommons</groupId>
+	<modelVersion>4.0.0</modelVersion>
+	
 	<properties>
 		<bundle.namespace>org.pathwaycommons.cypath2.internal</bundle.namespace>
 		<bundle.symbolicName>org.pathwaycommons.cypath2-impl</bundle.symbolicName>
@@ -13,10 +14,16 @@
 		<paxtools.version>4.2.0</paxtools.version>
 		<cpath2.version>4.1.0-SNAPSHOT</cpath2.version>
 		<spring.version>3.2.3.RELEASE</spring.version>
+		<maven-enforcer-plugin>1.2</maven-enforcer-plugin>
+		<slf4j.version>1.7.5</slf4j.version>
+		<java.version>1.6</java.version>
+		<maven.version.range>[3.0.0,3.1.0)</maven.version.range>							
 	</properties>
-	<modelVersion>4.0.0</modelVersion>
+	
+	<groupId>org.pathwaycommons</groupId>
 	<artifactId>cypath2-impl</artifactId>
-	<version>0.2.2-SNAPSHOT</version>
+	<version>0.3.0-SNAPSHOT</version>
+	
 	<name>${bundle.Name}</name>
 	<description>CyPath2 is a Cytoscape 3 GUI client app 
 	that connects to a cPath2 (cPathSquared) web service (default URL is http://www.pathwaycommons.org/pc2/,
@@ -88,11 +95,48 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.0</version>
 				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
 					<optimize>true</optimize>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>${maven-enforcer-plugin}</version>
+				<executions>
+					<execution>
+						<id>enforce-banned-dependencies</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<bannedDependencies>
+									<searchTransitive>true</searchTransitive>
+									<excludes>
+										<exclude>javassist:javassist</exclude><!-- org.javassist is the new one -->
+										<exclude>commons-logging</exclude>
+										<exclude>aspectj:aspectj*</exclude> <!-- org.aspectj is the new one -->
+										<exclude>hsqldb:hsqldb</exclude> <!-- org.hsqldb is the new one -->
+										<exclude>log4j:log4j</exclude>
+										<exclude>org.slf4j:1.5*</exclude>
+										<exclude>org.springframework:2.*</exclude>
+										<exclude>org.springframework:3.0.*</exclude>
+									</excludes>
+								</bannedDependencies>
+								<requireMavenVersion>
+									<version>${maven.version.range}</version>
+								</requireMavenVersion>
+								<requireJavaVersion>
+									<version>${java.version}</version>
+								</requireJavaVersion>
+							</rules>
+							<fail>true</fail>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>			
 		</plugins>
 	</build>
 
@@ -230,7 +274,17 @@
 						<artifactId>commons-logging</artifactId>
 					</exclusion>
 				</exclusions>
-			</dependency>															
+			</dependency>
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>jcl-over-slf4j</artifactId>
+				<version>${slf4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>log4j-over-slf4j</artifactId>
+				<version>${slf4j.version}</version>
+			</dependency>																	
 		</dependencies>
 	</dependencyManagement>
 
@@ -307,6 +361,16 @@
 			<groupId>org.biopax.paxtools</groupId>
 			<artifactId>paxtools-core</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>jcl-over-slf4j</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>log4j-over-slf4j</artifactId>
+			<scope>runtime</scope>
+		</dependency>		
 	</dependencies>
 
 </project>

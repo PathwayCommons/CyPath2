@@ -7,6 +7,7 @@ import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.session.CyNetworkNaming;
 import org.cytoscape.work.swing.DialogTaskManager;
 import org.cytoscape.work.undo.UndoSupport;
+import org.cytoscape.application.swing.CyAction;
 import org.cytoscape.application.swing.CySwingApplication;
 import org.cytoscape.application.CyApplicationManager;
 import org.cytoscape.view.vizmap.VisualMappingFunctionFactory;
@@ -25,7 +26,11 @@ import org.cytoscape.service.util.AbstractCyActivator;
 import cpath.client.CPath2Client;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
+
+import static org.cytoscape.work.ServiceProperties.*;
 
 
 public final class CyActivator extends AbstractCyActivator {
@@ -105,8 +110,48 @@ public final class CyActivator extends AbstractCyActivator {
 		// initialize (build the UI, etc. heavy calls)
 		cPathSquaredWebServiceClient.init();
 		
-		// Register as OSGi service
+		// Create a new menu/toolbar item (CyAction) that opens the CyPath2 GUI 
+		Map<String,String> showTheDialogActionProps = new HashMap<String, String>();
+		showTheDialogActionProps.put(ID,"showCyPath2DialogAction");
+		showTheDialogActionProps.put(TITLE,"Search/Import Network...");		
+		showTheDialogActionProps.put(PREFERRED_MENU,"Apps.CyPath2");
+		showTheDialogActionProps.put(MENU_GRAVITY,"2.0");
+//		showTheDialogActionProps.put(TOOL_BAR_GRAVITY,"3.17");
+//		showTheDialogActionProps.put(LARGE_ICON_URL,getClass().getResource("pc2.png").toString());
+		showTheDialogActionProps.put(SMALL_ICON_URL,getClass().getResource("pc2_small.png").toString());
+		showTheDialogActionProps.put(IN_TOOL_BAR,"false");
+		showTheDialogActionProps.put(IN_MENU_BAR,"true");
+		showTheDialogActionProps.put(TOOLTIP,"Networks From PC2");
+		
+		ShowTheDialogAction showTheDialogAction = new ShowTheDialogAction(
+				showTheDialogActionProps, 
+				cySwingApplicationRef.getJFrame(), 
+				cPathSquaredWebServiceClient.getQueryBuilderGUI(),
+				cyApplicationManagerRef, cyNetworkViewManagerRef
+				);
+		
+		// Create "About..." menu item and action
+		Map<String,String> showAboutDialogActionProps = new HashMap<String, String>();
+		showAboutDialogActionProps.put(ID,"showCyPath2AboutDialogAction");
+		showAboutDialogActionProps.put(TITLE,"About...");		
+		showAboutDialogActionProps.put(PREFERRED_MENU,"Apps.CyPath2");
+		showAboutDialogActionProps.put(MENU_GRAVITY,"1.0");
+		showAboutDialogActionProps.put(SMALL_ICON_URL,getClass().getResource("pc2_small.png").toString());
+		showAboutDialogActionProps.put(IN_TOOL_BAR,"false");
+		showAboutDialogActionProps.put(IN_MENU_BAR,"true");
+ 
+		ShowAboutDialogAction showAboutDialogAction = new ShowAboutDialogAction(
+				showAboutDialogActionProps, 
+				cySwingApplicationRef.getJFrame(), cPathSquaredWebServiceClient,
+				cyApplicationManagerRef, cyNetworkViewManagerRef, openBrowserRef
+				);
+		
+		
+		
+		// Register OSGi services
 		registerAllServices(bc, cPathSquaredWebServiceClient, new Properties());
+		registerService(bc, showAboutDialogAction, CyAction.class, new Properties());
+		registerService(bc, showTheDialogAction, CyAction.class, new Properties());
 	}
 }
 
