@@ -1,5 +1,6 @@
 package org.pathwaycommons.cypath2.internal;
 
+import org.cytoscape.task.NodeViewTaskFactory;
 import org.cytoscape.util.swing.OpenBrowser;
 import org.cytoscape.model.CyNetworkManager;
 import org.cytoscape.view.vizmap.VisualMappingManager;
@@ -48,28 +49,35 @@ public final class CyActivator extends AbstractCyActivator {
 	public void start(BundleContext bc) {
 		LOGGER.debug("starting...");
 		
-		CySwingApplication cySwingApplicationRef = getService(bc,CySwingApplication.class);
-		DialogTaskManager taskManagerRef = getService(bc,DialogTaskManager.class);
-		OpenBrowser openBrowserRef = getService(bc,OpenBrowser.class);
-		CyNetworkManager cyNetworkManagerRef = getService(bc,CyNetworkManager.class);
-		CyApplicationManager cyApplicationManagerRef = getService(bc,CyApplicationManager.class);
-		CyNetworkViewManager cyNetworkViewManagerRef = getService(bc,CyNetworkViewManager.class);
-		CyNetworkReaderManager cyNetworkViewReaderManagerRef = getService(bc,CyNetworkReaderManager.class);
-		CyNetworkNaming cyNetworkNamingRef = getService(bc,CyNetworkNaming.class);
-		CyNetworkFactory cyNetworkFactoryRef = getService(bc,CyNetworkFactory.class);
-		CyLayoutAlgorithmManager cyLayoutsRef = getService(bc,CyLayoutAlgorithmManager.class);
-		UndoSupport undoSupportRef = getService(bc,UndoSupport.class);
-		VisualMappingManager visualMappingManagerRef = getService(bc,VisualMappingManager.class);
-		VisualStyleFactory visualStyleFactoryRef = getService(bc,VisualStyleFactory.class);
-		VisualMappingFunctionFactory discreteMappingFactoryRef = getService(bc,VisualMappingFunctionFactory.class,"(mapping.type=discrete)");
+		CySwingApplication cySwingApplication = getService(bc,CySwingApplication.class);
+		DialogTaskManager taskManager = getService(bc,DialogTaskManager.class);
+		OpenBrowser openBrowser = getService(bc,OpenBrowser.class);
+		CyNetworkManager cyNetworkManager = getService(bc,CyNetworkManager.class);
+		CyApplicationManager cyApplicationManager = getService(bc,CyApplicationManager.class);
+		CyNetworkViewManager cyNetworkViewManager = getService(bc,CyNetworkViewManager.class);
+		CyNetworkReaderManager cyNetworkReaderManager = getService(bc,CyNetworkReaderManager.class);
+		CyNetworkNaming cyNetworkNaming = getService(bc,CyNetworkNaming.class);
+		CyNetworkFactory cyNetworkFactory = getService(bc,CyNetworkFactory.class);
+		CyLayoutAlgorithmManager cyLayoutAlgorithmManager = getService(bc,CyLayoutAlgorithmManager.class);
+		UndoSupport undoSupport = getService(bc,UndoSupport.class);
+		VisualMappingManager visualMappingManager = getService(bc,VisualMappingManager.class);
+		VisualStyleFactory visualStyleFactory = getService(bc,VisualStyleFactory.class);
+		VisualMappingFunctionFactory discreteVisualMappingFunctionFactory = getService(bc,VisualMappingFunctionFactory.class,"(mapping.type=discrete)");
 		VisualMappingFunctionFactory passthroughMappingFactoryRef = getService(bc,VisualMappingFunctionFactory.class,"(mapping.type=passthrough)");
-		CyProperty<Properties> cytoscapePropertiesServiceRef = getService(bc, CyProperty.class, "(cyPropertyName=cytoscape3.props)");
+		CyProperty<Properties> cyProperties = getService(bc, CyProperty.class, "(cyPropertyName=cytoscape3.props)");
 		
-		BinarySifVisualStyleFactory binarySifVisualStyleUtil = new BinarySifVisualStyleFactory(
-				visualStyleFactoryRef,
-				visualMappingManagerRef,
-				discreteMappingFactoryRef,
+		final BinarySifVisualStyleFactory binarySifVisualStyleUtil = new BinarySifVisualStyleFactory(
+				visualStyleFactory,
+				visualMappingManager,
+				discreteVisualMappingFunctionFactory,
 				passthroughMappingFactoryRef);
+		
+		// keep all the service references in one place -
+		final CyServices cyServices = new CyServices(cySwingApplication, taskManager, openBrowser, 
+				cyNetworkManager, cyApplicationManager, cyNetworkViewManager, cyNetworkReaderManager, 
+				cyNetworkNaming, cyNetworkFactory, cyLayoutAlgorithmManager, undoSupport, binarySifVisualStyleUtil, 
+				visualMappingManager, cyProperties);
+		
 		
 		// read current configuration properties
 		Properties props = new Properties();
@@ -81,40 +89,29 @@ public final class CyActivator extends AbstractCyActivator {
 		// (normally not needed but) one can switch between cpath2 servers by updating the property
 		// in the user's CytoscapeConfiguration directory. If it's set, this app will use it; 
 		// othervise, the default will be used/set -
-		String url = cytoscapePropertiesServiceRef.getProperties().getProperty(PROP_CPATH2_SERVER_URL);
+		String url = cyProperties.getProperties().getProperty(PROP_CPATH2_SERVER_URL);
 		//to set a new or update the deprecated from v0.2.2 PURL...
 		if(url == null || url.isEmpty() || url.contains("purl.org/pc2/current")) { 
 			url = CPath2Client.newInstance().getActualEndPointURL();
-		    cytoscapePropertiesServiceRef.getProperties().setProperty(PROP_CPATH2_SERVER_URL, url);
+		    cyProperties.getProperties().setProperty(PROP_CPATH2_SERVER_URL, url);
 		}    
 	    final String name = "Pathway Commons 2 (BioPAX L3)";
 	    final String description = props.getProperty("cypath2.description");			
 		
-		// Create a new app instance
-		CyPath2 cPathSquaredWebServiceClient = new CyPath2(url, name, description,
-				cySwingApplicationRef,
-				taskManagerRef,
-				openBrowserRef,
-				cyNetworkManagerRef,
-				cyApplicationManagerRef,
-				cyNetworkViewManagerRef,
-				cyNetworkViewReaderManagerRef,
-				cyNetworkNamingRef,
-				cyNetworkFactoryRef,
-				cyLayoutsRef,
-				undoSupportRef,
-				binarySifVisualStyleUtil,
-				visualMappingManagerRef,
-				cytoscapePropertiesServiceRef);
+		// Create a new CyPath2 app instance
+		CyPath2 app = new CyPath2(url, name, description, cyServices);
 		
 		// initialize (build the UI, etc. heavy calls)
-		cPathSquaredWebServiceClient.init();
+		app.init();
+		
+		// Register OSGi services
+		registerAllServices(bc, app, new Properties());
 		
 		// Create a new menu/toolbar item (CyAction) that opens the CyPath2 GUI 
 		Map<String,String> showTheDialogActionProps = new HashMap<String, String>();
 		showTheDialogActionProps.put(ID,"showCyPath2DialogAction");
 		showTheDialogActionProps.put(TITLE,"Search/Import Network...");		
-		showTheDialogActionProps.put(PREFERRED_MENU,"Apps.CyPath2");
+		showTheDialogActionProps.put(PREFERRED_MENU, APPS_MENU + ".CyPath2");
 		showTheDialogActionProps.put(MENU_GRAVITY,"2.0");
 //		showTheDialogActionProps.put(TOOL_BAR_GRAVITY,"3.17");
 //		showTheDialogActionProps.put(LARGE_ICON_URL,getClass().getResource("pc2.png").toString());
@@ -125,33 +122,40 @@ public final class CyActivator extends AbstractCyActivator {
 		
 		ShowTheDialogAction showTheDialogAction = new ShowTheDialogAction(
 				showTheDialogActionProps, 
-				cySwingApplicationRef.getJFrame(), 
-				cPathSquaredWebServiceClient.getQueryBuilderGUI(),
-				cyApplicationManagerRef, cyNetworkViewManagerRef
+				cySwingApplication.getJFrame(), 
+				app.getQueryBuilderGUI(),
+				cyApplicationManager, cyNetworkViewManager
 				);
+		// register the service
+		registerService(bc, showTheDialogAction, CyAction.class, new Properties());	
 		
 		// Create "About..." menu item and action
 		Map<String,String> showAboutDialogActionProps = new HashMap<String, String>();
 		showAboutDialogActionProps.put(ID,"showCyPath2AboutDialogAction");
 		showAboutDialogActionProps.put(TITLE,"About...");		
-		showAboutDialogActionProps.put(PREFERRED_MENU,"Apps.CyPath2");
+		showAboutDialogActionProps.put(PREFERRED_MENU, APPS_MENU + ".CyPath2");
 		showAboutDialogActionProps.put(MENU_GRAVITY,"1.0");
 		showAboutDialogActionProps.put(SMALL_ICON_URL,getClass().getResource("pc2_small.png").toString());
 		showAboutDialogActionProps.put(IN_TOOL_BAR,"false");
 		showAboutDialogActionProps.put(IN_MENU_BAR,"true");
  
 		ShowAboutDialogAction showAboutDialogAction = new ShowAboutDialogAction(
-				showAboutDialogActionProps, 
-				cySwingApplicationRef.getJFrame(), cPathSquaredWebServiceClient,
-				cyApplicationManagerRef, cyNetworkViewManagerRef, openBrowserRef
-				);
-		
-		
-		
-		// Register OSGi services
-		registerAllServices(bc, cPathSquaredWebServiceClient, new Properties());
+				showAboutDialogActionProps, cySwingApplication.getJFrame(), 
+				app.getDisplayName(), app.getDescription(),
+				cyApplicationManager, cyNetworkViewManager, openBrowser
+				);	
+		// register the service
 		registerService(bc, showAboutDialogAction, CyAction.class, new Properties());
-		registerService(bc, showTheDialogAction, CyAction.class, new Properties());
+		
+		// create a context menu (using a task factory, for this uses tunables and can be used by Cy3 scripts, headless too)
+		final NodeViewTaskFactory expandNodeContextMenuFactory = new ExpandNodeContextMenuFactory(visualMappingManager, cyLayoutAlgorithmManager);
+		final Properties nodeProp = new Properties();
+		nodeProp.setProperty("preferredTaskManager", "menu");
+		nodeProp.setProperty(PREFERRED_MENU, NODE_APPS_MENU);
+		nodeProp.setProperty(MENU_GRAVITY, "13.0");
+		nodeProp.setProperty(TITLE, "CyPath2: Extend Network...");
+		registerService(bc, expandNodeContextMenuFactory, NodeViewTaskFactory.class, nodeProp);
+		
 	}
 }
 

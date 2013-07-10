@@ -22,8 +22,7 @@ final class ShowAboutDialogAction extends AbstractCyAction {
 	private final String description;
 	
 	public ShowAboutDialogAction(Map<String, String> configProps,
-			Window parent, 
-			CyPath2 app,
+			Window parent, String title, String description,
 			CyApplicationManager applicationManager,
 			CyNetworkViewManager networkViewManager,
 			OpenBrowser openBrowser) 
@@ -31,8 +30,8 @@ final class ShowAboutDialogAction extends AbstractCyAction {
 		super(configProps, applicationManager, networkViewManager);
 		
 		icon = new ImageIcon(getClass().getResource("pc2.png"), "PC2 icon");
-		title = app.getDisplayName();
-		description = app.getDescription();
+		this.title = title;
+		this.description = description;
 		dialog = new AboutDialog(parent, openBrowser);
 	}
 

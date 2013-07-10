@@ -16,8 +16,6 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
-import java.io.FileWriter;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Observer;
-import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -50,7 +47,6 @@ import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
@@ -63,39 +59,14 @@ import javax.swing.text.Document;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.StyleSheet;
 
-import org.biopax.paxtools.model.BioPAXElement;
-import org.biopax.paxtools.model.Model;
-import org.biopax.paxtools.model.level3.Entity;
-import org.biopax.paxtools.model.level3.EntityReference;
-import org.cytoscape.application.CyApplicationManager;
-import org.cytoscape.application.swing.CySwingApplication;
-import org.cytoscape.io.read.CyNetworkReader;
-import org.cytoscape.io.read.CyNetworkReaderManager;
 import org.cytoscape.io.webservice.NetworkImportWebServiceClient;
 import org.cytoscape.io.webservice.SearchWebServiceClient;
 import org.cytoscape.io.webservice.swing.AbstractWebServiceGUIClient;
-import org.cytoscape.model.CyNetwork;
-import org.cytoscape.model.CyNetworkFactory;
-import org.cytoscape.model.CyNetworkManager;
-import org.cytoscape.model.CyNode;
-import org.cytoscape.model.CyRow;
-import org.cytoscape.model.subnetwork.CyRootNetwork;
-import org.cytoscape.property.CyProperty;
-import org.cytoscape.session.CyNetworkNaming;
 import org.cytoscape.util.swing.CheckBoxJList;
 import org.cytoscape.util.swing.OpenBrowser;
-import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
-import org.cytoscape.view.model.CyNetworkView;
-import org.cytoscape.view.model.CyNetworkViewManager;
-import org.cytoscape.view.vizmap.VisualMappingManager;
-import org.cytoscape.view.vizmap.VisualStyle;
-import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.Task;
 import org.cytoscape.work.TaskIterator;
-import org.cytoscape.work.TaskManager;
 import org.cytoscape.work.TaskMonitor;
-import org.cytoscape.work.undo.UndoSupport;
-import org.pathwaycommons.cypath2.internal.BioPaxUtil.StaxHack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,67 +82,32 @@ import cpath.service.jaxb.SearchResponse;
 /**
  * CyPath2: CPathSquared Web Service client integrated into the Cytoscape Web Services GUI Framework.
  */
-public final class CyPath2 extends AbstractWebServiceGUIClient 
+final class CyPath2 extends AbstractWebServiceGUIClient 
 	implements NetworkImportWebServiceClient, SearchWebServiceClient
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(CyPath2.class);
     
-    private static OutputFormat downloadMode = OutputFormat.BIOPAX;  
+    static OutputFormat downloadMode = OutputFormat.BIOPAX;  
     
-    public static final Map<String,String> uriToOrganismNameMap = new HashMap<String, String>();
-    public static final Map<String,String> uriToDatasourceNameMap = new HashMap<String, String>();
+    static final Map<String,String> uriToOrganismNameMap = new HashMap<String, String>();
+    static final Map<String,String> uriToDatasourceNameMap = new HashMap<String, String>();
     
-    private static final String CPATH_SERVER_NAME_ATTR = "CPATH_SERVER_NAME";
-    private static final String CPATH_SERVER_URL_ATTR = "CPATH_SERVER_URL";
+    static final String CPATH_SERVER_NAME_ATTR = "CPATH_SERVER_NAME";
+    static final String CPATH_SERVER_URL_ATTR = "CPATH_SERVER_URL";
 	
-	private final CySwingApplication application;
-	private final TaskManager taskManager;
-	private final OpenBrowser openBrowser;
-	private final CyNetworkManager networkManager;
-	private final CyApplicationManager applicationManager;
-	private final CyNetworkViewManager networkViewManager;
-	private final CyNetworkReaderManager networkViewReaderManager;
-	private final CyNetworkNaming naming;
-	private final CyNetworkFactory networkFactory;
-	private final CyLayoutAlgorithmManager layoutManager;
-	private final UndoSupport undoSupport;
-	private final BinarySifVisualStyleFactory binarySifVisualStyleUtil;
-	private final VisualMappingManager mappingManager;
-	private final CyProperty<Properties> cyProperty;
-	
-	private JPanel advQueryPanel;
-	
+	private final JPanel advQueryPanel;
 	private final CheckBoxJList organismList;
 	private final CheckBoxJList dataSourceList; 
-
+	private final CyServices cyServices;
     
 	/**
      * Creates a new Web Services client.
      */
-    public CyPath2(String uri, String displayName, String description, 
-    		CySwingApplication app, TaskManager tm, OpenBrowser ob, 
-			CyNetworkManager nm, CyApplicationManager am, CyNetworkViewManager nvm, 
-			CyNetworkReaderManager nvrm, CyNetworkNaming nn, CyNetworkFactory nf, 
-			CyLayoutAlgorithmManager lam, UndoSupport us, 
-			BinarySifVisualStyleFactory bsvsf, VisualMappingManager mm,
-			CyProperty<Properties> prop) 
+    public CyPath2(String uri, String displayName, String description, CyServices cyServices) 
     {    	   	
     	super(uri, displayName, description);
     	
-		application = app;
-		taskManager = tm;
-		openBrowser = ob;
-		networkManager = nm;
-		applicationManager = am;
-		networkViewManager = nvm;
-		networkViewReaderManager = nvrm;
-		naming = nn;
-		layoutManager = lam;
-		networkFactory = nf;
-		undoSupport = us;
-		binarySifVisualStyleUtil = bsvsf;
-		mappingManager = mm;
-		cyProperty = prop;
+    	this.cyServices = cyServices;
 		
 		//filter value lists
 		organismList = new CheckBoxJList();
@@ -180,6 +116,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 		JPanel mainPanel = new JPanel();
 		gui = mainPanel; 
 		
+		advQueryPanel = new JPanel(new BorderLayout());
     }
  
     /**
@@ -224,13 +161,15 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
      */
 	@Override
 	public TaskIterator createTaskIterator(final Object uri) {
-
+	
+		final CyPath2 app = this;
+		
 		TaskIterator taskIterator = new TaskIterator(new Task() {
 			@Override
 			public void run(TaskMonitor taskMonitor) throws Exception {
-				taskManager.setExecutionContext(null);
-				taskManager.execute(new TaskIterator(
-					new CpsNetworkAndViewTask(newClient(), (String) uri, "")));
+				cyServices.taskManager.setExecutionContext(null);
+				cyServices.taskManager.execute(new TaskIterator(
+					new NetworkAndViewTask(cyServices, newClient(), (String) uri, "")));
 			}
 
 			@Override
@@ -390,12 +329,12 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 //		final JPanel panel = new JPanel();
 	    	
 	   	final HitsModel hitsModel = new HitsModel("Current Search Hits", true, 
-	   			taskManager, newClient());
+	   			cyServices.taskManager, newClient());
 //	   	panel.setLayout(new BorderLayout());
 			
 	    // create tabs pane for the hit details and parent pathways sun-panels
 	    final JTabbedPane detailsTabbedPane = new JTabbedPane();
-	    final DetailsPanel detailsPanel = new DetailsPanel(openBrowser, hitsModel.graphQueryClient);
+	    final DetailsPanel detailsPanel = new DetailsPanel(cyServices.openBrowser, hitsModel.graphQueryClient);
 	    detailsTabbedPane.add("Summary", detailsPanel);
 	    //parent pathways list pane (its content to be added below)
 	    JPanel ppwListPane = new JPanel();
@@ -521,7 +460,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	        			}
 	        		};
 
-	        		taskManager.execute(new TaskIterator(search));
+	        		cyServices.taskManager.execute(new TaskIterator(search));
 	        	}
 	             	
 	        }
@@ -558,8 +497,8 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 						NvpListItem item = (NvpListItem) ppwList.getModel()
 								.getElementAt(selectedIndex);
 						String uri = item.getValue();
-				        taskManager.execute(new TaskIterator(
-				        	new CpsNetworkAndViewTask(hitsModel.graphQueryClient, uri, item.toString())));	
+						cyServices.taskManager.execute(new TaskIterator(
+				        	new NetworkAndViewTask(cyServices, hitsModel.graphQueryClient, uri, item.toString())));	
 					}
 				}
 			}
@@ -662,7 +601,6 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
         searchResultsPanel.add(hSplit);
 	        
         //create adv. query panel with user picked items list 
-        advQueryPanel = new JPanel(new BorderLayout());
         JPanel advQueryCtrlPanel = new JPanel();
         advQueryCtrlPanel.setLayout(new BoxLayout(advQueryCtrlPanel, BoxLayout.Y_AXIS));
         advQueryCtrlPanel.setPreferredSize(new Dimension(400, 300));
@@ -835,13 +773,13 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	        	updateFilterValues(hitsModel.graphQueryClient);
 	        	        	
 	        	if(hitsModel.graphType == null)
-	        		taskManager.execute(new TaskIterator(
-	        			new CpsNetworkAndViewTask(hitsModel.graphQueryClient, 
+	        		cyServices.taskManager.execute(new TaskIterator(
+	        			new NetworkAndViewTask(cyServices, hitsModel.graphQueryClient, 
 	        					Cmd.GET, null, srcs, null, "Biopax sub-model")
 	        			));
 	        	else
-	        		taskManager.execute(new TaskIterator(
-	        			new CpsNetworkAndViewTask(hitsModel.graphQueryClient, 
+	        		cyServices.taskManager.execute(new TaskIterator(
+	        			new NetworkAndViewTask(cyServices, hitsModel.graphQueryClient, 
 	        					Cmd.GRAPH, hitsModel.graphType, srcs, tgts, "Biopax " + hitsModel.graphType)
 		        		));
 	        	
@@ -875,10 +813,10 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 
     	// hits model is used both by the filters panel pathways jlist
     	final HitsModel topPathwaysModel = new HitsModel("Top Pathways", false, 
-    			taskManager, newClient());
+    			cyServices.taskManager, newClient());
 		
         //  Create Info Panel (the first tab)
-        final DetailsPanel detailsPanel = new DetailsPanel(openBrowser, topPathwaysModel.graphQueryClient);
+        final DetailsPanel detailsPanel = new DetailsPanel(cyServices.openBrowser, topPathwaysModel.graphQueryClient);
         final JTextPane summaryTextPane = detailsPanel.getTextPane();
 	        
         // make (south) tabs
@@ -918,8 +856,8 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 						SearchHit item = (SearchHit) tpwJList.getModel()
 								.getElementAt(selectedIndex);
 						String uri = item.getUri();
-				        taskManager.execute(new TaskIterator(
-				        	new CpsNetworkAndViewTask(topPathwaysModel.graphQueryClient, uri, item.toString())));	
+						cyServices.taskManager.execute(new TaskIterator(
+				        	new NetworkAndViewTask(cyServices, topPathwaysModel.graphQueryClient, uri, item.toString())));	
 					}
 				}
 			}
@@ -981,7 +919,7 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
 	    			}
 	    		});			
 	    		// kick off the task execution
-	    		taskManager.execute(taskIterator);
+	    		cyServices.taskManager.execute(taskIterator);
 	        }
 	    });
 	    updateButton.setAlignmentX(Component.LEFT_ALIGNMENT); 
@@ -1013,13 +951,13 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
                		if(!currentItem.getBiopaxClass().equalsIgnoreCase("Pathway")) {
         	        	//use global organism and datasource filters for the query
                			updateFilterValues(client);  			
-               			taskManager.execute(new TaskIterator(
-                   			new CpsNetworkAndViewTask(client, Cmd.GRAPH, 
+               			cyServices.taskManager.execute(new TaskIterator(
+                   			new NetworkAndViewTask(cyServices, client, Cmd.GRAPH, 
                    				GraphType.NEIGHBORHOOD, Collections.singleton(uri), null, 
                    					currentItem.getName() + " NEIGHBORHOOD")));
                		} else { // use '/get' command
-               			taskManager.execute(new TaskIterator(
-                   			new CpsNetworkAndViewTask(client, uri, currentItem.getName())));
+               			cyServices.taskManager.execute(new TaskIterator(
+                   			new NetworkAndViewTask(cyServices, client, uri, currentItem.getName())));
                		}
                 }
             }
@@ -1123,225 +1061,6 @@ public final class CyPath2 extends AbstractWebServiceGUIClient
             return scrollPane;
         }
 
-    }
-	    
-	    
-    /**
-     * A Task that gets data from the cPath2 server and 
-     * creates a new Cytoscape network and view.
-     * 
-     * @author rodche
-     */
-    class CpsNetworkAndViewTask extends AbstractTask {
-    	
-    	private final String networkTitle;
-    	private final GraphType graphType;
-    	private final Set<String> sources;
-    	private final Set<String> targets;
-    	private final Cmd command;
-    	private final CPath2Client client;
-
-    	/**
-    	 * Constructor 
-    	 * (for a simple get-by-URI query).
-    	 * 
-    	 * @param uri of a pathway or interaction
-    	 * @param networkTitle optional name for the new network
-    	 */
-    	public CpsNetworkAndViewTask(CPath2Client client, String uri, String networkTitle) {
-    		this.networkTitle = networkTitle;
-    		this.graphType = null; //  if null, will use the cpath2 '/get' (by URIs) command
-    		this.sources = Collections.singleton(uri);
-    		this.targets = null;
-    		this.command = Cmd.GET;
-    		this.client = client;
-    	}
-    	
-    	/**
-    	 * Constructor 
-    	 * (advanced, for all get, traverse, and graph queries).
-    	 * 
-    	 * @param command
-    	 * @param graphType
-    	 * @param srcs
-    	 * @param tgts
-    	 * @param networkTitle
-    	 */
-    	public CpsNetworkAndViewTask(CPath2Client client, Cmd command, GraphType graphType, 
-    			Set<String> srcs, Set<String> tgts, String networkTitle) 
-    	{
-    		this.networkTitle = networkTitle;
-    		this.sources = srcs;
-    		this.targets = tgts;
-    		this.graphType = graphType; 
-    		this.command = command;
-    		this.client = client;
-    	}
-
-    	public void run(TaskMonitor taskMonitor) throws Exception {
-    		String title = "Retrieving a network " + networkTitle + " from " 
-   				+ getDisplayName() + "...";
-    		taskMonitor.setTitle(title);
-    		try {
-    			taskMonitor.setProgress(0);
-    			taskMonitor.setStatusMessage("Retrieving data...");
-    	    	
-    	    	// do query, get data as string
-    	    	final String data = client.doPost(command, String.class, 
-    	    	    client.buildRequest(command, graphType, sources, targets, downloadMode));
-    	    	
-    	    	if(data == null || data.isEmpty()) {
-    	    		JOptionPane.showMessageDialog(gui, "No data returned from the server.");
-    	    		return;
-    	    	}
-    	    		
-    	    	
-    	    	// done.
-    			taskMonitor.setProgress(0.4);    			
-    			if (cancelled) 
-    				return;
-	    			
-    			// Save the BioPAX or SIF data to a temporary local file
-    			String tmpDir = System.getProperty("java.io.tmpdir");			
-    			// Branch based on download mode setting.
-    			File tmpFile;
-    			if (downloadMode == OutputFormat.BIOPAX) {
-    				tmpFile = File.createTempFile("temp", ".xml", new File(tmpDir));
-    			} else {
-    				tmpFile = File.createTempFile("temp", ".sif", new File(tmpDir));
-    			}
-    			tmpFile.deleteOnExit();
-	    							
-    			FileWriter writer = new FileWriter(tmpFile);
-    			writer.write(data);
-    			writer.close();	
-	    			
-    			taskMonitor.setProgress(0.5);
-    			if (cancelled) return;
-    			taskMonitor.setStatusMessage("Creating Cytoscape Network from BioPAX Data...");
-	    			
-    			// Import data via Cy3 I/O API	
-    			String inputName = naming.getSuggestedNetworkTitle(networkTitle);
-    			CyNetworkReader reader =  networkViewReaderManager
-   					.getReader(tmpFile.toURI(), inputName);	
-    			reader.run(taskMonitor);
-	    			
-    			taskMonitor.setProgress(0.6);
-    			if (cancelled) return;
-    			taskMonitor.setStatusMessage("Creating Network View...");
-
-    			final CyNetwork cyNetwork = reader.getNetworks()[0];
-                final CyNetworkView view = reader.buildCyNetworkView(cyNetwork);
-
-                networkManager.addNetwork(cyNetwork);
-                networkViewManager.addNetworkView(view);
-
-    			taskMonitor.setProgress(0.7);
-    			if (cancelled) return;
-	    			
-    			//post-process SIF network (retrieve biopax attributes from the server)
-    			if (downloadMode == OutputFormat.BINARY_SIF) {
-    				//fix the network name
-    				SwingUtilities.invokeLater(new Runnable() {
-    					public void run() {
-    						String networkTitleWithUnderscores = naming.getSuggestedNetworkTitle(networkTitle);
-    						Attributes.set(cyNetwork, cyNetwork, CyNetwork.NAME, networkTitleWithUnderscores, String.class);
-    						Attributes.set(cyNetwork, cyNetwork, CyRootNetwork.SHARED_NAME, networkTitleWithUnderscores, String.class);
-    					}
-    				});
-	    				
-    				taskMonitor.setStatusMessage("Updating SIF network " +
-    					"attributes from corresonding BioPAX data...");				
-	    				
-    				// Set the Quick Find Default Index
-    				Attributes.set(cyNetwork, cyNetwork, "quickfind.default_index", CyNetwork.NAME, String.class);
-    				// Specify that this is a BINARY_NETWORK
-    				Attributes.set(cyNetwork, cyNetwork, "BIOPAX_NETWORK", Boolean.TRUE, Boolean.class);
-    	
-    				// we need the biopax sub-model to create node/edge attributes
-    				final Set<String> uris = new HashSet<String>();
-    				// Set node/edge attributes from the Biopax Model
-    				for (CyNode node : cyNetwork.getNodeList()) {
-    					String uri = cyNetwork.getRow(node).get(CyNetwork.NAME, String.class);
-    					if(!uri.contains("/group/")) {
-    						uris.add(uri);
-    					} else {
-							Attributes.set(cyNetwork, node, BioPaxUtil.BIOPAX_ENTITY_TYPE, "(Generic/Group)", String.class);
-							Attributes.set(cyNetwork, node, BioPaxUtil.BIOPAX_RDF_ID, uri, String.class);
-							Attributes.set(cyNetwork, node, CyRootNetwork.SHARED_NAME, "(Group)", String.class);
-							Attributes.set(cyNetwork, node, CyNetwork.NAME, "(Group)", String.class);
-    					}
-    				}
-    				if (cancelled) return;
-    				
-    				//retrieve the model (using a STAX hack)
-    				final Model[] callback = new Model[1];
-    				StaxHack.runWithHack(new Runnable() {
-    					@Override
-    					public void run() {
-    						try {
-    							callback[0] = client.get(uris);
-    						} catch (Throwable e) {
-    							LOGGER.warn("Import failed: " + e);
-    						}
-    					}
-    				});
-    				final Model bpModel = callback[0];
-    				
-    				// Set node/edge attributes from the Biopax Model
-    				for (CyNode node : cyNetwork.getNodeList()) {
-    					String uri = cyNetwork.getRow(node).get(CyNetwork.NAME, String.class);
-    					BioPAXElement e = bpModel.getByID(uri);// can be null (for generic/group nodes)
-    					if(e instanceof EntityReference || e instanceof Entity) 
-    					{
-    						//note: in fact, SIF formatted data contains only ERs, PEs (no sub-classes), and Complexes.
-    						BioPaxUtil.createAttributesFromProperties(e, node, cyNetwork);
-    					} else if (e != null){
-   							LOGGER.warn("SIF network has an unexpected node: " + uri 
-   								+ " of type " + e.getModelInterface());
-    					} else { //e == null
-    						assert uri.contains("/group/") : "URI, which is not a generated " +
-    							"generic/group's one, is not found on the server: " + uri;
-    						
-    						if(!uri.contains("/group/")) {
-    							LOGGER.warn("URI, which is not a generated " +
-    								"generic/group's one, is not found on the server: " + uri);
-    						}
-    					}
-    				}
-
-    				if (cancelled) return;
-
-    				VisualStyle visualStyle = binarySifVisualStyleUtil.getVisualStyle();
-    				mappingManager.setVisualStyle(visualStyle, view);
-    				visualStyle.apply(view);
-    				view.updateView();
-    			} 
-
-    			taskMonitor.setProgress(0.8);
-    			if (cancelled) return;
-    			taskMonitor.setStatusMessage("Generating html links...");
-	    			
-    			// Add Links Back to cPath2 Instance
-    			CyRow row = cyNetwork.getRow(cyNetwork);
-    			String cPathServerDetailsUrl = row.get(CPATH_SERVER_URL_ATTR, String.class);
-    			if (cPathServerDetailsUrl == null) {
-    				Attributes.set(cyNetwork, cyNetwork, CPATH_SERVER_NAME_ATTR, getDisplayName(), String.class);
-    				Attributes.set(cyNetwork, cyNetwork, CPATH_SERVER_URL_ATTR, client.getEndPointURL(), String.class);
-    			}
-	    			
-    			taskMonitor.setProgress(0.9);
-    			if (cancelled) return;
-    			taskMonitor.setStatusMessage("Running the default layout algorithm...");
-
-    			view.updateView();
-	    			
-    		} finally {
-    			taskMonitor.setStatusMessage("Done");
-    			taskMonitor.setProgress(1.0);
-    		}
-    	}
-    
     }
     
 }
