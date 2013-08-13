@@ -2,7 +2,6 @@ package org.pathwaycommons.cypath2.internal;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -16,19 +15,16 @@ import org.biopax.paxtools.model.level3.EntityReference;
 import org.cytoscape.io.read.CyNetworkReader;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;
-import org.cytoscape.model.CyRow;
 import org.cytoscape.model.subnetwork.CyRootNetwork;
 import org.cytoscape.view.model.CyNetworkView;
 import org.cytoscape.view.vizmap.VisualStyle;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.TaskMonitor;
-import org.pathwaycommons.cypath2.internal.BioPaxUtil.StaxHack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import cpath.client.CPath2Client;
-import cpath.service.Cmd;
-import cpath.service.GraphType;
+import cpath.client.util.CPathException;
+import cpath.query.CPathQuery;
 import cpath.service.OutputFormat;
 
 /**
@@ -37,59 +33,27 @@ import cpath.service.OutputFormat;
  * 
  * @author rodche
  */
-class NetworkAndViewTask extends AbstractTask {
+class NetworkAndViewTask<T> extends AbstractTask {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(NetworkAndViewTask.class);
 	
 	private final String networkTitle;
-	private final GraphType graphType;
-	private final Set<String> sources;
-	private final Set<String> targets;
-	private final Cmd command;
-	private final CPath2Client client;
+	private final CPathQuery<T> cPathQuery;
 	private final CyServices cyServices;
-
-	/**
-	 * Constructor 
-	 * (for a simple get-by-URI query).
-	 * 
-	 * @param cyServices
-	 * @param client 
-	 * @param uri of a pathway or interaction
-	 * @param networkTitle optional name for the new network
-	 */
-	public NetworkAndViewTask(CyServices cyServices, CPath2Client client, String uri, String networkTitle) {
-		this.cyServices = cyServices;
-		this.networkTitle = networkTitle;
-		this.graphType = null; //  if null, will use the cpath2 '/get' (by URIs) command
-		this.sources = Collections.singleton(uri);
-		this.targets = null;
-		this.command = Cmd.GET;
-		this.client = client;
-	}
 	
 	/**
 	 * Constructor 
 	 * (advanced, for all get, traverse, and graph queries).
 	 * 
 	 * @param cyServices
-	 * @param client
-	 * @param command
-	 * @param graphType
-	 * @param srcs
-	 * @param tgts
+	 * @param 
 	 * @param networkTitle
 	 */
-	public NetworkAndViewTask(CyServices cyServices, CPath2Client client, Cmd command, GraphType graphType, 
-			Set<String> srcs, Set<String> tgts, String networkTitle) 
+	public NetworkAndViewTask(CyServices cyServices, CPathQuery<T> cPathQuery, String networkTitle) 
 	{
 		this.cyServices = cyServices;
 		this.networkTitle = networkTitle;
-		this.sources = srcs;
-		this.targets = tgts;
-		this.graphType = graphType; 
-		this.command = command;
-		this.client = client;
+		this.cPathQuery = cPathQuery;
 	}
 
 	public void run(TaskMonitor taskMonitor) throws Exception {
@@ -100,20 +64,26 @@ class NetworkAndViewTask extends AbstractTask {
 			taskMonitor.setProgress(0);
 			taskMonitor.setStatusMessage("Retrieving data...");
 	    	
-	    	// do query, get data as string
-	    	final String data = client.doPost(command, String.class, 
-	    	    client.buildRequest(command, graphType, sources, targets, CyPath2.downloadMode));
+	    	String data = null;
+			try {
+				data = cPathQuery.stringResult(CyPath2.downloadMode);
+			} catch (CPathException e) {
+				LOGGER.warn("cPath2 query failed", e);
+			}
 	    	
 	    	if(data == null || data.isEmpty()) {
 	    		JOptionPane.showMessageDialog(cyServices.cySwingApplication.getJFrame(), "No data returned from the server.");
+	    		taskMonitor.setStatusMessage("No data returned from the server.");
+	    		taskMonitor.setProgress(1.0);
+	    		cancel();
 	    		return;
-	    	}
-	    		
+	    	}	    		
 	    	
 	    	// done.
 			taskMonitor.setProgress(0.4);    			
-			if (cancelled) 
+			if (cancelled) {
 				return;
+			}
     			
 			// Save the BioPAX or SIF data to a temporary local file
 			String tmpDir = System.getProperty("java.io.tmpdir");			
@@ -124,8 +94,7 @@ class NetworkAndViewTask extends AbstractTask {
 			} else {
 				tmpFile = File.createTempFile("temp", ".sif", new File(tmpDir));
 			}
-			tmpFile.deleteOnExit();
-    							
+			tmpFile.deleteOnExit();   							
 			FileWriter writer = new FileWriter(tmpFile);
 			writer.write(data);
 			writer.close();	
@@ -136,7 +105,7 @@ class NetworkAndViewTask extends AbstractTask {
     			
 			// Import data via Cy3 I/O API	
 			String inputName = cyServices.naming.getSuggestedNetworkTitle(networkTitle);
-			CyNetworkReader reader =  cyServices.networkViewReaderManager.getReader(tmpFile.toURI(), inputName);	
+			CyNetworkReader reader =  cyServices.networkViewReaderManager.getReader(tmpFile.toURI(), inputName);
 			reader.run(taskMonitor);
     			
 			taskMonitor.setProgress(0.6);
@@ -189,16 +158,18 @@ class NetworkAndViewTask extends AbstractTask {
 				
 				//retrieve the model (using a STAX hack)
 				final Model[] callback = new Model[1];
-				StaxHack.runWithHack(new Runnable() {
+				ClassLoaderHack.runWithHack(new Runnable() {
 					@Override
 					public void run() {
 						try {
-							callback[0] = client.get(uris);
+							callback[0] = CyPath2.client.createGetQuery()
+								.sources(uris)
+									.result();
 						} catch (Throwable e) {
 							LOGGER.warn("Import failed: " + e);
 						}
 					}
-				});
+				}, com.ctc.wstx.stax.WstxInputFactory.class);
 				final Model bpModel = callback[0];
 				
 				// Set node/edge attributes from the Biopax Model
@@ -230,20 +201,10 @@ class NetworkAndViewTask extends AbstractTask {
 				visualStyle.apply(view);
 				view.updateView();
 			} 
-
+    			
 			taskMonitor.setProgress(0.8);
 			if (cancelled) return;
-			taskMonitor.setStatusMessage("Generating html links...");
-    			
-			// Add Links Back to cPath2 Instance
-			CyRow row = cyNetwork.getRow(cyNetwork);
-			String cPathServerDetailsUrl = row.get(CyPath2.CPATH_SERVER_URL_ATTR, String.class);
-			if (cPathServerDetailsUrl == null) {
-				Attributes.set(cyNetwork, cyNetwork, CyPath2.CPATH_SERVER_URL_ATTR, client.getEndPointURL(), String.class);
-			}
-    			
-			taskMonitor.setProgress(0.9);
-			if (cancelled) return;
+			
 			taskMonitor.setStatusMessage("Running the default layout algorithm...");
 
 			view.updateView();

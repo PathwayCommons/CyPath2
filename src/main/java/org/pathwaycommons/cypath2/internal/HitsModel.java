@@ -12,7 +12,7 @@ import org.cytoscape.work.TaskManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import cpath.client.CPath2Client;
+import cpath.client.CPathClient.Direction;
 import cpath.client.util.CPathException;
 import cpath.service.GraphType;
 import cpath.service.jaxb.SearchHit;
@@ -28,7 +28,6 @@ final class HitsModel extends Observable {
 
     private SearchResponse response;
     
-    final boolean parentPathwaysRequired;
     final String title;
     
     final Map<String, Integer> numHitsByTypeMap =  new ConcurrentSkipListMap<String, Integer>();
@@ -36,25 +35,19 @@ final class HitsModel extends Observable {
     final Map<String, Integer> numHitsByDatasourceMap = new ConcurrentSkipListMap<String, Integer>();       
     final Map<String, String> hitsSummaryMap = new ConcurrentHashMap<String, String>();
     final Map<String, Collection<NvpListItem>> hitsPathwaysMap = new ConcurrentHashMap<String, Collection<NvpListItem>>();
+    final Map<String, String> hitsDetailsMap = new ConcurrentHashMap<String, String>();
 
     // full-text search query parameter
     volatile String searchFor = "Interaction"; 
     // advanced (graph or multiple items import) query parameter 
     volatile GraphType graphType = null;
-    final CPath2Client graphQueryClient; 
+    volatile Direction direction;
     
-	// dynamic map - one cpath-client instance per biopax property path (used by multiple thread)
-	private static final Map<String, CPath2Client> proprtyPathToClientMap 
-		= Collections.synchronizedMap(new HashMap<String, CPath2Client>());
-	
 	private static final Logger LOGGER = LoggerFactory.getLogger(HitsModel.class);
     
-    public HitsModel(String title, boolean parentPathwaysUsed, 
-    		TaskManager taskManager, CPath2Client graphQueryClient) 
+    public HitsModel(String title, TaskManager taskManager) 
     {
-		this.parentPathwaysRequired = parentPathwaysUsed;
 		this.title = title;
-		this.graphQueryClient = graphQueryClient;
 	}
     
     public int getNumRecords() {
@@ -79,9 +72,9 @@ final class HitsModel extends Observable {
 		numHitsByDatasourceMap.clear();
 		hitsSummaryMap.clear();
 		hitsPathwaysMap.clear();
+		hitsDetailsMap.clear();
 		
-		// get/save info INFO_ABOUT components/participants/members;
-		// run in a few separate threads
+		// get and save the summary info for all hits at once
 		ExecutorService exec = Executors.newFixedThreadPool(10);
 		for (final SearchHit record : response.getSearchHit())
 		{
@@ -111,9 +104,8 @@ final class HitsModel extends Observable {
     }
 
     
-	private void summarize(final SearchHit hit) {
-        
-		// do catalog -
+	private void summarize(final SearchHit hit) {       
+		// do catalog (by type, organism, source) -
 		String type = hit.getBiopaxClass();
         Integer count = numHitsByTypeMap.get(type);
         if (count != null) {
@@ -139,26 +131,21 @@ final class HitsModel extends Observable {
             	numHitsByDatasourceMap.put(ds, 1);
             }
         }
-		
-		
+				
 		// get/create and show hit's summary
+		final String uri = hit.getUri();
 		StringBuilder html = new StringBuilder();
 		html.append("<html>")
-			.append("<h2>").append(hit.getBiopaxClass()).append("</h2>");
+			//a link to be intercepted and replaced with a well-formed cpath2 query later
+			.append("<h2><a href='").append(uri).append("'>Click to import ")
+			.append((hit.getBiopaxClass().equalsIgnoreCase("Pathway")) ? "this network" : "the neighborhood network of")
+			.append("</a></h2>")
+			.append("<h3>BioPAX Object:</h3>")
+			.append("<strong>Type:</strong> <em>").append(hit.getBiopaxClass()).append("</em><br/>")
+			.append("<strong>URI :</strong> ").append(uri).append("<br/>");		
+		
 		if (hit.getName() != null)
-			html.append("<b>").append(hit.getName()).append("</b><br/>");
-		
-		final String uri = hit.getUri();
-		html.append("<em>URI='").append(uri).append("'</em><br/>");
-		
-		//create a fake link to be intercepted when clicked
-		String linkText = "Click to Import (a sub-network or neighborhood network).";
-//		if(searchFor.equalsIgnoreCase("Pathway") || searchFor.equalsIgnoreCase("Interaction")) { //simply use 'get' query
-//			linkText = "Click to Import.";
-//		}
-		html.append("<a href='#'>").append(linkText).append("</a>");
-
-		//TODO may create other links (to e.g. provider's site)
+			html.append("<strong>Name:</strong> ").append(hit.getName()).append("<br/>");
 		
 		String primeExcerpt = hit.getExcerpt();
 		if (primeExcerpt != null)
@@ -166,55 +153,112 @@ final class HitsModel extends Observable {
 				.append("<span class='excerpt'>")
 					.append(primeExcerpt)
 						.append("</span><br/>");
-		//get organism URIs
-		List<String> items = hit.getOrganism();
-		if (items != null && !items.isEmpty()) {
-			html.append("<h3>Organisms:</h3>").append("<ul>");
-			for(String it : items) {
-				String name = CyPath2.uriToOrganismNameMap.get(it);
-				name = (name == null || name.isEmpty()) ? it : name;
-				html.append("<li>")
-					.append(name)
-					.append("</li>");
-			}
-			html.append("</ul>");
-		}
+		
 		//get datasource URIs
-		items = hit.getDataSource();
+		List<String> items = hit.getDataSource();
 		if (items != null && !items.isEmpty()) {
-			html.append("<h3>Data sources:</h3>").append("<ul>");
+			html.append("<h3>Data sources:</h3>");
 			for(String it : items) {
 				String name = CyPath2.uriToDatasourceNameMap.get(it);
 				name = (name == null || name.isEmpty()) ? it : name;
-				html.append("<li>")
-					.append(name)
-					.append("</li>");
+				html.append(name).append("<br/>");
 			}
-			html.append("</ul>");
 		}
+		
+		//get organism URIs
+		items = hit.getOrganism();
+		if (items != null && !items.isEmpty()) {
+			html.append("<h3>Organisms:</h3>");
+			for(String it : items) {
+				String name = CyPath2.uriToOrganismNameMap.get(it);
+				name = (name == null || name.isEmpty()) ? it : name;
+				html.append(name).append("<br/>");
+			}
+		}
+		
+		html.append("</html>");		
+		hitsSummaryMap.put(uri, html.toString());		
+	}
 
+
+	/**
+	 * Gets additional parent pathways' and members'
+	 * names and counts from the server, etc., and store/cache 
+	 * in a temporary map to re-use in the future.
+	 * 
+	 * @param hit
+	 * @return
+	 */
+	public String fetchDetails(final SearchHit hit) {
+        	
+		// get/create and show hit's summary
+		final String uri = hit.getUri();
+		
+		if(hitsDetailsMap.containsKey(uri))
+			return hitsDetailsMap.get(uri);
+				
+		StringBuilder html = new StringBuilder("<html>");
+		
+		//shortcut when the hit is just an unused protein/molecule reference from the Warehouse
+		if(searchFor.equalsIgnoreCase("EntityReference")) {
+			TraverseResponse res = traverse("EntityReference/entityReferenceOf", Collections.singleton(uri));
+			if(res == null || res.isEmpty()) {
+				html.append("This standard ").append(hit.getBiopaxClass())
+					.append(" is not part of any bio-network currently loaded in the server.</html>");
+				hitsDetailsMap.put(uri, html.toString());
+				return hitsDetailsMap.get(uri);
+			}
+		}		
+		
+		//list parent pathways		
+		if(!hit.getPathway().isEmpty() && 
+			!( hit.getPathway().size() == 1 && uri.equalsIgnoreCase(hit.getPathway().get(0))) ) 
+		{
+			html.append("<h3>Parent Pathways:</h3><ul>");
+			final Set<String> ppwUris = new HashSet<String>(hit.getPathway()); // a hack for not unique URIs (a cpath2 indexing bug...)
+			TraverseResponse ppwNames = traverse("Named/displayName", ppwUris);
+			if (ppwNames != null) {
+				Map<String, String> ppwUriToNameMap = new HashMap<String, String>();
+				for (TraverseEntry e : ppwNames.getTraverseEntry()) {
+					String name = (e.getValue().isEmpty()) ? e.getUri() : e.getValue().get(0);
+					ppwUriToNameMap.put(e.getUri(), name);
+				}
+				// add parent pathways's components counts
+				TraverseResponse ppwComponents = traverse("Pathway/pathwayComponent", ppwUris); // this gets URIs of pathways
+				for (TraverseEntry e : ppwComponents.getTraverseEntry()) {
+					String name = ppwUriToNameMap.get(e.getUri());
+					ppwUriToNameMap.put(e.getUri(), name + " (" + e.getValue().size() + " processes)");
+				}
+				
+				// create html links
+				for(String ppwUri : ppwUriToNameMap.keySet()) {
+					html.append("<li><a href='").append(ppwUri).append("'>")
+						.append(ppwUriToNameMap.get(ppwUri)).append("</a></li>");
+				}				
+			}
+			html.append("</ul>");		
+		}			
+		
+		// list members (if any)
 		String path = null;
 		if("Pathway".equalsIgnoreCase(hit.getBiopaxClass()))
 			path = "Pathway/pathwayComponent";
 		else if("Complex".equalsIgnoreCase(hit.getBiopaxClass()))
-				path = "Complex/component";
+			path = "Complex/component";
 		else if(searchFor.equalsIgnoreCase("Interaction"))
 			path = "Interaction/participant";
 		else if(searchFor.equalsIgnoreCase("PhysicalEntity"))
-				path = "PhysicalEntity/memberPhysicalEntity";
+			path = "PhysicalEntity/memberPhysicalEntity";
 		else if(searchFor.equalsIgnoreCase("EntityReference"))
-			path = "EntityReference/memberEntityReference";
-		
+			path = "EntityReference/memberEntityReference";		
 		assert (path != null);
-		
-		// get names
+
+		// request members's names
 		TraverseResponse members = traverse(path + ":Named/displayName", 
 				Collections.singleton(uri));
-		
-		if (members == null)
-		// no names? - get uris then
+		if (members == null) // no names? - get uris then	
 			members = traverse(path, Collections.singleton(uri));
-			
+		
 		if (members != null) {
 			List<String> values  = members.getTraverseEntry().get(0).getValue();
 			if (!values.isEmpty())
@@ -222,50 +266,26 @@ final class HitsModel extends Observable {
 				.append(" (direct) members:</h3>")
 				.append(StringUtils.join(values, "<br/>"));
 		}
-
-		html.append("</html>");		
-		hitsSummaryMap.put(hit.getUri(), html.toString());
 		
-		if(this.parentPathwaysRequired && !hit.getPathway().isEmpty()) {
-			// add parent pathways to the Map ("ppw" prefix means "parent pathway's" -)
-			final Collection<NvpListItem> ppws = new TreeSet<NvpListItem>();	
-			final Set<String> ppwUris = new HashSet<String>(hit.getPathway()); // a hack for not unique URIs (a cpath2 indexing bug...)
-			TraverseResponse ppwNames = traverse("Named/displayName", ppwUris);
-			if (ppwNames != null) {
-				Map<String, String> ppwUriToNameMap = new HashMap<String, String>();			
-				for (TraverseEntry e : ppwNames.getTraverseEntry()) {
-					String name = (e.getValue().isEmpty()) ? e.getUri() : e.getValue().get(0);
-					ppwUriToNameMap.put(e.getUri(), name);
-				}
+		html.append("</html>");	
+		
+		//store for re-using later
+		hitsDetailsMap.put(uri, html.toString());
 				
-				// add ppw component counts to names and wrap/save as NVP, finally:
-				TraverseResponse ppwComponents = traverse("Pathway/pathwayComponent", ppwUris); // this gets URIs of pathways
-				for (TraverseEntry e : ppwComponents.getTraverseEntry()) {
-					assert ppwUriToNameMap.containsKey(e.getUri());
-					String name = ppwUriToNameMap.get(e.getUri());
-					ppws.add(new NvpListItem(name + " (" + e.getValue().size() + " processes)", e.getUri()));
-				}
-			}
-			hitsPathwaysMap.put(hit.getUri(), ppws);
-		}
-		
-	}
+		return hitsDetailsMap.get(uri);
+	}	
 	
 	
 	private TraverseResponse traverse(String path, Set<String> uris) {
 		if(LOGGER.isDebugEnabled())
 	   		LOGGER.debug("traverse: path=" + path);
 	   		
-	   	CPath2Client client = proprtyPathToClientMap.get(path);
-	   	if(client == null) {
-	   		client = CPath2Client.newInstance(graphQueryClient.getActualEndPointURL());
-	   		client.setPath(path);
-	   		proprtyPathToClientMap.put(path, client);
-	   	}
-	        
         TraverseResponse res = null;
 		try {
-			res = client.traverse(uris);
+			res = CyPath2.client.createTraverseQuery()
+				.propertyPath(path)
+				.sources(uris)
+				.result();
 		} catch (CPathException e) {
 			LOGGER.error("traverse: " + path + 
 				" failed; uris:" + uris.toString(), e);

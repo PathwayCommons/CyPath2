@@ -16,11 +16,9 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Observer;
 import java.util.Set;
@@ -55,7 +53,6 @@ import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.text.Document;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.StyleSheet;
 
@@ -63,17 +60,18 @@ import org.cytoscape.io.webservice.NetworkImportWebServiceClient;
 import org.cytoscape.io.webservice.SearchWebServiceClient;
 import org.cytoscape.io.webservice.swing.AbstractWebServiceGUIClient;
 import org.cytoscape.util.swing.CheckBoxJList;
-import org.cytoscape.util.swing.OpenBrowser;
+import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.Task;
 import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskMonitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import cpath.client.CPath2Client;
-import cpath.client.CPath2Client.Direction;
+import cpath.client.CPathClient;
+import cpath.client.CPathClient.Direction;
 import cpath.client.util.CPathException;
-import cpath.service.Cmd;
+import cpath.query.CPathGetQuery;
+import cpath.query.CPathGraphQuery;
 import cpath.service.GraphType;
 import cpath.service.OutputFormat;
 import cpath.service.jaxb.SearchHit;
@@ -87,7 +85,10 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(CyPath2.class);
     
-    static OutputFormat downloadMode = OutputFormat.BIOPAX;  
+	static final String PROP_CPATH2_SERVER_URL = "cypath2.server.url";
+    
+    static OutputFormat downloadMode = OutputFormat.BIOPAX; 
+	static CPathClient client;
     
     static final Map<String,String> uriToOrganismNameMap = new HashMap<String, String>();
     static final Map<String,String> uriToDatasourceNameMap = new HashMap<String, String>();
@@ -102,10 +103,14 @@ final class CyPath2 extends AbstractWebServiceGUIClient
     
 	/**
      * Creates a new Web Services client.
+     * 
+     * @param displayName
+     * @param description
+     * @param cyServices
      */
-    public CyPath2(String uri, String displayName, String description, CyServices cyServices) 
+    public CyPath2(String displayName, String description, CyServices cyServices) 
     {    	   	
-    	super(uri, displayName, description);
+    	super(client.getEndPointURL(), displayName, description);
     	
     	this.cyServices = cyServices;
 		
@@ -122,21 +127,35 @@ final class CyPath2 extends AbstractWebServiceGUIClient
     /**
      * Creates the UI and loads 
      * some initial data from the server.
+     * @throws CPathException 
      * 
      */
-    public void init() {   	
+    public void init() throws CPathException {   	
     	// init datasources and org. maps (in a separate thread)
-		CPath2Client client = newClient();
-		client.setType("Provenance");
-		List<SearchHit> hits = client.findAll();
-		for(SearchHit bs : hits) {
-			uriToDatasourceNameMap.put(bs.getUri(), bs.getName());
-		}
-        client.setType("BioSource");
-        hits = client.findAll();
-        for(SearchHit bs : hits) {
-        	uriToOrganismNameMap.put(bs.getUri(), bs.getName());
-        }    	
+//    	ClassLoaderHack.runWithHack(new Runnable() {			
+//			@Override
+//			public void run() {
+				SearchResponse res;
+				try {
+					res = client.createSearchQuery()
+							.typeFilter("Provenance")
+							.allPages() //sets .queryString("*") automatically
+							.result();
+					for(SearchHit bs : res.getSearchHit()) {
+						uriToDatasourceNameMap.put(bs.getUri(), bs.getName());
+					}
+			        res = client.createSearchQuery()
+			        	.typeFilter("BioSource")
+			        	.allPages() //sets .queryString("*") automatically
+			        	.result();
+			        for(SearchHit bs : res.getSearchHit()) {
+			        	uriToOrganismNameMap.put(bs.getUri(), bs.getName());
+			        }  	
+				} catch (CPathException e) {
+					throw new RuntimeException(e);
+				}
+//			}
+//		}, com.sun.xml.bind.v2.ContextFactory.class);
     	
         // create the UI
 		final JTabbedPane  tabbedPane = new JTabbedPane();
@@ -147,13 +166,9 @@ final class CyPath2 extends AbstractWebServiceGUIClient
     	JPanel mainPanel = (JPanel) gui;
         mainPanel.setPreferredSize(new Dimension (900,600));
         mainPanel.setLayout (new BorderLayout());
-        mainPanel.add(tabbedPane, BorderLayout.CENTER);       
+        mainPanel.add(tabbedPane, BorderLayout.CENTER);
     }   
     
-    
-    private CPath2Client newClient() {
-		return CPath2Client.newInstance(getServiceLocation().toString());
-	}
 
 	/**
      * Creates a new network and view using data returned 
@@ -161,15 +176,15 @@ final class CyPath2 extends AbstractWebServiceGUIClient
      */
 	@Override
 	public TaskIterator createTaskIterator(final Object uri) {
-	
-		final CyPath2 app = this;
-		
+
 		TaskIterator taskIterator = new TaskIterator(new Task() {
 			@Override
 			public void run(TaskMonitor taskMonitor) throws Exception {
 				cyServices.taskManager.setExecutionContext(null);
-				cyServices.taskManager.execute(new TaskIterator(
-					new NetworkAndViewTask(cyServices, newClient(), (String) uri, "")));
+				final CPathGetQuery query = client.createGetQuery().sources(new String[] {(String) uri});
+				cyServices.taskManager.execute(
+					new TaskIterator(new NetworkAndViewTask(cyServices, query, ""))
+				);
 			}
 
 			@Override
@@ -192,8 +207,11 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 		TitledBorder border = BorderFactory.createTitledBorder(
 				BorderFactory.createEtchedBorder(EtchedBorder.RAISED), title);
 		Font font = border.getTitleFont();
-		Font newFont = new Font(font.getFamily(), Font.BOLD, font.getSize() + 1);
-		border.setTitleFont(newFont);
+		if(font != null) { //weird null on a Win7 system
+			Font newFont = new Font(font.getFamily(), Font.BOLD, font.getSize() + 1);
+			border.setTitleFont(newFont);
+		}
+		
 		border.setTitleColor(new Color(102, 51, 51));
 		return border;
 	}
@@ -285,12 +303,12 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	    	model.addElement(nvp);
 	    }
 	    organismList.setModel(model);
-	    organismList.setToolTipText("Organism(s) include:");
+	    organismList.setToolTipText("Organism(s) only:");
 	    organismList.setAlignmentX(Component.LEFT_ALIGNMENT);
 	        
 	    JScrollPane organismFilterBox = new JScrollPane(organismList, 
 	    	JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-	    organismFilterBox.setBorder(new TitledBorder("Organism(s) include:"));
+	    organismFilterBox.setBorder(new TitledBorder("Organism(s) only:"));
 	    organismFilterBox.setPreferredSize(new Dimension(300, 200));
 	    organismFilterBox.setMinimumSize(new Dimension(200, 100));
 	        
@@ -301,12 +319,12 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	    	dataSourceBoxModel.addElement(new NvpListItem(name, name));
 	    }		        
 	    dataSourceList.setModel(dataSourceBoxModel);
-	    dataSourceList.setToolTipText("Datasource(s) include:");
+	    dataSourceList.setToolTipText("Datasource(s) only:");
 	    dataSourceList.setAlignmentX(Component.LEFT_ALIGNMENT);
 	        
 	    JScrollPane dataSourceFilterBox = new JScrollPane(dataSourceList, 
 	       	JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-	    dataSourceFilterBox.setBorder(new TitledBorder("Datasource(s) include:"));
+	    dataSourceFilterBox.setBorder(new TitledBorder("Datasource(s) only:"));
 	    dataSourceFilterBox.setPreferredSize(new Dimension(300, 200));
 	    dataSourceFilterBox.setMinimumSize(new Dimension(200, 100));
 
@@ -325,22 +343,13 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 
 	    
 	private Component createSearchPanel() 
-	{	   	 	
-//		final JPanel panel = new JPanel();
-	    	
-	   	final HitsModel hitsModel = new HitsModel("Current Search Hits", true, 
-	   			cyServices.taskManager, newClient());
-//	   	panel.setLayout(new BorderLayout());
+	{	   	 		    	
+	   	final HitsModel hitsModel = new HitsModel("Current Search Hits", cyServices.taskManager);
 			
 	    // create tabs pane for the hit details and parent pathways sun-panels
-	    final JTabbedPane detailsTabbedPane = new JTabbedPane();
-	    final DetailsPanel detailsPanel = new DetailsPanel(cyServices.openBrowser, hitsModel.graphQueryClient);
-	    detailsTabbedPane.add("Summary", detailsPanel);
-	    //parent pathways list pane (its content to be added below)
-	    JPanel ppwListPane = new JPanel();
-	    detailsTabbedPane.add("Parent Pathways", ppwListPane);
-	    detailsTabbedPane.setPreferredSize(new Dimension(300, 250));
-	    detailsTabbedPane.setMinimumSize(new Dimension(200, 150));
+	    final CurrentHitInfoJTabbedPane currentHitInfoPane = new CurrentHitInfoJTabbedPane(hitsModel);
+	    currentHitInfoPane.setPreferredSize(new Dimension(300, 250));
+	    currentHitInfoPane.setMinimumSize(new Dimension(200, 150));
 	        
 	    final JPanel searchQueryPanel = new JPanel();
 	    searchQueryPanel.setMinimumSize(new Dimension(400, 100));
@@ -405,7 +414,6 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	    bpTypeComboBox.setEditable(false);
 	        
 	    // create the search button and action
-	    final CPath2Client searchClient = newClient();
 	    final JButton searchButton = new JButton("Search");
 	    searchButton.setToolTipText("Full-Text Search");
 	    searchButton.addActionListener(new ActionListener() {
@@ -423,11 +431,13 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	        			public void run(TaskMonitor taskMonitor) throws Exception {
 	        				try {
 	        					taskMonitor.setProgress(0);
-	        					taskMonitor.setStatusMessage("Executing search for " + keyword);
-	        					
-	        					searchClient.setType(hitsModel.searchFor.toString());
-	        					updateFilterValues(searchClient);	        					
-	        					final SearchResponse searchResponse = (SearchResponse) searchClient.search(keyword);
+	        					taskMonitor.setStatusMessage("Executing search for " + keyword);        					
+	        					final SearchResponse searchResponse = client.createSearchQuery()
+	        							.typeFilter(hitsModel.searchFor)
+	        							.datasourceFilter(selectedDatasources())
+	        							.organismFilter(selectedOrganisms())
+	        							.queryString(keyword)
+	        							.result();
 	        					if(searchResponse != null) {
 	        						// update hits model (make summaries, notify observers!)
 	        						hitsModel.update(searchResponse);
@@ -483,32 +493,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
     	final JPanel searchResultsPanel = new JPanel();
     	searchResultsPanel.setMinimumSize(new Dimension(400, 350));
     	searchResultsPanel.setLayout(new BoxLayout(searchResultsPanel, BoxLayout.Y_AXIS));
-    	searchResultsPanel.add(info);
-        //create parent pathways panel (the second tab)
-        final JList ppwList = new JList(new DefaultListModel());
-        ppwList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        ppwList.setPrototypeCellValue("12345678901234567890");   
-        ppwList.addMouseListener(new MouseAdapter() {
-			public void mouseClicked(MouseEvent e) {
-				if (e.getClickCount() == 2) {
-					int selectedIndex = ppwList.getSelectedIndex();
-					// ignore the "unselect" event.
-					if (selectedIndex >= 0) {
-						NvpListItem item = (NvpListItem) ppwList.getModel()
-								.getElementAt(selectedIndex);
-						String uri = item.getValue();
-						cyServices.taskManager.execute(new TaskIterator(
-				        	new NetworkAndViewTask(cyServices, hitsModel.graphQueryClient, uri, item.toString())));	
-					}
-				}
-			}
-		});  
-	        
-        ppwListPane.setLayout(new BorderLayout());
-        final JScrollPane ppwListScrollPane = new JScrollPane(ppwList);
-        ppwListScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        ppwListScrollPane.setBorder(createTitledBorder("Double-click to import (a new network)."));
-        ppwListPane.add(ppwListScrollPane, BorderLayout.CENTER);
+    	searchResultsPanel.add(info); 
 
         // picked by user items list (for adv. querying or downloading later)
         final JList userList = new JList(new DefaultListModel());
@@ -535,21 +520,20 @@ final class CyPath2 extends AbstractWebServiceGUIClient
             public void valueChanged(ListSelectionEvent listSelectionEvent) {
                 int selectedIndex = resList.getSelectedIndex();
                 //  ignore the "unselect" event.
-                if (!listSelectionEvent.getValueIsAdjusting()) {
+//                if (!listSelectionEvent.getValueIsAdjusting()) {
                     if (selectedIndex >=0) {
                     	SearchHit item = (SearchHit)resList.getModel().getElementAt(selectedIndex);
                 		// show current hit's summary
-                		String summary = hitsModel.hitsSummaryMap.get(item.getUri());
-                    	detailsPanel.setCurrentItem(item, summary);
-                		// update pathways list
-                		DefaultListModel ppwListModel = (DefaultListModel) ppwList.getModel();
-						ppwListModel.clear();
-						Collection<NvpListItem> ppws = hitsModel.hitsPathwaysMap.get(item.getUri());
-						if (ppws != null && !ppws.isEmpty())
-							for (NvpListItem it : ppws)
-								ppwListModel.addElement(it);           			
+                    	currentHitInfoPane.setCurrentItem(item);
+//                		// update pathways list
+//                		DefaultListModel ppwListModel = (DefaultListModel) ppwList.getModel();
+//						ppwListModel.clear();
+//						Collection<NvpListItem> ppws = hitsModel.hitsPathwaysMap.get(item.getUri());
+//						if (ppws != null && !ppws.isEmpty())
+//							for (NvpListItem it : ppws)
+//								ppwListModel.addElement(it);     
                     }
-                }
+//                }
             }
         });
         //double-click adds item to the other list (user picked items)
@@ -584,7 +568,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
         hitListScrollPane.setBorder(createTitledBorder("Double-click adds it to Advanced Query page."));
         hitListScrollPane.setPreferredSize(new Dimension(300, 150));
         // make (north) tabs       
-        JSplitPane vSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, hitListScrollPane, detailsTabbedPane);
+        JSplitPane vSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, hitListScrollPane, currentHitInfoPane);
         vSplit.setDividerLocation(150);
         vSplit.setResizeWeight(0.5f);
         hitListPane.add(vSplit, BorderLayout.CENTER);
@@ -622,7 +606,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	    hitsModel.graphType = null;
 	    b.addActionListener(new ActionListener() {
 	        public void actionPerformed(ActionEvent actionEvent) {
-	            hitsModel.graphType = null;
+	            hitsModel.graphType = null; //to use "get" command instead of "graph"
 	        	both.setEnabled(false);
 	        	up.setEnabled(false);
 	        	down.setEnabled(false);
@@ -645,7 +629,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	        	up.setEnabled(true);
 	        	down.setEnabled(true);
 	        	both.setSelected(true);
-	        	hitsModel.graphQueryClient.setDirection(Direction.BOTHSTREAM);
+	        	hitsModel.direction = Direction.BOTHSTREAM;
 	        }
 	    });
 	    bg.add(b);
@@ -661,7 +645,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	        	up.setEnabled(true);
 	        	down.setEnabled(true);
 	        	down.setSelected(true);
-	        	hitsModel.graphQueryClient.setDirection(Direction.DOWNSTREAM);
+	        	hitsModel.direction = Direction.DOWNSTREAM;
 	        }
 	    });
 	    bg.add(b);
@@ -676,7 +660,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	        	both.setEnabled(false);
 	        	up.setEnabled(false);
 	        	down.setEnabled(false);
-	        	hitsModel.graphQueryClient.setDirection(null);
+	        	hitsModel.direction = null;
 	        }
 	    });
 	    bg.add(b);
@@ -691,7 +675,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	        	both.setEnabled(false);
 	        	up.setEnabled(false);
 	        	down.setEnabled(false);
-	        	hitsModel.graphQueryClient.setDirection(null);
+	        	hitsModel.direction = null;
 	        }
 	    });
 	    bg.add(b);
@@ -709,7 +693,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
     	bg = new ButtonGroup();	    
     	down.addActionListener(new ActionListener() {
 	        public void actionPerformed(ActionEvent actionEvent) {
-	        	hitsModel.graphQueryClient.setDirection(Direction.DOWNSTREAM);
+	        	hitsModel.direction = Direction.DOWNSTREAM;
 	        }
 	    });
 	    bg.add(down);
@@ -722,7 +706,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	    
         up.addActionListener(new ActionListener() {
 	        public void actionPerformed(ActionEvent actionEvent) {
-	        	hitsModel.graphQueryClient.setDirection(Direction.UPSTREAM);
+	        	hitsModel.direction = Direction.UPSTREAM;
 	        }
 	    });
 	    bg.add(up);
@@ -732,7 +716,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	    
 	    both.addActionListener(new ActionListener() {
 	        public void actionPerformed(ActionEvent actionEvent) {
-	        	hitsModel.graphQueryClient.setDirection(Direction.BOTHSTREAM);
+	        	hitsModel.direction = Direction.BOTHSTREAM;
 	        }
 	    });
 	    bg.add(both);
@@ -769,19 +753,23 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	        			tgts.add(uri);
 	        	}
 	        	
-	        	//use same organism and datasource filters for the GRAPH query
-	        	updateFilterValues(hitsModel.graphQueryClient);
-	        	        	
-	        	if(hitsModel.graphType == null)
+	        	if(hitsModel.graphType == null) {
+	        		final CPathGetQuery getQ = client.createGetQuery().sources(srcs);
 	        		cyServices.taskManager.execute(new TaskIterator(
-	        			new NetworkAndViewTask(cyServices, hitsModel.graphQueryClient, 
-	        					Cmd.GET, null, srcs, null, "Biopax sub-model")
+	        			new NetworkAndViewTask(cyServices, getQ, "Biopax sub-model")
 	        			));
-	        	else
+	        	} else {
+	        		final CPathGraphQuery graphQ = client.createGraphQuery()
+	        			.kind(hitsModel.graphType)
+	        			.sources(srcs).targets(tgts)
+	        			.datasourceFilter(selectedDatasources())
+	        			.direction(hitsModel.direction)
+	        			//.limit(?)
+	        			.organismFilter(selectedOrganisms());
 	        		cyServices.taskManager.execute(new TaskIterator(
-	        			new NetworkAndViewTask(cyServices, hitsModel.graphQueryClient, 
-	        					Cmd.GRAPH, hitsModel.graphType, srcs, tgts, "Biopax " + hitsModel.graphType)
+	        			new NetworkAndViewTask(cyServices, graphQ, "Biopax " + hitsModel.graphType)
 		        		));
+	        	}
 	        	
 	        	advQueryButton.setEnabled(true);
 	        }
@@ -812,17 +800,10 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
     	// hits model is used both by the filters panel pathways jlist
-    	final HitsModel topPathwaysModel = new HitsModel("Top Pathways", false, 
-    			cyServices.taskManager, newClient());
-		
-        //  Create Info Panel (the first tab)
-        final DetailsPanel detailsPanel = new DetailsPanel(cyServices.openBrowser, topPathwaysModel.graphQueryClient);
-        final JTextPane summaryTextPane = detailsPanel.getTextPane();
-	        
+    	final HitsModel topPathwaysModel = new HitsModel("Top Pathways", cyServices.taskManager);        
         // make (south) tabs
-        JTabbedPane southPane = new JTabbedPane(); 
-        southPane.add("Summary", detailsPanel);
-	        
+        final CurrentHitInfoJTabbedPane southPane = new CurrentHitInfoJTabbedPane(topPathwaysModel);
+        
     	// create top pathways list
     	final TopPathwaysJList tpwJList = new TopPathwaysJList();
     	// as for current version, enable only the filter by data source (type is always Pathway, organisms - human + unspecified)
@@ -835,16 +816,13 @@ final class CyPath2 extends AbstractWebServiceGUIClient
             	TopPathwaysJList l = (TopPathwaysJList) listSelectionEvent.getSource();
                 int selectedIndex = l.getSelectedIndex();
                 //  ignore the "unselect" event.
-                if (!listSelectionEvent.getValueIsAdjusting()) {
+//                if (!listSelectionEvent.getValueIsAdjusting()) {
                     if (selectedIndex >=0) {
                     	SearchHit item = (SearchHit) l.getModel().getElementAt(selectedIndex);
-                		// get/create and show hit's summary
-                		String summary = topPathwaysModel.hitsSummaryMap.get(item.getUri());
-                		detailsPanel.setCurrentItem(item, summary);
-                		summaryTextPane.setText(summary);
-                		summaryTextPane.setCaretPosition(0);					
+                		// update hit's summary/details pane
+                		southPane.setCurrentItem(item);				
                     }
-                }
+//                }
             }
         });
 		tpwJList.addMouseListener(new MouseAdapter() {
@@ -856,8 +834,9 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 						SearchHit item = (SearchHit) tpwJList.getModel()
 								.getElementAt(selectedIndex);
 						String uri = item.getUri();
+						final CPathGetQuery getQuery = client.createGetQuery().sources(new String[]{uri});
 						cyServices.taskManager.execute(new TaskIterator(
-				        	new NetworkAndViewTask(cyServices, topPathwaysModel.graphQueryClient, uri, item.toString())));	
+				        	new NetworkAndViewTask(cyServices, getQuery, item.toString())));	
 					}
 				}
 			}
@@ -892,16 +871,23 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	        public void actionPerformed(ActionEvent actionEvent) {
 	        	updateButton.setEnabled(false);	        			
 	            // load pathways from server
-	    		TaskIterator taskIterator = new TaskIterator(new Task() {
+	    		TaskIterator taskIterator = new TaskIterator(new AbstractTask() {
 	    			@Override
 	    			public void run(TaskMonitor taskMonitor) throws Exception {
 	    				try {
-	    					taskMonitor.setTitle("cPathSquared Task: Top Pathways");
+	    					taskMonitor.setTitle("CyPath2 Task: Top Pathways");
 	    					taskMonitor.setProgress(0.1);
-	    					taskMonitor.setStatusMessage("Retrieving top pathways...");
-	    					final SearchResponse resp = topPathwaysModel.graphQueryClient.getTopPathways();
+	    					taskMonitor.setStatusMessage("Getting top pathways from the server...");
+	    					final SearchResponse resp = client.createTopPathwaysQuery()
+	    						.organismFilter(selectedOrganisms()).datasourceFilter(selectedDatasources())
+	    							.result();
 	    					// reset the model and kick off observers (list and filter panel)
-							topPathwaysModel.update(resp);		    			        
+	    					if(resp != null)
+	    						topPathwaysModel.update(resp);	
+	    					else {
+	    						taskMonitor.setStatusMessage("Not Found");
+	    						JOptionPane.showMessageDialog(gui, "No Matches Found");
+	    					}
 	    				} catch (Throwable e) { 
 	    					//fail on both when there is no data (server error) and runtime/osgi errors
 	    					throw new RuntimeException(e);
@@ -913,9 +899,6 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	    					parentWindow.toFront();
 	    					updateButton.setEnabled(true);
 	    				}
-	    			}
-	    			@Override
-	    			public void cancel() {
 	    			}
 	    		});			
 	    		// kick off the task execution
@@ -930,79 +913,36 @@ final class CyPath2 extends AbstractWebServiceGUIClient
         
         return panel;
 	}
-	
-		
-    /*
-     * Creates a JTextPane with correct line wrap settings
-     * and hyperlink action.
-     */
-    private JTextPane createHtmlTextPane(final DetailsPanel detailsPanel, final CPath2Client client) {
-        final JTextPane textPane = new JTextPane();
-        textPane.setEditable(false);
-        textPane.setBorder(new EmptyBorder(7,7,7,7));
-        textPane.setContentType("text/html");
-        textPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
-        textPane.addHyperlinkListener(new HyperlinkListener() {
-            public void hyperlinkUpdate(HyperlinkEvent hyperlinkEvent) {
-                if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-                	//import/create a network if the special (fake) link is clicked
-               		SearchHit currentItem = detailsPanel.getCurrentItem();
-               		String uri = currentItem.getUri();
-               		if(!currentItem.getBiopaxClass().equalsIgnoreCase("Pathway")) {
-        	        	//use global organism and datasource filters for the query
-               			updateFilterValues(client);  			
-               			cyServices.taskManager.execute(new TaskIterator(
-                   			new NetworkAndViewTask(cyServices, client, Cmd.GRAPH, 
-                   				GraphType.NEIGHBORHOOD, Collections.singleton(uri), null, 
-                   					currentItem.getName() + " NEIGHBORHOOD")));
-               		} else { // use '/get' command
-               			cyServices.taskManager.execute(new TaskIterator(
-                   			new NetworkAndViewTask(cyServices, client, uri, currentItem.getName())));
-               		}
-                }
-            }
-        });
-
-        StyleSheet styleSheet = ((HTMLDocument) textPane.getDocument()).getStyleSheet();
-        styleSheet.addRule("h2 {color:  #663333; font-size: 102%; font-weight: bold; "
-            + "margin-bottom:3px}");
-        styleSheet.addRule("h3 {color: #663333; font-size: 95%; font-weight: bold;"
-        	+ "margin-bottom:7px}");
-        styleSheet.addRule("ul { list-style-type: none; margin-left: 5px; "
-            + "padding-left: 1em;	text-indent: -1em;}");
-	    styleSheet.addRule("h4 {color: #66333; font-weight: bold; margin-bottom:3px;}");
-//	    styleSheet.addRule("b {background-color: #FFFF00;}");
-	    styleSheet.addRule(".bold {font-weight:bold;}");
-        styleSheet.addRule(".link {color:blue; text-decoration: underline;}");
-        styleSheet.addRule(".excerpt {font-size: 90%;}");
-        // highlight matching fragments
-        styleSheet.addRule(".hitHL {background-color: #FFFF00;}");
-        
-        return textPane;
-    }
 
 	    
-    void updateFilterValues(CPath2Client client) {
-    	//use global organism and datasource filters for the query
+    /**
+     * @return currently selected organisms
+     */
+    Set<String> selectedOrganisms() {
     	Set<String> values = new HashSet<String>();
     	for(Object it : organismList.getSelectedValues())
     		values.add(((NvpListItem) it).getValue()); 
-    	client.setOrganisms(values);
-    	
-    	values= new HashSet<String>();
-        for(Object it : dataSourceList.getSelectedValues())
-        	values.add(((NvpListItem) it).getValue());
-    	client.setDataSources(values);
+    	return values;
+	}
+    
+    /**
+     * @return currently selected datasources
+     */
+    Set<String> selectedDatasources() {
+    	Set<String> values = new HashSet<String>();
+    	for(Object it : dataSourceList.getSelectedValues())
+    		values.add(((NvpListItem) it).getValue()); 
+    	return values;
 	}
 
 
 	/**
-     * Summary Panel.
-     *
+     * Hit Summary/Details Panel class.
      */
-    final class DetailsPanel extends JPanel {
-        private final Document doc;
-        private final JTextPane textPane;
+    final class CurrentHitInfoJTabbedPane extends JTabbedPane {
+        private final JTextPane summaryTextPane;
+        private final JTextPane detailsTextPane;
+        private final HitsModel hitsModel;
         
         private SearchHit current;
 
@@ -1010,56 +950,153 @@ final class CyPath2 extends AbstractWebServiceGUIClient
          * Constructor.
          * @param browser 
          */
-        public DetailsPanel(OpenBrowser openBrowser, CPath2Client client) {
-            this.setLayout(new BorderLayout());
-            textPane = createHtmlTextPane(this, client);
-            doc = textPane.getDocument();
-            JScrollPane scrollPane = encloseInJScrollPane (textPane);
-            add(scrollPane, BorderLayout.CENTER);
+        public CurrentHitInfoJTabbedPane(HitsModel hitsModel) {          	
+        	this.hitsModel = hitsModel;
+        	
+        	//build 'summary' tab
+        	JPanel summaryPanel = new JPanel();
+        	summaryPanel.setLayout(new BorderLayout());
+            summaryTextPane = createSummaryHtmlTextPane();
+            JScrollPane scrollPane = new JScrollPane(summaryTextPane);
+            summaryPanel.add(scrollPane, BorderLayout.CENTER);         
+    	    add("Summary", summaryPanel);
+    	    
+    	    //build 'details' tab (parent pathways, etc.)
+    	    JPanel detailsPane = new JPanel();
+            detailsPane.setLayout(new BorderLayout());                       
+            detailsTextPane = createDetailsHtmlTextPane();
+            scrollPane = new JScrollPane(detailsTextPane);
+            scrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
+            detailsPane.add(scrollPane, BorderLayout.CENTER);
+            add("Details", detailsPane);
+            
+            repaint();
         }
 
-        /**
+
+        private JTextPane createDetailsHtmlTextPane() {
+            final JTextPane textPane = new JTextPane();
+            textPane.setEditable(false);
+            textPane.setBorder(new EmptyBorder(7,7,7,7));
+            textPane.setContentType("text/html");
+            textPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
+            textPane.addHyperlinkListener(new HyperlinkListener() {
+                public void hyperlinkUpdate(HyperlinkEvent hyperlinkEvent) {
+                    if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+                    	//import/create a network (parent pathways) if the link is clicked
+                   		String uri = hyperlinkEvent.getURL().toString();
+                   		final CPathGetQuery query = CyPath2.client.createGetQuery().sources(Collections.singleton(uri));
+                   		cyServices.taskManager.execute(new TaskIterator(
+                       		new NetworkAndViewTask(cyServices, query, hyperlinkEvent.getDescription())));
+                    }
+                }
+            });
+
+            style(textPane);
+            
+            return textPane;
+		}
+
+
+        private void style(JTextPane textPane) {
+            StyleSheet styleSheet = ((HTMLDocument) textPane.getDocument()).getStyleSheet();
+            styleSheet.addRule("h2 {color:  #663333; font-size: 102%; font-weight: bold; "
+                + "margin-bottom:3px}");
+            styleSheet.addRule("h3 {color: #663333; font-size: 95%; font-weight: bold;"
+            	+ "margin-bottom:7px}");
+            styleSheet.addRule("ul { list-style-type: none; margin-left: 5px; "
+                + "padding-left: 1em;	text-indent: -1em;}");
+    	    styleSheet.addRule("h4 {color: #66333; font-weight: bold; margin-bottom:3px;}");
+//    	    styleSheet.addRule("b {background-color: #FFFF00;}");
+    	    styleSheet.addRule(".bold {font-weight:bold;}");
+            styleSheet.addRule(".link {color:blue; text-decoration: underline;}");
+            styleSheet.addRule(".excerpt {font-size: 90%;}");
+            // highlight matching fragments
+            styleSheet.addRule(".hitHL {background-color: #FFFF00;}");		
+		}
+
+		/**
          * Sets the current item and HTML to display
          * 
          * @param item
-         * @param summary
          */
-        public synchronized void setCurrentItem(SearchHit item, String summary) {
+        public synchronized void setCurrentItem(final SearchHit item) {
+			String summaryHtml = hitsModel.hitsSummaryMap.get(item.getUri());
+			summaryTextPane.setText(summaryHtml);
+    		summaryTextPane.setCaretPosition(0);
+    		
+    		//get or build the second (details) tab content    		
+    		String detailsHtml = hitsModel.hitsDetailsMap.get(item.getUri());
+    		if(detailsHtml != null && !detailsHtml.isEmpty())   		
+    			detailsTextPane.setText(detailsHtml);
+    		else { //if(detailsTextPane.isVisible()) {
+    			detailsTextPane.setText("");
+    			TaskIterator taskIterator = new TaskIterator(new AbstractTask() {
+    				@Override
+    				public void run(TaskMonitor taskMonitor) throws Exception {
+    					try {
+    						taskMonitor.setTitle("CyPath2 Task: Query for more details (of " + item + ")");
+    						taskMonitor.setProgress(0.1);
+    						taskMonitor.setStatusMessage("Getting pathway/component names and counts from the server...");
+    						final String html = hitsModel.fetchDetails(item);
+    						detailsTextPane.setText(html);
+    					} catch (Throwable e) { 
+    						//fail on server error and runtime/osgi error
+    						throw new RuntimeException(e);
+    					} finally {
+    						taskMonitor.setStatusMessage("Done");
+    						taskMonitor.setProgress(1.0);
+    					}
+    				}
+    			});			
+    			// kick off the task execution
+    			cyServices.taskManager.execute(taskIterator);
+    		}
+    		
 			current = item;
-    		getTextPane().setText(summary);
-    		getTextPane().setCaretPosition(0); 
-		}
-
-        public synchronized SearchHit getCurrentItem() {
-			return current;
+    		detailsTextPane.setCaretPosition(0);
+    		repaint();
 		}
         
-		/**
-         * Gets the summary document model.
-         * @return Document object.
+        /*
+         * Creates a JTextPane with correct line wrap settings
+         * and hyperlink action.
          */
-        public Document getDocument() {
-            return doc;
-        }
-
-        /**
-         * Gets the summary text pane object.
-         * @return JTextPane Object.
-         */
-        public JTextPane getTextPane() {
+        private JTextPane createSummaryHtmlTextPane() {
+            final JTextPane textPane = new JTextPane();
+            textPane.setEditable(false);
+            textPane.setBorder(new EmptyBorder(7,7,7,7));
+            textPane.setContentType("text/html");
+            textPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
+            textPane.addHyperlinkListener(new HyperlinkListener() {
+                public void hyperlinkUpdate(HyperlinkEvent hyperlinkEvent) {
+                    if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+                    	//import/create a network if the link is clicked
+                   		SearchHit currentItem = current;
+                   		String uri = hyperlinkEvent.getURL().toString();
+                   		if(!currentItem.getBiopaxClass().equalsIgnoreCase("Pathway")) {
+            	        	//create new 'neighborhood' query; use global organism and datasource filters	
+                   			final CPathGraphQuery graphQuery = CyPath2.client.createGraphQuery()
+                   				.datasourceFilter(selectedDatasources())
+                   				.organismFilter(selectedOrganisms())
+                   				.sources(Collections.singleton(uri))
+                   				.kind(GraphType.NEIGHBORHOOD);
+                   			cyServices.taskManager.execute(new TaskIterator(
+                       			new NetworkAndViewTask(cyServices, graphQuery, currentItem.getName() + " NEIGHBORHOOD")));
+                   		} else { // use '/get' command
+                   			final CPathGetQuery getQuery = CyPath2.client.createGetQuery()
+                   				.sources(Collections.singleton(uri));
+                   			cyServices.taskManager.execute(new TaskIterator(
+                       			new NetworkAndViewTask(cyServices, getQuery, currentItem.getName())));
+                   		}
+                    }
+                }
+            });
+            
+            style(textPane);
+            
             return textPane;
-        }
-
-        /**
-         * Encloses the specified JTextPane in a JScrollPane.
-         *
-         * @param textPane JTextPane Object.
-         * @return JScrollPane Object.
-         */
-        private JScrollPane encloseInJScrollPane(JTextPane textPane) {
-            JScrollPane scrollPane = new JScrollPane(textPane);
-            return scrollPane;
-        }
+        }        
 
     }
     

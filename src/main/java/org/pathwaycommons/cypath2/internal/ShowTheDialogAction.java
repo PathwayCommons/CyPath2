@@ -7,29 +7,24 @@ import java.util.Map;
 
 import javax.swing.JDialog;
 
-import org.cytoscape.application.CyApplicationManager;
 import org.cytoscape.application.swing.AbstractCyAction;
-import org.cytoscape.view.model.CyNetworkViewManager;
 
 final class ShowTheDialogAction extends AbstractCyAction {
 	
+	private static final long serialVersionUID = -5069785324747282157L;
+	
 	private final JDialog dialog;
 	private final Window parent;
+
 	
-	public ShowTheDialogAction(Map<String, String> configProps,
-			Window parent, 
-			Container gui,
-			CyApplicationManager applicationManager,
-			CyNetworkViewManager networkViewManager) 
+	public ShowTheDialogAction(Map<String, String> configProps,CyServices cyServices, Container gui) 
 	{
-		super(configProps, applicationManager, networkViewManager);
+		super(configProps, cyServices.applicationManager, cyServices.networkViewManager);
 		
-		this.parent = parent;
+		this.parent = cyServices.cySwingApplication.getJFrame();
 		dialog = new JDialog(parent);
 		dialog.add(gui);
 	}
-
-	private static final long serialVersionUID = -5069785324747282157L;
 
 	
 	@Override

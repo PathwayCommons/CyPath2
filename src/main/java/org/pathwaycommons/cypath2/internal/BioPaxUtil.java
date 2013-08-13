@@ -72,8 +72,6 @@ import org.pathwaycommons.cypath2.internal.ExternalLinks.ExternalLink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctc.wstx.stax.WstxInputFactory;
-
 /**
  * BioPax Utility Class - is a BioPAX Model Adapter 
  * that also defines additional constants. 
@@ -107,20 +105,6 @@ final class BioPaxUtil {
 	public static final String PHOSPHORYLATION_SITE = "phosphorylation site";
 	public static final String PROTEIN_PHOSPHORYLATED = "Protein-phosphorylated";
 
-	
-	static class StaxHack {
-		public static final void runWithHack(Runnable runnable) {
-			Thread thread = Thread.currentThread();
-			ClassLoader loader = thread.getContextClassLoader();
-			try {
-				thread.setContextClassLoader(WstxInputFactory.class.getClassLoader());
-				runnable.run();
-			} finally {
-				thread.setContextClassLoader(loader);
-			}
-		}
-	}
-	
 	// private Constructor
 	private BioPaxUtil() {}
 	
@@ -824,7 +808,7 @@ final class BioPaxUtil {
 		final Model[] model = new Model[1];
 		final SimpleIOHandler handler = new SimpleIOHandler();
 		handler.mergeDuplicates(true); // a workaround (illegal) BioPAX data having duplicated rdf:ID...
-		StaxHack.runWithHack(new Runnable() {
+		ClassLoaderHack.runWithHack(new Runnable() {
 			@Override
 			public void run() {
 				try {
@@ -833,7 +817,7 @@ final class BioPaxUtil {
 					log.warn("Import failed: " + e);
 				}
 			}
-		});
+		}, com.ctc.wstx.stax.WstxInputFactory.class);
 		return model[0];
 	}
 	

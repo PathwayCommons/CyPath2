@@ -1,16 +1,12 @@
 package org.pathwaycommons.cypath2.internal;
 
-import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.util.Map;
 
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 
-import org.cytoscape.application.CyApplicationManager;
 import org.cytoscape.application.swing.AbstractCyAction;
-import org.cytoscape.util.swing.OpenBrowser;
-import org.cytoscape.view.model.CyNetworkViewManager;
 
 final class ShowAboutDialogAction extends AbstractCyAction {
 	
@@ -20,19 +16,18 @@ final class ShowAboutDialogAction extends AbstractCyAction {
 	private final Icon icon;
 	private final String title;
 	private final String description;
+
 	
-	public ShowAboutDialogAction(Map<String, String> configProps,
-			Window parent, String title, String description,
-			CyApplicationManager applicationManager,
-			CyNetworkViewManager networkViewManager,
-			OpenBrowser openBrowser) 
+	public ShowAboutDialogAction(
+			Map<String, String> configProps, CyServices cyServices,
+			String title, String description) 
 	{
-		super(configProps, applicationManager, networkViewManager);
+		super(configProps, cyServices.applicationManager, cyServices.networkViewManager);
 		
 		icon = new ImageIcon(getClass().getResource("pc2.png"), "PC2 icon");
 		this.title = title;
 		this.description = description;
-		dialog = new AboutDialog(parent, openBrowser);
+		dialog = new AboutDialog(cyServices.cySwingApplication.getJFrame(), cyServices.openBrowser);
 	}
 
 	
