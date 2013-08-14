@@ -22,7 +22,7 @@
 	
 	<groupId>org.pathwaycommons</groupId>
 	<artifactId>cypath2-impl</artifactId>
-	<version>0.4.1</version>
+	<version>0.4.2-SNAPSHOT</version>
 	
 	<name>${bundle.Name}</name>
 	<description>CyPath2 is a Cytoscape 3 GUI client app 
