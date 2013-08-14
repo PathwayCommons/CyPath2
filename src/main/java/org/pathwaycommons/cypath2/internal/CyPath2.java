@@ -303,12 +303,12 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	    	model.addElement(nvp);
 	    }
 	    organismList.setModel(model);
-	    organismList.setToolTipText("Organism(s) only:");
+	    organismList.setToolTipText("Check to exclude entities not associated with at least one of selected organisms");
 	    organismList.setAlignmentX(Component.LEFT_ALIGNMENT);
 	        
 	    JScrollPane organismFilterBox = new JScrollPane(organismList, 
 	    	JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-	    organismFilterBox.setBorder(new TitledBorder("Organism(s) only:"));
+	    organismFilterBox.setBorder(new TitledBorder("Organism(s):"));
 	    organismFilterBox.setPreferredSize(new Dimension(300, 200));
 	    organismFilterBox.setMinimumSize(new Dimension(200, 100));
 	        
@@ -319,17 +319,17 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	    	dataSourceBoxModel.addElement(new NvpListItem(name, name));
 	    }		        
 	    dataSourceList.setModel(dataSourceBoxModel);
-	    dataSourceList.setToolTipText("Datasource(s) only:");
+	    dataSourceList.setToolTipText("Check to excludes entities not associated with at least one of selected datasources");
 	    dataSourceList.setAlignmentX(Component.LEFT_ALIGNMENT);
 	        
 	    JScrollPane dataSourceFilterBox = new JScrollPane(dataSourceList, 
 	       	JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-	    dataSourceFilterBox.setBorder(new TitledBorder("Datasource(s) only:"));
+	    dataSourceFilterBox.setBorder(new TitledBorder("Datasource(s):"));
 	    dataSourceFilterBox.setPreferredSize(new Dimension(300, 200));
 	    dataSourceFilterBox.setMinimumSize(new Dimension(200, 100));
 
 	    JSplitPane filtersPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, dataSourceFilterBox, organismFilterBox);
-	    filtersPane.setBorder(new TitledBorder("Global Filters (for search and graph queries)"));
+	    filtersPane.setBorder(new TitledBorder("Global Filters (for all full-text search, top pathways, and graph queries)"));
 	    filtersPane.setDividerLocation(400);
 	    filtersPane.setResizeWeight(0.5f);
 	    filtersPane.setAlignmentX(Component.LEFT_ALIGNMENT);
