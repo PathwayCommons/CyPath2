@@ -319,7 +319,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	    	dataSourceBoxModel.addElement(new NvpListItem(name, name));
 	    }		        
 	    dataSourceList.setModel(dataSourceBoxModel);
-	    dataSourceList.setToolTipText("Check to excludes entities not associated with at least one of selected datasources");
+	    dataSourceList.setToolTipText("Check to exclude entities not associated with at least one of selected datasources");
 	    dataSourceList.setAlignmentX(Component.LEFT_ALIGNMENT);
 	        
 	    JScrollPane dataSourceFilterBox = new JScrollPane(dataSourceList, 
