@@ -116,12 +116,10 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 		
 		//filter value lists
 		organismList = new CheckBoxJList();
-		dataSourceList = new CheckBoxJList(); 
-		
-		JPanel mainPanel = new JPanel();
-		gui = mainPanel; 
-		
+		dataSourceList = new CheckBoxJList(); 		
 		advQueryPanel = new JPanel(new BorderLayout());
+
+		gui = new JPanel();
     }
  
     /**
@@ -422,7 +420,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	        	hitsModel.searchFor = ((NvpListItem)bpTypeComboBox.getSelectedItem()).getValue();
 	           	final String keyword = searchField.getText();           	
 	            if (keyword == null || keyword.trim().length() == 0 || keyword.startsWith(ENTER_TEXT)) {
-	            	JOptionPane.showMessageDialog(gui, "Please enter something into the search box.");
+	            	JOptionPane.showMessageDialog(searchQueryPanel, "Please enter something into the search box.");
 	        		searchButton.setEnabled(true);
 	        	} else {
 	        		info.setText("");
@@ -446,14 +444,14 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	        							+ " (page #" + searchResponse.getPageNo() + ")");
 	        					} else {
 	        						info.setText("No Matches Found");
-	        						JOptionPane.showMessageDialog(gui, "No Matches Found");
+	        						JOptionPane.showMessageDialog(searchQueryPanel, "No Matches Found");
 	        					}
 	        				} catch (CPathException e) {
-	        					JOptionPane.showMessageDialog(gui, "Error: " + e);
+	        					JOptionPane.showMessageDialog(searchQueryPanel, "Error: " + e);
 								hitsModel.update(new SearchResponse()); //clear
 	        				} catch (Throwable e) { 
 	        					// using Throwable helps catch unresolved runtime dependency issues!
-	        					JOptionPane.showMessageDialog(gui, "Error: " + e);
+	        					JOptionPane.showMessageDialog(searchQueryPanel, "Error: " + e);
 	        					throw new RuntimeException(e);
 	        				} finally {
 	        					taskMonitor.setStatusMessage("Done");
@@ -477,7 +475,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	    });
 	    searchButton.setAlignmentX(Component.LEFT_ALIGNMENT); 
         
-        final JPanel keywordPane = new JPanel();
+	    final JPanel keywordPane = new JPanel();
         keywordPane.setLayout(new FlowLayout(FlowLayout.LEFT));
         keywordPane.add(label);
         keywordPane.add(searchField);
@@ -585,7 +583,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
         searchResultsPanel.add(hSplit);
 	        
         //create adv. query panel with user picked items list 
-        JPanel advQueryCtrlPanel = new JPanel();
+        final JPanel advQueryCtrlPanel = new JPanel();
         advQueryCtrlPanel.setLayout(new BoxLayout(advQueryCtrlPanel, BoxLayout.Y_AXIS));
         advQueryCtrlPanel.setPreferredSize(new Dimension(400, 300));
         
@@ -735,7 +733,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	        public void actionPerformed(ActionEvent actionEvent) {
 	        	
 	        	if(userList.getSelectedIndices().length == 0) {
-	        		JOptionPane.showMessageDialog(gui, "No items were selected from the list. " +
+	        		JOptionPane.showMessageDialog(advQueryCtrlPanel, "No items were selected from the list. " +
 	        				"Please pick one or several to be used with the query.");
 	        		return;
 	        	}
@@ -886,7 +884,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	    						topPathwaysModel.update(resp);	
 	    					else {
 	    						taskMonitor.setStatusMessage("Not Found");
-	    						JOptionPane.showMessageDialog(gui, "No Matches Found");
+	    						JOptionPane.showMessageDialog(panel, "No Matches Found");
 	    					}
 	    				} catch (Throwable e) { 
 	    					//fail on both when there is no data (server error) and runtime/osgi errors

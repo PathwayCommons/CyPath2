@@ -15,20 +15,24 @@ final class ShowTheDialogAction extends AbstractCyAction {
 	
 	private final JDialog dialog;
 	private final Window parent;
-
+	private final Container gui;
 	
-	public ShowTheDialogAction(Map<String, String> configProps,CyServices cyServices, Container gui) 
+	public ShowTheDialogAction(Map<String, String> configProps, CyServices cyServices, Container gui) 
 	{
 		super(configProps, cyServices.applicationManager, cyServices.networkViewManager);
 		
 		this.parent = cyServices.cySwingApplication.getJFrame();
+		this.gui = gui;
+		
 		dialog = new JDialog(parent);
-		dialog.add(gui);
+		dialog.setModal(true);
 	}
 
 	
 	@Override
-	public void actionPerformed(ActionEvent arg0) {
+	public void actionPerformed(ActionEvent ae) {
+		dialog.remove(gui);
+		dialog.add(gui);
 		dialog.pack();
 		dialog.setLocationRelativeTo(parent);
 		dialog.setVisible(true);

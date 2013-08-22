@@ -27,6 +27,7 @@ import org.cytoscape.service.util.AbstractCyActivator;
 import cpath.client.CPathClient;
 import cpath.client.util.CPathException;
 
+import java.awt.Dimension;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -115,7 +116,7 @@ public final class CyActivator extends AbstractCyActivator {
 		showTheDialogActionProps.put(SMALL_ICON_URL,getClass().getResource("pc2_small.png").toString());
 		showTheDialogActionProps.put(IN_TOOL_BAR,"false");
 		showTheDialogActionProps.put(IN_MENU_BAR,"true");
-		showTheDialogActionProps.put(TOOLTIP,"Networks From PC2");		
+		showTheDialogActionProps.put(TOOLTIP,"Networks From PC2");	
 		ShowTheDialogAction showTheDialogAction = new ShowTheDialogAction(
 				showTheDialogActionProps, cyServices, app.getQueryBuilderGUI());
 		// register the service

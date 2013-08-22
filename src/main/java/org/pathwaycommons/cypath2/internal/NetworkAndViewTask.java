@@ -137,22 +137,19 @@ class NetworkAndViewTask<T> extends AbstractTask {
     				
 				// Set the Quick Find Default Index
 				Attributes.set(cyNetwork, cyNetwork, "quickfind.default_index", CyNetwork.NAME, String.class);
-				// Specify that this is a BINARY_NETWORK
-				Attributes.set(cyNetwork, cyNetwork, "BIOPAX_NETWORK", Boolean.TRUE, Boolean.class);
+				// Set attribute: BIOPAX_NETWORK = FALSE (but not empty/null) 
+				// (hack: the biopax core plugin displays SIF visual legend and node's info properly if "BIOPAX_NETWORK" attr. is present)
+				Attributes.set(cyNetwork, cyNetwork, "BIOPAX_NETWORK", Boolean.FALSE, Boolean.class);
 	
 				// we need the biopax sub-model to create node/edge attributes
 				final Set<String> uris = new HashSet<String>();
-				// Set node/edge attributes from the Biopax Model
 				for (CyNode node : cyNetwork.getNodeList()) {
+					//hack: we know that the built-in Cy3 SIF reader uses URIs 
+					// from the Pathway Commons SIF data to fill the NAME column by default...
 					String uri = cyNetwork.getRow(node).get(CyNetwork.NAME, String.class);
-					if(!uri.contains("/group/")) {
+					if(uri != null && !uri.contains("/group/")) {
 						uris.add(uri);
-					} else {
-						Attributes.set(cyNetwork, node, BioPaxUtil.BIOPAX_ENTITY_TYPE, "(Generic/Group)", String.class);
-						Attributes.set(cyNetwork, node, BioPaxUtil.BIOPAX_RDF_ID, uri, String.class);
-						Attributes.set(cyNetwork, node, CyRootNetwork.SHARED_NAME, "(Group)", String.class);
-						Attributes.set(cyNetwork, node, CyNetwork.NAME, "(Group)", String.class);
-					}
+					} 
 				}
 				if (cancelled) return;
 				
@@ -181,25 +178,31 @@ class NetworkAndViewTask<T> extends AbstractTask {
 						//note: in fact, SIF formatted data contains only ERs, PEs (no sub-classes), and Complexes.
 						BioPaxUtil.createAttributesFromProperties(e, node, cyNetwork);
 					} else if (e != null){
-							LOGGER.warn("SIF network has an unexpected node: " + uri 
+						LOGGER.warn("SIF network has an unexpected node: " + uri 
 								+ " of type " + e.getModelInterface());
-					} else { //e == null
-						assert uri.contains("/group/") : "URI, which is not a generated " +
-							"generic/group's one, is not found on the server: " + uri;
-						
-						if(!uri.contains("/group/")) {
+						BioPaxUtil.createAttributesFromProperties(e, node, cyNetwork);
+					} else { //e == null						
+						if(uri.contains("/group/")) {
+							Attributes.set(cyNetwork, node, BioPaxUtil.BIOPAX_ENTITY_TYPE, "(Generic/Group)", String.class);
+							Attributes.set(cyNetwork, node, BioPaxUtil.BIOPAX_RDF_ID, uri, String.class);
+							Attributes.set(cyNetwork, node, CyRootNetwork.SHARED_NAME, "(Group)", String.class);
+							Attributes.set(cyNetwork, node, CyNetwork.NAME, "(Group)", String.class);
+						} else {
 							LOGGER.warn("URI, which is not a generated " +
-								"generic/group's one, is not found on the server: " + uri);
+									"generic/group's one, is not found on the server: " + uri);
 						}
+
 					}
 				}
 
-				if (cancelled) return;
-
-				VisualStyle visualStyle = cyServices.binarySifVisualStyleUtil.getVisualStyle();
-				cyServices.mappingManager.setVisualStyle(visualStyle, view);
-				visualStyle.apply(view);
-				view.updateView();
+				SwingUtilities.invokeLater(new Runnable() {
+					public void run() {
+						VisualStyle visualStyle = cyServices.binarySifVisualStyleUtil.getVisualStyle();
+						cyServices.mappingManager.setVisualStyle(visualStyle, view);
+						visualStyle.apply(view);
+						view.updateView();
+					}
+				});
 			} 
     			
 			taskMonitor.setProgress(0.8);

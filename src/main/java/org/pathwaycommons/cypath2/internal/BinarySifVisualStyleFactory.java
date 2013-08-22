@@ -22,8 +22,7 @@ import static org.cytoscape.view.presentation.property.BasicVisualLexicon.*;
  * 
  */
 final class BinarySifVisualStyleFactory {
-	public final static String BINARY_SIF_VISUAL_STYLE = "BioPAX_Binary_SIF";
-	public final static String BINARY_NETWORK = "BINARY_NETWORK";
+	public final static String BINARY_SIF_VISUAL_STYLE = "PC2_SIF";
 	public final static String COMPONENT_OF = "COMPONENT_OF";
 	public final static String COMPONENT_IN_SAME = "IN_SAME_COMPONENT";
 	public final static String SEQUENTIAL_CATALYSIS = "SEQUENTIAL_CATALYSIS";
@@ -31,12 +30,8 @@ final class BinarySifVisualStyleFactory {
 	public final static String CONTROLS_METABOLIC_CHANGE = "METABOLIC_CATALYSIS";
 	public final static String PARTICIPATES_CONVERSION = "REACTS_WITH";
 	public final static String PARTICIPATES_INTERACTION = "INTERACTS_WITH";
-	public final static String CO_CONTROL_INDEPENDENT_SIMILAR = "CO_CONTROL_INDEPENDENT_SIMILAR";
-	public final static String CO_CONTROL_INDEPENDENT_ANTI = "CO_CONTROL_INDEPENDENT_ANTI";
-	public final static String CO_CONTROL_DEPENDENT_SIMILAR = "CO_CONTROL_DEPENDENT_SIMILAR";
-	public final static String CO_CONTROL_DEPENDENT_ANTI = "CO_CONTROL_DEPENDENT_ANTI";
-	private final static String COMPLEX = "Complex";
-	private final static String INTERACTION = "Interaction";
+	public final static String CO_CONTROL = "CO_CONTROL";
+	private final static String INTERACTION = "interaction";
 
 	VisualStyle binarySifStyle;
 
@@ -73,8 +68,7 @@ final class BinarySifVisualStyleFactory {
 				binarySifStyle = styleFactory.createVisualStyle(BINARY_SIF_VISUAL_STYLE);
 
 				// set node opacity
-				binarySifStyle.setDefaultValue(
-						NODE_TRANSPARENCY, 125);
+				binarySifStyle.setDefaultValue(NODE_TRANSPARENCY, 125);
 				// unlock node size
 				// binarySifStyle.getDependency().set(VisualPropertyDependency.Definition.NODE_SIZE_LOCKED,false);
 
@@ -82,15 +76,11 @@ final class BinarySifVisualStyleFactory {
 				createNodeColors(binarySifStyle);
 				createNodeLabel(binarySifStyle);
 
-				binarySifStyle.setDefaultValue(EDGE_WIDTH,
-						4.0);
+				binarySifStyle.setDefaultValue(EDGE_WIDTH, 4.0);
 				createEdgeColor(binarySifStyle);
 				createDirectedEdges(binarySifStyle);
 
-				binarySifStyle
-						.setDefaultValue(
-								NETWORK_BACKGROUND_PAINT,
-								Color.WHITE);
+				binarySifStyle.setDefaultValue(NETWORK_BACKGROUND_PAINT, Color.WHITE);
 
 				// The visual style must be added to the Global Catalog
 				// in order for it to be written out to vizmap.props upon user
@@ -111,7 +101,8 @@ final class BinarySifVisualStyleFactory {
 		DiscreteMapping<String, NodeShape> function = (DiscreteMapping<String, NodeShape>) discreteFactory
 				.createVisualMappingFunction(
 						BioPaxUtil.BIOPAX_ENTITY_TYPE, String.class, NODE_SHAPE);
-		function.putMapValue(COMPLEX, NodeShapeVisualProperty.HEXAGON);
+		function.putMapValue("Complex", NodeShapeVisualProperty.HEXAGON);
+		function.putMapValue("(Generic/Group)", NodeShapeVisualProperty.OCTAGON);
 		style.addVisualMappingFunction(function);
 	}
 
@@ -124,37 +115,28 @@ final class BinarySifVisualStyleFactory {
 		DiscreteMapping<String, Paint> function = (DiscreteMapping<String, Paint>) discreteFactory
 				.createVisualMappingFunction(
 						BioPaxUtil.BIOPAX_ENTITY_TYPE, String.class, NODE_FILL_COLOR);
-		function.putMapValue(COMPLEX, lightBlue);
+		function.putMapValue("Complex", lightBlue);
+		function.putMapValue("(Generic/Group)", lightBlue);
 		style.addVisualMappingFunction(function);
 	}
 
 	private void createEdgeColor(VisualStyle style) {
-		// create a discrete mapper, for mapping biopax node type
-		// to a particular node color
+		// create a discrete mapper, for mapping edge type to a particular edge color
 		style.setDefaultValue(EDGE_PAINT, Color.BLACK);
+		
 		DiscreteMapping<String, Paint> function = (DiscreteMapping<String, Paint>) discreteFactory
 				.createVisualMappingFunction(INTERACTION, String.class, EDGE_PAINT);
 		
-		function.putMapValue(PARTICIPATES_CONVERSION,
-				Color.decode("#ccc1da"));
-		function.putMapValue(PARTICIPATES_INTERACTION,
-				Color.decode("#7030a0"));
-		function.putMapValue(CONTROLS_STATE_CHANGE,
-				Color.decode("#0070c0"));
-		function.putMapValue(CONTROLS_METABOLIC_CHANGE,
-				Color.decode("#00b0f0"));
-		function.putMapValue(SEQUENTIAL_CATALYSIS,
-				Color.decode("#7f7f7f"));
-		function.putMapValue(CO_CONTROL_DEPENDENT_ANTI,
-				Color.decode("#ff0000"));
-		function.putMapValue(CO_CONTROL_INDEPENDENT_ANTI,
-				Color.decode("#fd95a6"));
-		function.putMapValue(CO_CONTROL_DEPENDENT_SIMILAR,
-				Color.decode("#00b050"));
-		function.putMapValue(CO_CONTROL_INDEPENDENT_SIMILAR,
-				Color.decode("#92d050"));
+		function.putMapValue(PARTICIPATES_CONVERSION, Color.decode("#ccc1da"));
+		function.putMapValue(PARTICIPATES_INTERACTION, Color.decode("#7030a0"));
+		function.putMapValue(CONTROLS_STATE_CHANGE, Color.decode("#0070c0"));
+		function.putMapValue(CONTROLS_METABOLIC_CHANGE, Color.decode("#00b0f0"));
+		function.putMapValue(SEQUENTIAL_CATALYSIS, Color.decode("#7f7f7f"));
+		function.putMapValue(CO_CONTROL, Color.decode("#ff0000"));
 		function.putMapValue(COMPONENT_IN_SAME, Color.decode("#ffff00"));
 		function.putMapValue(COMPONENT_OF, Color.decode("#ffc000"));
+		
+		style.addVisualMappingFunction(function);
 	}
 
 	

@@ -26,7 +26,6 @@
 package org.pathwaycommons.cypath2.internal;
 
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,7 +45,6 @@ import org.biopax.paxtools.controller.SimpleEditorMap;
 import org.biopax.paxtools.io.BioPAXIOHandler;
 import org.biopax.paxtools.io.SimpleIOHandler;
 import org.biopax.paxtools.model.BioPAXElement;
-import org.biopax.paxtools.model.BioPAXLevel;
 import org.biopax.paxtools.model.Model;
 import org.biopax.paxtools.model.level3.BioSource;
 import org.biopax.paxtools.model.level3.CellularLocationVocabulary;
@@ -87,7 +85,7 @@ final class BioPaxUtil {
     
 	public static final String BIOPAX_NETWORK = "BIOPAX_NETWORK";
 	public static final String BIOPAX_RDF_ID = "URI";
-	public static final String BIOPAX_ENTITY_TYPE = "biopax_type";
+	public static final String BIOPAX_ENTITY_TYPE = "BIOPAX_TYPE";
 	public static final String BIOPAX_DATA = "biopax_data";
     public static final String DEFAULT_CHARSET = "UTF-8";
     public static final int MAX_DISPLAY_STRING_LEN = 25;
@@ -145,22 +143,18 @@ final class BioPaxUtil {
 	 * @return
 	 */
 	private static String getNodeName(BioPAXElement bpe) {
-
-		if(bpe == null) {
-			return "";
-		}
 				
 		String nodeName = getShortName(bpe);
-		if (nodeName == null || nodeName.length()== 0) {
+		if (nodeName == null || nodeName.trim().length()== 0) {
 			nodeName = getStandardName(bpe);
-			if (nodeName == null || nodeName.length() == 0) {
+			if (nodeName == null || nodeName.trim().length() == 0) {
 				Collection<String> names = getSynonyms(bpe);
 				if (!names.isEmpty())
 					nodeName = getTheShortestString(names);
 			}
 		}
 
-		return (nodeName == null || nodeName.length() == 0)
+		return (nodeName == null || nodeName.trim().length() == 0)
 				? bpe.getRDFId() : StringEscapeUtils.unescapeHtml(nodeName);
 	}
 	
@@ -374,19 +368,6 @@ final class BioPaxUtil {
 		}
 		return str;
 	}
-
-	
-	private static String toOwl(BioPAXElement bpe) {
-		StringWriter writer = new StringWriter();
-		try {
-			SimpleIOHandler simpleExporter = new SimpleIOHandler(BioPAXLevel.L3);
-			simpleExporter.writeObject(writer, bpe);
-		} catch (Exception e) {
-			log.error("Failed printing '" + bpe.getRDFId() + "' to OWL", e);
-		}
-		return writer.toString();
-	}
-	
 	
 	/**
 	 * Generates Cytoscape node attributes 
@@ -482,12 +463,7 @@ final class BioPaxUtil {
 		Attributes.set(network, node, BIOPAX_RDF_ID, element.getRDFId(), String.class);
 		Attributes.set(network, node, BIOPAX_ENTITY_TYPE, element.getModelInterface().getSimpleName(), String.class);	
 		
-		// add a piece of the BioPAX (RDF/XML without parent|child elements)
-		
-		String owl = toOwl(element); // (requires common-lang-2.4 bundle to be started)
-		Attributes.set(network, node, CyNetwork.HIDDEN_ATTRS, BIOPAX_DATA, owl, String.class);
-		
-		String name = BioPaxUtil.truncateLongStr(BioPaxUtil.getNodeName(element) + "");
+		String name = BioPaxUtil.truncateLongStr(BioPaxUtil.getNodeName(element));
 		
 		if (!(element instanceof Interaction)) {
 			// get chemical modification & cellular location attributes
