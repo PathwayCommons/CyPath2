@@ -17,7 +17,6 @@ import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;
 import org.cytoscape.model.subnetwork.CyRootNetwork;
 import org.cytoscape.view.model.CyNetworkView;
-import org.cytoscape.view.vizmap.VisualStyle;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.TaskMonitor;
 import org.slf4j.Logger;
@@ -194,15 +193,6 @@ class NetworkAndViewTask<T> extends AbstractTask {
 
 					}
 				}
-
-				SwingUtilities.invokeLater(new Runnable() {
-					public void run() {
-						VisualStyle visualStyle = cyServices.binarySifVisualStyleUtil.getVisualStyle();
-						cyServices.mappingManager.setVisualStyle(visualStyle, view);
-						visualStyle.apply(view);
-						view.updateView();
-					}
-				});
 			} 
     			
 			taskMonitor.setProgress(0.8);

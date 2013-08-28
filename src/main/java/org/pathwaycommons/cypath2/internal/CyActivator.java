@@ -27,7 +27,6 @@ import org.cytoscape.service.util.AbstractCyActivator;
 import cpath.client.CPathClient;
 import cpath.client.util.CPathException;
 
-import java.awt.Dimension;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -65,17 +64,11 @@ public final class CyActivator extends AbstractCyActivator {
 		VisualMappingFunctionFactory passthroughMappingFactoryRef = getService(bc,VisualMappingFunctionFactory.class,"(mapping.type=passthrough)");
 		final CyProperty<Properties> cyProperties = getService(bc, CyProperty.class, "(cyPropertyName=cytoscape3.props)");
 		
-		final BinarySifVisualStyleFactory binarySifVisualStyleUtil = new BinarySifVisualStyleFactory(
-				visualStyleFactory,
-				visualMappingManager,
-				discreteVisualMappingFunctionFactory,
-				passthroughMappingFactoryRef);
-		
 		// keep all the service references in one place -
 		final CyServices cyServices = new CyServices(cySwingApplication, taskManager, openBrowser, 
 				cyNetworkManager, cyApplicationManager, cyNetworkViewManager, cyNetworkReaderManager, 
-				cyNetworkNaming, cyNetworkFactory, cyLayoutAlgorithmManager, undoSupport, binarySifVisualStyleUtil, 
-				visualMappingManager, cyProperties);
+				cyNetworkNaming, cyNetworkFactory, cyLayoutAlgorithmManager, undoSupport, visualMappingManager, 
+				cyProperties);
 			    
 	    // Create/init a cpath2 client instance
 		String cPath2Url = cyProperties.getProperties().getProperty(CyPath2.PROP_CPATH2_SERVER_URL);

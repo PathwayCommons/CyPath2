@@ -29,7 +29,6 @@ final class CyServices {
 	final CyNetworkFactory networkFactory;
 	final CyLayoutAlgorithmManager layoutManager;
 	final UndoSupport undoSupport;
-	final BinarySifVisualStyleFactory binarySifVisualStyleUtil;
 	final VisualMappingManager mappingManager;
 	final CyProperty<Properties> cyProperty;
 	public CyServices(CySwingApplication cySwingApplication,
@@ -40,7 +39,6 @@ final class CyServices {
 			CyNetworkReaderManager networkViewReaderManager,
 			CyNetworkNaming naming, CyNetworkFactory networkFactory,
 			CyLayoutAlgorithmManager layoutManager, UndoSupport undoSupport,
-			BinarySifVisualStyleFactory binarySifVisualStyleUtil,
 			VisualMappingManager mappingManager,
 			CyProperty<Properties> cyProperty) 
 	{
@@ -55,7 +53,6 @@ final class CyServices {
 		this.networkFactory = networkFactory;
 		this.layoutManager = layoutManager;
 		this.undoSupport = undoSupport;
-		this.binarySifVisualStyleUtil = binarySifVisualStyleUtil;
 		this.mappingManager = mappingManager;
 		this.cyProperty = cyProperty;
 	}
