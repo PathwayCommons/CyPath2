@@ -10,9 +10,10 @@ import org.cytoscape.work.swing.DialogTaskManager;
 import org.cytoscape.work.undo.UndoSupport;
 import org.cytoscape.application.swing.CyAction;
 import org.cytoscape.application.swing.CySwingApplication;
+import org.cytoscape.application.swing.CytoPanelComponent;
 import org.cytoscape.application.CyApplicationManager;
-import org.cytoscape.view.vizmap.VisualMappingFunctionFactory;
-import org.cytoscape.view.vizmap.VisualStyleFactory;
+//import org.cytoscape.view.vizmap.VisualMappingFunctionFactory;
+//import org.cytoscape.view.vizmap.VisualStyleFactory;
 import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.io.read.CyNetworkReaderManager;
@@ -59,10 +60,11 @@ public final class CyActivator extends AbstractCyActivator {
 		CyLayoutAlgorithmManager cyLayoutAlgorithmManager = getService(bc,CyLayoutAlgorithmManager.class);
 		UndoSupport undoSupport = getService(bc,UndoSupport.class);
 		VisualMappingManager visualMappingManager = getService(bc,VisualMappingManager.class);
-		VisualStyleFactory visualStyleFactory = getService(bc,VisualStyleFactory.class);
-		VisualMappingFunctionFactory discreteVisualMappingFunctionFactory = getService(bc,VisualMappingFunctionFactory.class,"(mapping.type=discrete)");
-		VisualMappingFunctionFactory passthroughMappingFactoryRef = getService(bc,VisualMappingFunctionFactory.class,"(mapping.type=passthrough)");
-		final CyProperty<Properties> cyProperties = getService(bc, CyProperty.class, "(cyPropertyName=cytoscape3.props)");
+//		VisualStyleFactory visualStyleFactory = getService(bc,VisualStyleFactory.class);
+//		VisualMappingFunctionFactory discreteVisualMappingFunctionFactory = getService(bc,VisualMappingFunctionFactory.class,"(mapping.type=discrete)");
+//		VisualMappingFunctionFactory passthroughMappingFactory = getService(bc,VisualMappingFunctionFactory.class,"(mapping.type=passthrough)");
+		CyProperty<Properties> cyProperties = getService(bc, CyProperty.class, "(cyPropertyName=cytoscape3.props)");
+		
 		
 		// keep all the service references in one place -
 		final CyServices cyServices = new CyServices(cySwingApplication, taskManager, openBrowser, 
@@ -138,7 +140,16 @@ public final class CyActivator extends AbstractCyActivator {
 		nodeProp.setProperty(PREFERRED_MENU, NODE_APPS_MENU);
 		nodeProp.setProperty(MENU_GRAVITY, "13.0");
 		nodeProp.setProperty(TITLE, "CyPath2: Extend Network...");
-		registerService(bc, expandNodeContextMenuFactory, NodeViewTaskFactory.class, nodeProp);		
+		registerService(bc, expandNodeContextMenuFactory, NodeViewTaskFactory.class, nodeProp);	
+		
+			
+		BioPaxDetailsPanel bioPaxDetailsPanel = new BioPaxDetailsPanel(openBrowser);
+		BioPaxCytoPanelComponent cytoPanelComponent = new BioPaxCytoPanelComponent(bioPaxDetailsPanel, cyServices);
+		registerService(bc, cytoPanelComponent, CytoPanelComponent.class, new Properties());
+		
+		// a biopax node selection listener and eastern cytopanel (results panel) feature
+		BioPaxTracker bioPaxTracker = new BioPaxTracker(bioPaxDetailsPanel, cytoPanelComponent, cyServices);	
+		registerAllServices(bc, bioPaxTracker, new Properties());
 	}
 }
 

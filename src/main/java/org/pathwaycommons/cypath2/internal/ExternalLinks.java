@@ -294,7 +294,7 @@ final class ExternalLinks {
 		StringBuilder buf = new StringBuilder();
 
         if (url != null) {
-			buf.append("<A class=\"link\" HREF=\"" + url + "\">" + dbName + ":  " + id + "</A>");
+			buf.append("<A class=\"link\" href=\"" + url + "\">" + dbName + ":  " + id + "</A>");
 		} else {
 			buf.append(dbName + ":  " + id);
 		}

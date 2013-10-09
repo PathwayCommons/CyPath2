@@ -40,7 +40,6 @@ import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.ListSelectionModel;
@@ -73,7 +72,6 @@ import cpath.client.util.CPathException;
 import cpath.query.CPathGetQuery;
 import cpath.query.CPathGraphQuery;
 import cpath.service.GraphType;
-import cpath.service.OutputFormat;
 import cpath.service.jaxb.SearchHit;
 import cpath.service.jaxb.SearchResponse;
 
@@ -87,7 +85,6 @@ final class CyPath2 extends AbstractWebServiceGUIClient
     
 	static final String PROP_CPATH2_SERVER_URL = "cypath2.server.url";
     
-    static OutputFormat downloadMode = OutputFormat.BIOPAX; 
 	static CPathClient client;
     
     static final Map<String,String> uriToOrganismNameMap = new HashMap<String, String>();
@@ -222,73 +219,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	 */
 	Component createOptionsPane() {
 	   	JPanel panel = new JPanel();
-	   	panel.setLayout(new GridLayout(2, 1));
-	   	
-	    // download oprions group
-	    final JRadioButton button1 = new JRadioButton("Download BioPAX");
-	    button1.setSelected(true);
-	    button1.addActionListener(new ActionListener() {
-	        public void actionPerformed(ActionEvent actionEvent) {
-	            downloadMode = OutputFormat.BIOPAX;
-	        }
-	    });
-	    JTextArea textArea1 = new JTextArea(3, 20);
-	    textArea1.setLineWrap(true);
-	    textArea1.setWrapStyleWord(true);
-	    textArea1.setEditable(false);
-	    textArea1.setOpaque(false);
-	    Font font = textArea1.getFont();
-	    Font smallerFont = new Font(font.getFamily(), font.getStyle(), font.getSize() - 2);
-	    textArea1.setFont(smallerFont);
-	    textArea1.setText("Retrieve the full model, i.e., the BioPAX "
-	        + "representation.  In this representation, nodes within a network can "
-	        + "refer either to physical entities or processes.");
-	    textArea1.setBorder(new EmptyBorder(5, 20, 0, 0));
-	       
-	    final JRadioButton button2 = new JRadioButton("Download SIF");
-	    button2.addActionListener(new ActionListener() {
-	        public void actionPerformed(ActionEvent actionEvent) {
-	            downloadMode = OutputFormat.BINARY_SIF;
-	        }
-	    });
-	    JTextArea textArea2 = new JTextArea(3, 20);
-	    textArea2.setLineWrap(true);
-	    textArea2.setWrapStyleWord(true);
-	    textArea2.setEditable(false);
-	    textArea2.setOpaque(false);
-	    textArea2.setFont(smallerFont);
-	    textArea2.setText("Retrieve a simplified binary network, as inferred from the original "
-	        + "BioPAX representation.  In this representation, nodes within a network refer "
-	        + "to physical entities only, and edges refer to inferred interactions.");
-	    textArea2.setBorder(new EmptyBorder(5, 20, 0, 0));
-
-	    ButtonGroup group = new ButtonGroup();
-	    group.add(button1);
-	    group.add(button2);
-
-	    JPanel configPanel = new JPanel();
-	    configPanel.setBorder(new TitledBorder("Download Options"));
-	    configPanel.setLayout(new GridBagLayout());
-	    GridBagConstraints c = new GridBagConstraints();
-	        
-	    c.fill = GridBagConstraints.HORIZONTAL;
-	    c.weightx = 1.0;
-	    c.gridx = 0;
-	    c.gridy = 0;
-	    configPanel.add(button1, c);
-	    c.gridy = 1;
-	    configPanel.add(textArea1, c);
-	    c.gridy = 2;
-	    configPanel.add(button2, c);
-	    c.gridy = 3;
-	    configPanel.add(textArea2, c); 
-	    //  Add invisible filler to take up all remaining space
-	    c.gridy = 4;
-	    c.weighty = 1.0;
-	    JPanel filler = new JPanel();
-	    configPanel.add(filler, c);
-	    
-	    panel.add(configPanel);	    
+	   	panel.setLayout(new GridLayout(2, 1));    
 	    
 		// Initialize the organisms filter-list:
 	    // manually add choice(s): only human is currently supported
@@ -336,7 +267,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	    
 	    panel.add(filtersPane);
 	    
-	    return panel; //new JScrollPane(panel);
+	    return panel;
 	}
 
 	    
@@ -938,7 +869,8 @@ final class CyPath2 extends AbstractWebServiceGUIClient
      * Hit Summary/Details Panel class.
      */
     final class CurrentHitInfoJTabbedPane extends JTabbedPane {
-        private final JTextPane summaryTextPane;
+		private static final long serialVersionUID = 1L;
+		private final JTextPane summaryTextPane;
         private final JTextPane detailsTextPane;
         private final HitsModel hitsModel;
         
