@@ -25,15 +25,8 @@
  **/
 package org.pathwaycommons.cypath2.internal;
 
-import java.io.InputStream;
-
-import org.biopax.paxtools.io.BioPAXIOHandler;
-import org.biopax.paxtools.io.SimpleIOHandler;
-import org.biopax.paxtools.model.Model;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyTable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * BioPAX network related utilities
@@ -41,54 +34,14 @@ import org.slf4j.LoggerFactory;
  * @CyAPI.Final.Class
  */
 final class BioPaxUtil {
-	
-	private static final Logger log = LoggerFactory.getLogger(BioPaxUtil.class);
     
 	static final String BIOPAX_URI = "URI";
 	static final String BIOPAX_ENTITY_TYPE = "BIOPAX_TYPE";
 	static final String BIOPAX_NETWORK = "BIOPAX_NETWORK";	
-    static final int MAX_DISPLAY_STRING_LEN = 25;
-
-	private static final BioPAXIOHandler biopaxIO; 
     
 	// private Constructor
 	private BioPaxUtil() {}
-	
-	static  {
-		biopaxIO = new SimpleIOHandler();
-		// a workaround (illegal) BioPAX data having duplicated rdf:ID...
-		((SimpleIOHandler)biopaxIO).mergeDuplicates(true); 
-	}
-	
-	
-	public static String truncateLongStr(String str) {
-		if(str != null) {
-			str = str.replaceAll("[\n\r \t]+", " ");
-			if (str.length() > MAX_DISPLAY_STRING_LEN) {
-				str = str.substring(0, MAX_DISPLAY_STRING_LEN) + "...";
-			}
-		}
-		return str;
-	}
-		
-	
-	public static Model convertFromOwl(final InputStream stream) {
-		final Model[] model = new Model[1];
-		final SimpleIOHandler handler = new SimpleIOHandler();
-		handler.mergeDuplicates(true); // a workaround (illegal) BioPAX data having duplicated rdf:ID...
-		ClassLoaderHack.runWithHack(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					model[0] =  handler.convertFromOWL(stream);	
-				} catch (Throwable e) {
-					log.warn("Import failed: " + e);
-				}
-			}
-		}, com.ctc.wstx.stax.WstxInputFactory.class);
-		return model[0];
-	}
-
+			
 	
 	/**
 	 * Detects whether a network was generated from BioPAX data.

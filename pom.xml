@@ -367,10 +367,6 @@
 			<groupId>pathwaycommons.cpath</groupId>
 			<artifactId>cpath-client</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>org.biopax.paxtools</groupId>
-			<artifactId>paxtools-core</artifactId>
-		</dependency>
 	</dependencies>
 
 </project>

@@ -6,6 +6,8 @@ import java.io.FileWriter;
 import javax.swing.JOptionPane;
 
 import org.cytoscape.io.read.CyNetworkReader;
+import org.cytoscape.model.CyNetwork;
+import org.cytoscape.view.model.CyNetworkView;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.TaskMonitor;
 import org.slf4j.Logger;
@@ -44,12 +46,12 @@ class NetworkAndViewTask<T> extends AbstractTask {
 	}
 
 	public void run(TaskMonitor taskMonitor) throws Exception {
-		String title = "Retrieving a network " + networkTitle 
-			+ " from Pathway Commons 2...";
+		String title = "CyPath2: Import a Network";
 		taskMonitor.setTitle(title);
 		try {
 			taskMonitor.setProgress(0);
-			taskMonitor.setStatusMessage("Retrieving data...");
+			taskMonitor.setStatusMessage("Retrieving a network " + 
+					networkTitle + " from Pathway Commons 2...");
 	    	
 	    	String data = null;
 			try {
@@ -83,28 +85,23 @@ class NetworkAndViewTask<T> extends AbstractTask {
     			
 			taskMonitor.setProgress(0.5);
 			if (cancelled) return;
-			taskMonitor.setStatusMessage("Creating Cytoscape Network from BioPAX Data...");
-    			
-			// Import data via Cy3 I/O API	
-			String inputName = cyServices.naming.getSuggestedNetworkTitle(networkTitle);
-			CyNetworkReader reader =  cyServices.networkViewReaderManager.getReader(tmpFile.toURI(), inputName);
-			//TODO WRAP in taskManager.execute(iterator) for biopax app's TUNABLES there to show up (allows to choose SIF mode)
-			reader.run(taskMonitor);
-    			
-			taskMonitor.setProgress(0.6);
-			if (cancelled) return;
-			taskMonitor.setStatusMessage("Creating Network View...");
+			
+			taskMonitor.setStatusMessage("Processing the BioPAX data: " +
+					"looking for the BioPAX reader service...");    						
+			// Import data via Cy3 I/O API
+			final String inputName = cyServices.naming.getSuggestedNetworkTitle(networkTitle);
+			final CyNetworkReader reader =  cyServices.networkViewReaderManager.getReader(tmpFile.toURI(), inputName);			
+			//the first task (BioPAX reader) cretas the network; the second one registers it and adds the view:
+			insertTasksAfterCurrentTask(reader, new AbstractTask() {			
+				@Override
+				public void run(TaskMonitor taskMonitor) throws Exception {
+				  final CyNetwork cyNetwork = reader.getNetworks()[0];
+		          cyServices.networkManager.addNetwork(cyNetwork);			
+		          final CyNetworkView view = reader.buildCyNetworkView(cyNetwork);
+		          cyServices.networkViewManager.addNetworkView(view);
+				}
+			});	
 
-			//TODO can remove commented out 4 lines below (used to add network and view using corresp. Cy managers)?
-//			final CyNetwork cyNetwork = reader.getNetworks()[0];
-//          final CyNetworkView view = reader.buildCyNetworkView(cyNetwork);
-//          cyServices.networkManager.addNetwork(cyNetwork);
-//          cyServices.networkViewManager.addNetworkView(view);
-    			
-			taskMonitor.setProgress(0.9);
-			if (cancelled) return;
-
-    			
 		} finally {
 			taskMonitor.setStatusMessage("Done");
 			taskMonitor.setProgress(1.0);
