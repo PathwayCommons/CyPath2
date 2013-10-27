@@ -39,9 +39,6 @@ import javax.swing.JTextPane;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 
-import org.cytoscape.application.CyApplicationManager;
-import org.cytoscape.application.swing.CySwingApplication;
-
 /**
  * Displays the Default Visual Style Legend for the BioPAX Mapper.
  *
@@ -63,9 +60,8 @@ public class LegendPanel extends JPanel {
 
     /**
 	 * Constructor.
-	 *
 	 */
-	public LegendPanel(int mode, final CyApplicationManager applicationManager, final CySwingApplication swingApplication) {
+	public LegendPanel(int mode, final CyServices cyServices) {
 		this.setLayout(new BorderLayout());
 
 		JTextPane textPane = new JTextPane();
@@ -80,7 +76,7 @@ public class LegendPanel extends JPanel {
             legendUrl = LegendPanel.class.getResource("binary_legend.html");
         }
         StringBuffer temp = new StringBuffer();
-		temp.append("<HTML><BODY>");
+		temp.append("<html><body>");
 
 		try {
 			String legendHtml = retrieveDocument(legendUrl.toString());
@@ -89,7 +85,7 @@ public class LegendPanel extends JPanel {
 			temp.append("Could not load legend... " + e.toString());
 		}
 
-		temp.append("</BODY></HTML>");
+		temp.append("</body></html>");
 		textPane.setText(temp.toString());
 
 		textPane.addHyperlinkListener(new HyperlinkListener() {
@@ -97,7 +93,7 @@ public class LegendPanel extends JPanel {
                 if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
                     String name = hyperlinkEvent.getDescription();
                     if (name.equalsIgnoreCase("filter")) {
-                        new EdgeFilterUi(applicationManager.getCurrentNetwork(), swingApplication);
+                        new EdgeFilterUi(cyServices.applicationManager.getCurrentNetwork(), cyServices);
                     }
                 }
             }

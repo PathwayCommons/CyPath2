@@ -5,6 +5,7 @@ import java.io.FileWriter;
 
 import javax.swing.JOptionPane;
 
+import org.biopax.paxtools.model.Model;
 import org.cytoscape.io.read.CyNetworkReader;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.view.model.CyNetworkView;
@@ -22,36 +23,37 @@ import cpath.query.CPathQuery;
  * 
  * @author rodche
  */
-class NetworkAndViewTask<T> extends AbstractTask {
+class NetworkAndViewTask extends AbstractTask {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(NetworkAndViewTask.class);
 	
-	private final String networkTitle;
-	private final CPathQuery<T> cPathQuery;
+	private final CPathQuery<Model> cPathQuery;
 	private final CyServices cyServices;
+	private final String networkName;
 	
 	/**
 	 * Constructor 
 	 * (advanced, for all get, traverse, and graph queries).
 	 * 
 	 * @param cyServices
+	 * @param networkName
 	 * @param 
-	 * @param networkTitle
 	 */
-	public NetworkAndViewTask(CyServices cyServices, CPathQuery<T> cPathQuery, String networkTitle) 
+	public NetworkAndViewTask(CyServices cyServices, CPathQuery<Model> cPathQuery, String networkName) 
 	{
 		this.cyServices = cyServices;
-		this.networkTitle = networkTitle;
 		this.cPathQuery = cPathQuery;
+		this.networkName = networkName;
 	}
 
+	
 	public void run(TaskMonitor taskMonitor) throws Exception {
-		String title = "CyPath2: Import a Network";
-		taskMonitor.setTitle(title);
+		
+		taskMonitor.setTitle("CyPath2 Query");
+		
 		try {
 			taskMonitor.setProgress(0);
-			taskMonitor.setStatusMessage("Retrieving a network " + 
-					networkTitle + " from Pathway Commons 2...");
+			taskMonitor.setStatusMessage("Getting the network data from server...");
 	    	
 	    	String data = null;
 			try {
@@ -87,18 +89,36 @@ class NetworkAndViewTask<T> extends AbstractTask {
 			if (cancelled) return;
 			
 			taskMonitor.setStatusMessage("Processing the BioPAX data: " +
-					"looking for the BioPAX reader service...");    						
+					"looking for the BioPAX reader service...");					
 			// Import data via Cy3 I/O API
-			final String inputName = cyServices.naming.getSuggestedNetworkTitle(networkTitle);
-			final CyNetworkReader reader =  cyServices.networkViewReaderManager.getReader(tmpFile.toURI(), inputName);			
-			//the first task (BioPAX reader) cretas the network; the second one registers it and adds the view:
+			final CyNetworkReader reader =  cyServices.networkViewReaderManager.getReader(tmpFile.toURI(), null);			
+			//the first task (the BioPAX reader) creates a network; the second one registers it and adds the view:
 			insertTasksAfterCurrentTask(reader, new AbstractTask() {			
 				@Override
 				public void run(TaskMonitor taskMonitor) throws Exception {
-				  final CyNetwork cyNetwork = reader.getNetworks()[0];
-		          cyServices.networkManager.addNetwork(cyNetwork);			
-		          final CyNetworkView view = reader.buildCyNetworkView(cyNetwork);
-		          cyServices.networkViewManager.addNetworkView(view);
+					taskMonitor.setTitle("CyPath2 after BioPAX read");
+					final CyNetwork cyNetwork = reader.getNetworks()[0];
+					
+					//check / set the network name attr. (otherwise, it won't be shown in the panel - a bug?..)
+					String name = cyNetwork.getRow(cyNetwork).get(CyNetwork.NAME, String.class);
+					if (name == null || name.trim().length() == 0) {
+						name = networkName;
+						if (name == null)
+							name = "Network by CyPath2 (name is missing)";
+						Attributes.set(cyNetwork, cyNetwork, CyNetwork.NAME, name, String.class);
+					}				
+					cyServices.networkManager.addNetwork(cyNetwork);
+					//if a new root network was created, register that one as well
+//					CyRootNetwork cyRootNetwork = cyServices.rootNetworkManager.getRootNetwork(cyNetwork);
+//					if(cyRootNetwork != null) {
+//						cyServices.networkManager.addNetwork(cyRootNetwork);
+//						taskMonitor.setStatusMessage("Registered the root network");
+//					}
+					taskMonitor.setStatusMessage("Registered the network");
+					// create and register the view
+					final CyNetworkView view = reader.buildCyNetworkView(cyNetwork);
+					cyServices.networkViewManager.addNetworkView(view);
+					taskMonitor.setStatusMessage("Created and registered the view");
 				}
 			});	
 

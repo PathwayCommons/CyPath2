@@ -162,42 +162,36 @@ public class BioPaxDetailsPanel extends JPanel {
 	 * @param nodes
 	 */
 	public void updateNodeDetails(CyNetwork network, Collection<CyNode> nodes) {
-        String s;
-
 		StringBuffer buf = new StringBuffer("<html><body>");
-		buf.append("<h2>Details</h2>");
-		
+		buf.append("<dl>");
 		for (CyNode selected : nodes) {			
 			CyRow row = network.getRow(selected);
 			// name
-			s = row.get(CyNetwork.NAME, String.class);
-			buf.append("<h3>" + s + "</h3>");
-
+			String s = row.get(CyNetwork.NAME, String.class);
+			buf.append("<dt><strong>").append(s).append("</strong>");
 			// type (to the text buffer)
 			String type = row.get(BioPaxUtil.BIOPAX_ENTITY_TYPE, String.class);
 			if (type != null) {
-				buf.append("<h4>");
-				buf.append("BioPAX Class: " + type);
-				buf.append("</h4>");
+				buf.append(" (BioPAX: <em>").append(type).append("</em>)");
 			}
+			buf.append("</dt>").append("<dd>").append("<dl>");
 			// organism
 			s = null;
 			s = row.get("entityReference/organism/displayName", String.class);
 			if(s == null)
 				s = row.get("organism/displayName", String.class);
 			if (s != null) {
-				buf.append("<h4>");
-				buf.append("Organism: " + s);
-				buf.append("</h4>");
+				buf.append("<dt>").append("Organism").append("</dt>")
+				.append("<dd>").append(s).append("</dd>");
 			}        
 			// cellular location
 			s = null;
 			s = row.get("cellularLocation", String.class);
 			if (s != null) {
-				buf.append("<h4>");
-				buf.append("Cellular Location: " + s);
-				buf.append("</h4>");
-			}		
+				buf.append("<dt>").append("Cellular Location").append("</dt>")
+				.append("<dd>").append(s).append("</dd>");
+			}
+			
 			// chemical modification
 			addAttributeList(network, selected, null,
 					BIOPAX_CHEMICAL_MODIFICATIONS_LIST, "Chemical Modifications:", buf);
@@ -205,8 +199,11 @@ public class BioPaxDetailsPanel extends JPanel {
 			addAttributeList(network, selected, null, "dataSource", "Data sources:", buf);        		
 			// links
 			addLinks(network, selected, buf);
+			buf.append("</dl>");
+			buf.append("</dd><hr/>");			
 		}
 		
+		buf.append("</dl>");
 		buf.append("</body></html>");
 		
 		textPane.setText(buf.toString());
@@ -215,18 +212,25 @@ public class BioPaxDetailsPanel extends JPanel {
 
 
     private void addLinks(CyNetwork network, CyNode node, StringBuffer buf) {
-    	CyRow row = network.getRow(node);
-
         addAttributeList(network, node, CyNetwork.HIDDEN_ATTRS,
-                BIOPAX_UNIFICATION_REFERENCES, "Links:", buf);
+                BIOPAX_UNIFICATION_REFERENCES, "Unification Xrefs:", buf);
         addAttributeList(network, node, CyNetwork.HIDDEN_ATTRS,
-                BIOPAX_RELATIONSHIP_REFERENCES, null, buf);
+                BIOPAX_RELATIONSHIP_REFERENCES, "Relationship Xrefs:", buf);
         addAttributeList(network, node, CyNetwork.HIDDEN_ATTRS,
                 BIOPAX_PUBLICATION_REFERENCES, "Publications:", buf);
          
         addIHOPLinks(network, node, buf);
 	}
 
+    /*
+     * 
+     * @param network
+     * @param node
+     * @param tableName attributes table name, e.g., CyNetwork.HIDDEN_ATTRS; if null - the default is used
+     * @param attribute
+     * @param label
+     * @param buf
+     */
 	private void addAttributeList(CyNetwork network, CyNode node, String tableName, 
 			String attribute, String label, StringBuffer buf) 
 	{
@@ -250,7 +254,6 @@ public class BioPaxDetailsPanel extends JPanel {
         }
         for (int lc = 0; lc < len; lc++) {
 			String listItem = list.get(lc);
-
 			if ((listItem != null) && (listItem.length() > 0)) {
                 displayString.append("<li> - " + listItem);
                 displayString.append("</li>"); 
@@ -262,14 +265,8 @@ public class BioPaxDetailsPanel extends JPanel {
 
         // do we have a string to display ?
 		if (displayString.length() > 0) {
-			if(label != null) {
-				buf.append("<h4>");
-				buf.append(label);
-				buf.append("</h4>");
-			}
-            buf.append ("<ul>");
-            buf.append(displayString.toString());
-            buf.append ("</ul>");
+			buf.append("<dt>").append(label).append("</dt>");
+           	buf.append("<dd><ul>").append(displayString.toString()).append("</ul></dd>");
         }
 	}
 
@@ -277,7 +274,6 @@ public class BioPaxDetailsPanel extends JPanel {
 	private void addIHOPLinks(CyNetwork network, CyNode node, StringBuffer buf) {
 		CyRow row = network.getRow(node,CyNetwork.HIDDEN_ATTRS);
 		String ihopLinks = row.get(BIOPAX_IHOP_LINKS, String.class);
-
 		if (ihopLinks != null) {
 			buf.append("<ul>");
 			buf.append(ihopLinks);

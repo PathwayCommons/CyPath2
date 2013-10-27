@@ -1,6 +1,7 @@
 package org.pathwaycommons.cypath2.internal;
 
 import org.cytoscape.task.NodeViewTaskFactory;
+import org.cytoscape.task.hide.UnHideAllEdgesTaskFactory;
 import org.cytoscape.util.swing.OpenBrowser;
 import org.cytoscape.model.CyNetworkManager;
 import org.cytoscape.view.vizmap.VisualMappingManager;
@@ -15,6 +16,7 @@ import org.cytoscape.application.CyApplicationManager;
 //import org.cytoscape.view.vizmap.VisualMappingFunctionFactory;
 //import org.cytoscape.view.vizmap.VisualStyleFactory;
 import org.cytoscape.model.CyNetworkFactory;
+import org.cytoscape.model.subnetwork.CyRootNetworkManager;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.io.read.CyNetworkReaderManager;
 import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
@@ -60,17 +62,15 @@ public final class CyActivator extends AbstractCyActivator {
 		CyLayoutAlgorithmManager cyLayoutAlgorithmManager = getService(bc,CyLayoutAlgorithmManager.class);
 		UndoSupport undoSupport = getService(bc,UndoSupport.class);
 		VisualMappingManager visualMappingManager = getService(bc,VisualMappingManager.class);
-//		VisualStyleFactory visualStyleFactory = getService(bc,VisualStyleFactory.class);
-//		VisualMappingFunctionFactory discreteVisualMappingFunctionFactory = getService(bc,VisualMappingFunctionFactory.class,"(mapping.type=discrete)");
-//		VisualMappingFunctionFactory passthroughMappingFactory = getService(bc,VisualMappingFunctionFactory.class,"(mapping.type=passthrough)");
 		CyProperty<Properties> cyProperties = getService(bc, CyProperty.class, "(cyPropertyName=cytoscape3.props)");
-		
+		CyRootNetworkManager cyRootNetworkManager = getService(bc, CyRootNetworkManager.class);
+		UnHideAllEdgesTaskFactory unHideAllEdgesTaskFactory = getService(bc, UnHideAllEdgesTaskFactory.class);
 		
 		// keep all the service references in one place -
 		final CyServices cyServices = new CyServices(cySwingApplication, taskManager, openBrowser, 
 				cyNetworkManager, cyApplicationManager, cyNetworkViewManager, cyNetworkReaderManager, 
 				cyNetworkNaming, cyNetworkFactory, cyLayoutAlgorithmManager, undoSupport, visualMappingManager, 
-				cyProperties);
+				cyProperties, cyRootNetworkManager, unHideAllEdgesTaskFactory);
 			    
 	    // Create/init a cpath2 client instance
 		String cPath2Url = cyProperties.getProperties().getProperty(CyPath2.PROP_CPATH2_SERVER_URL);

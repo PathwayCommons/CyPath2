@@ -176,9 +176,10 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 			@Override
 			public void run(TaskMonitor taskMonitor) throws Exception {
 				cyServices.taskManager.setExecutionContext(null);
-				final CPathGetQuery query = client.createGetQuery().sources(new String[] {(String) uri});
+				String uriStr = String.valueOf(uri);
+				final CPathGetQuery query = client.createGetQuery().sources(new String[] {uriStr});
 				cyServices.taskManager.execute(
-					new TaskIterator(new NetworkAndViewTask(cyServices, query, ""))
+					new TaskIterator(new NetworkAndViewTask(cyServices, query, uriStr))
 				);
 			}
 
@@ -339,7 +340,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	    		new NvpListItem("Entity references (mol. classes)", "EntityReference")
 	    	}
 	    );
-	    bpTypeComboBox.setSelectedIndex(1);
+	    bpTypeComboBox.setSelectedIndex(0); //default value: Pathway
 	    bpTypeComboBox.setEditable(false);
 	        
 	    // create the search button and action
@@ -685,7 +686,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	        	if(hitsModel.graphType == null) {
 	        		final CPathGetQuery getQ = client.createGetQuery().sources(srcs);
 	        		cyServices.taskManager.execute(new TaskIterator(
-	        			new NetworkAndViewTask(cyServices, getQ, "Biopax sub-model")
+	        			new NetworkAndViewTask(cyServices, getQ, null)
 	        			));
 	        	} else {
 	        		final CPathGraphQuery graphQ = client.createGraphQuery()
@@ -693,10 +694,10 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	        			.sources(srcs).targets(tgts)
 	        			.datasourceFilter(selectedDatasources())
 	        			.direction(hitsModel.direction)
-	        			//.limit(?)
+	        			//.limit(1) TODO set limit (optional; default is 1)
 	        			.organismFilter(selectedOrganisms());
 	        		cyServices.taskManager.execute(new TaskIterator(
-	        			new NetworkAndViewTask(cyServices, graphQ, "Biopax " + hitsModel.graphType)
+	        			new NetworkAndViewTask(cyServices, graphQ, null)
 		        		));
 	        	}
 	        	
@@ -760,8 +761,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 					int selectedIndex = tpwJList.getSelectedIndex();
 					// ignore the "unselect" event.
 					if (selectedIndex >= 0) {
-						SearchHit item = (SearchHit) tpwJList.getModel()
-								.getElementAt(selectedIndex);
+						SearchHit item = (SearchHit) tpwJList.getModel().getElementAt(selectedIndex);
 						String uri = item.getUri();
 						final CPathGetQuery getQuery = client.createGetQuery().sources(new String[]{uri});
 						cyServices.taskManager.execute(new TaskIterator(
@@ -804,7 +804,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	    			@Override
 	    			public void run(TaskMonitor taskMonitor) throws Exception {
 	    				try {
-	    					taskMonitor.setTitle("CyPath2 Task: Top Pathways");
+	    					taskMonitor.setTitle("CyPath2 Top Pathways");
 	    					taskMonitor.setProgress(0.1);
 	    					taskMonitor.setStatusMessage("Getting top pathways from the server...");
 	    					final SearchResponse resp = client.createTopPathwaysQuery()
@@ -917,7 +917,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
                    		String uri = hyperlinkEvent.getURL().toString();
                    		final CPathGetQuery query = CyPath2.client.createGetQuery().sources(Collections.singleton(uri));
                    		cyServices.taskManager.execute(new TaskIterator(
-                       		new NetworkAndViewTask(cyServices, query, hyperlinkEvent.getDescription())));
+                       		new NetworkAndViewTask(cyServices, query, current.toString())));
                     }
                 }
             });
@@ -965,9 +965,10 @@ final class CyPath2 extends AbstractWebServiceGUIClient
     				@Override
     				public void run(TaskMonitor taskMonitor) throws Exception {
     					try {
-    						taskMonitor.setTitle("CyPath2 Task: Query for more details (of " + item + ")");
+    						taskMonitor.setTitle("CyPath2 auto-query");
     						taskMonitor.setProgress(0.1);
-    						taskMonitor.setStatusMessage("Getting pathway/component names and counts from the server...");
+    						taskMonitor.setStatusMessage("Getting current hit's (" + item 
+    								+ ") info from the server...");
     						final String html = hitsModel.fetchDetails(item);
     						detailsTextPane.setText(html);
     					} catch (Throwable e) { 
@@ -1012,12 +1013,12 @@ final class CyPath2 extends AbstractWebServiceGUIClient
                    				.sources(Collections.singleton(uri))
                    				.kind(GraphType.NEIGHBORHOOD);
                    			cyServices.taskManager.execute(new TaskIterator(
-                       			new NetworkAndViewTask(cyServices, graphQuery, currentItem.getName() + " NEIGHBORHOOD")));
+                       			new NetworkAndViewTask(cyServices, graphQuery, currentItem.toString())));
                    		} else { // use '/get' command
                    			final CPathGetQuery getQuery = CyPath2.client.createGetQuery()
                    				.sources(Collections.singleton(uri));
                    			cyServices.taskManager.execute(new TaskIterator(
-                       			new NetworkAndViewTask(cyServices, getQuery, currentItem.getName())));
+                       			new NetworkAndViewTask(cyServices, getQuery, currentItem.toString())));
                    		}
                     }
                 }

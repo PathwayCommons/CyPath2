@@ -7,8 +7,10 @@ import org.cytoscape.application.swing.CySwingApplication;
 import org.cytoscape.io.read.CyNetworkReaderManager;
 import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.CyNetworkManager;
+import org.cytoscape.model.subnetwork.CyRootNetworkManager;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.session.CyNetworkNaming;
+import org.cytoscape.task.hide.UnHideAllEdgesTaskFactory;
 import org.cytoscape.util.swing.OpenBrowser;
 import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
 import org.cytoscape.view.model.CyNetworkViewManager;
@@ -31,6 +33,8 @@ final class CyServices {
 	final UndoSupport undoSupport;
 	final VisualMappingManager mappingManager;
 	final CyProperty<Properties> cyProperty;
+	final CyRootNetworkManager rootNetworkManager;
+	final UnHideAllEdgesTaskFactory unHideAllEdgesTaskFactory;
 	public CyServices(CySwingApplication cySwingApplication,
 			TaskManager taskManager, OpenBrowser openBrowser,
 			CyNetworkManager networkManager,
@@ -40,7 +44,9 @@ final class CyServices {
 			CyNetworkNaming naming, CyNetworkFactory networkFactory,
 			CyLayoutAlgorithmManager layoutManager, UndoSupport undoSupport,
 			VisualMappingManager mappingManager,
-			CyProperty<Properties> cyProperty) 
+			CyProperty<Properties> cyProperty,
+			CyRootNetworkManager rootNetworkManager, 
+			UnHideAllEdgesTaskFactory unHideAllEdgesTaskFactory) 
 	{
 		this.cySwingApplication = cySwingApplication;
 		this.taskManager = taskManager;
@@ -55,6 +61,8 @@ final class CyServices {
 		this.undoSupport = undoSupport;
 		this.mappingManager = mappingManager;
 		this.cyProperty = cyProperty;
+		this.rootNetworkManager = rootNetworkManager;
+		this.unHideAllEdgesTaskFactory = unHideAllEdgesTaskFactory;
 	}
 	
 }

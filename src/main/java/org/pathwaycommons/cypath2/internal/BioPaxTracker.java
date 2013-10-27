@@ -87,8 +87,8 @@ public class BioPaxTracker implements SetCurrentNetworkViewListener, RowsSetList
 			for (CyNode node : network.getNodeList()) {
 				if (network.getRow(node).get(CyNetwork.SELECTED, Boolean.class)) {
 					selected.add(node);
-					if(selected.size() == MAX_SELECTED_NODES_INFO)
-						break; //stop
+//					if(selected.size() == MAX_SELECTED_NODES_INFO)
+//						break; //stop
 				}
 			}
 

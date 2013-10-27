@@ -74,10 +74,8 @@ public class BioPaxCytoPanelComponent extends JPanel implements CytoPanelCompone
 		this.cyServices = cyServices;
 		
         cards = new JPanel(new CardLayout());
-        LegendPanel bioPaxLegendPanel = new LegendPanel(LegendPanel.BIOPAX_LEGEND, 
-        		cyServices.applicationManager, cyServices.cySwingApplication);
-        LegendPanel binaryLegendPanel = new LegendPanel(LegendPanel.BINARY_LEGEND, 
-        		cyServices.applicationManager, cyServices.cySwingApplication);
+        LegendPanel bioPaxLegendPanel = new LegendPanel(LegendPanel.BIOPAX_LEGEND, cyServices);
+        LegendPanel binaryLegendPanel = new LegendPanel(LegendPanel.BINARY_LEGEND, cyServices);
 
         cards.add (bpDetailsPanel, DETAILS_CARD);
         cards.add (bioPaxLegendPanel, LEGEND_BIOPAX_CARD);
