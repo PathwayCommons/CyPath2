@@ -1,18 +1,18 @@
 <table cellpadding="3" cellspacing="3" width="100%">
 <tr>
-    <td><h2>Visual Legend</h2></td>
+    <th><h2>Visual Legend</h2></th>
     <td align='RIGHT'><a href="filter">Filter Edges</a></td>
-    </tr>
+</tr>
 </table>
 
 <table cellpadding="3" cellspacing="3">
 <tr bgcolor="#DDDDDD">
-    <td VALIGN=CENTER>
+    <th VALIGN=CENTER>
         <h3>Edge Type</h3>
-    </td>
-    <td VALIGN=CENTER>
+    </th>
+    <th VALIGN=CENTER>
         <h3>Color</h3>
-    </td>
+    </th>
 </tr>
 
 <tr>
@@ -182,4 +182,47 @@
         </span>
     </td>
  </tr> 
+</table>
+
+<table cellpadding="3" cellspacing="3">
+<tr bgcolor="#DDDDDD">
+    <th VALIGN=CENTER>
+        <h3>Node Type</h3>
+    </th>
+    <th VALIGN=CENTER>
+        <h3>Shape & Color</h3>
+    </th>   
+</tr>
+    
+<!-- TODO Describe Node Shapes (actually defined in the BioPAX core app!)-->
+<tr>
+    <td VALIGN=CENTER>
+        <span class="rule">Entity References (e.g, ProteinReference)</span>
+    </td>
+    <td BGCOLOR="#FF9999" VALIGN=CENTER>ELLIPSE</td>    
+</tr>
+<tr>
+    <td VALIGN=CENTER>
+        <span class="rule">Complex</span>
+    </td>
+    <td BGCOLOR="#99CCFF" VALIGN=CENTER>HEXAGON</td>    
+</tr>
+<tr>
+    <td VALIGN=CENTER>
+        <span class="rule">GenericProteinReference</span>
+    </td>
+    <td BGCOLOR="#FF3300" VALIGN=CENTER>OCTAGON</td>    
+</tr>
+<tr>
+    <td VALIGN=CENTER>
+        <span class="rule">GenericSmallMoleculeReference</span>
+    </td>
+    <td BGCOLOR="#CCCCFF" VALIGN=CENTER>OCTAGON</td>    
+</tr>
+<tr>
+    <td VALIGN=CENTER>
+        <span class="rule">Generic DNA/RNA References</span>
+    </td>
+    <td BGCOLOR="#33CCCC" VALIGN=CENTER>ROUND_RECTANGLE</td>    
+</tr>
 </table>
