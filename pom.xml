@@ -9,9 +9,9 @@
 		<bundle.Name>CyPath2</bundle.Name>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<cytoscape.version>3.0.2</cytoscape.version>
+		<cytoscape.version>[3.1.0-SNAPSHOT,4.0)</cytoscape.version>
 		<osgi.api.version>4.2.0</osgi.api.version>
-		<paxtools.version>4.2.1-SNAPSHOT</paxtools.version>
+		<paxtools.version>4.2.2-SNAPSHOT</paxtools.version>
 		<cpath2.version>4.1.0-SNAPSHOT</cpath2.version>
 		<spring.version>3.2.3.RELEASE</spring.version>
 		<maven-enforcer-plugin>1.2</maven-enforcer-plugin>
@@ -57,20 +57,6 @@
 			</resource>
 		</resources>
 		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<version>2.4</version>
-				<configuration>
-					<archive>
-						<manifestEntries>
-							<Cytoscape-App-Name>CyPath2</Cytoscape-App-Name>
-							<Cytoscape-App-Version>0.5</Cytoscape-App-Version>
-							<Cytoscape-API-Compatibility>3.1</Cytoscape-API-Compatibility>
-						</manifestEntries>
-					</archive>					
-				</configuration>
-			</plugin>
 			<plugin>
 				<groupId>org.apache.felix</groupId>
 				<artifactId>maven-bundle-plugin</artifactId>
