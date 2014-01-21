@@ -9,7 +9,7 @@
 		<bundle.Name>CyPath2</bundle.Name>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<cytoscape.version>[3.1.0-SNAPSHOT,4.0)</cytoscape.version>
+		<cytoscape.version>3.1.0-SNAPSHOT</cytoscape.version>
 		<osgi.api.version>4.2.0</osgi.api.version>
 		<paxtools.version>4.3.0-SNAPSHOT</paxtools.version>
 		<cpath2.version>4.1.0-SNAPSHOT</cpath2.version>
