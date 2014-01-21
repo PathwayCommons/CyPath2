@@ -69,11 +69,11 @@ public class BioPaxDetailsPanel extends JPanel {
 
 	private static final Logger LOG = LoggerFactory.getLogger(BioPaxDetailsPanel.class);
 	
-    static final String BIOPAX_CHEMICAL_MODIFICATIONS_LIST = "chemical_modifications";
-    static final String BIOPAX_UNIFICATION_REFERENCES = "unification_references";
-    static final String BIOPAX_RELATIONSHIP_REFERENCES = "relationship_references";
-    static final String BIOPAX_PUBLICATION_REFERENCES = "publication_references";
-    static final String BIOPAX_IHOP_LINKS = "ihop_links";	
+    static final String BIOPAX_CHEMICAL_MODIFICATIONS_LIST = "CHEMICAL_MODIFICATIONS";
+    static final String BIOPAX_UNIFICATION_REFERENCES = "UNIFICATION_REFERENCES";
+    static final String BIOPAX_RELATIONSHIP_REFERENCES = "RELATIONSHIP_REFERENCES";
+    static final String BIOPAX_PUBLICATION_REFERENCES = "PUBLICATION_REFERENCES";
+    static final String BIOPAX_IHOP_LINKS = "IHOP_LINKS";	
 	
 	CyApplicationManager applicationManager;
 	

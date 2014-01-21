@@ -11,7 +11,7 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<cytoscape.version>[3.1.0-SNAPSHOT,4.0)</cytoscape.version>
 		<osgi.api.version>4.2.0</osgi.api.version>
-		<paxtools.version>4.2.2-SNAPSHOT</paxtools.version>
+		<paxtools.version>4.3.0-SNAPSHOT</paxtools.version>
 		<cpath2.version>4.1.0-SNAPSHOT</cpath2.version>
 		<spring.version>3.2.3.RELEASE</spring.version>
 		<maven-enforcer-plugin>1.2</maven-enforcer-plugin>
@@ -22,7 +22,7 @@
 	
 	<groupId>org.pathwaycommons</groupId>
 	<artifactId>cypath2-impl</artifactId>
-	<version>0.5.0-SNAPSHOT</version>
+	<version>0.6.0-SNAPSHOT</version>
 	
 	<name>${bundle.Name}</name>
 	<description>CyPath2 is a Cytoscape 3 GUI client app 
@@ -73,6 +73,10 @@
 						<Embed-Dependency>*;scope=runtime|compile;optional=false</Embed-Dependency>
 						<Embed-Transitive>true</Embed-Transitive>
 						<Import-Package>*;resolution:=optional</Import-Package>
+<!-- does not work as biopax-impl is not in the Apps Store:
+						<Cytoscape-App-Dependencies>biopax-impl;3.1.0-SNAPSHOT</Cytoscape-App-Dependencies> -->
+<!-- not required for osgi bundle apps:	
+						<Cytoscape-API-Compatibility>3.0</Cytoscape-API-Compatibility> -->						
 					</instructions>
 				</configuration>
 			</plugin>
@@ -182,27 +186,7 @@
 		<dependencies>
 			<dependency>
 				<groupId>org.cytoscape</groupId>
-				<artifactId>model-api</artifactId>
-				<version>${cytoscape.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.cytoscape</groupId>
-				<artifactId>io-api</artifactId>
-				<version>${cytoscape.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.cytoscape</groupId>
-				<artifactId>viewmodel-api</artifactId>
-				<version>${cytoscape.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.cytoscape</groupId>
 				<artifactId>layout-api</artifactId>
-				<version>${cytoscape.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.cytoscape</groupId>
-				<artifactId>presentation-api</artifactId>
 				<version>${cytoscape.version}</version>
 			</dependency>
 			<dependency>
@@ -272,6 +256,21 @@
 				</exclusions>
 			</dependency>
 			<dependency>
+				<groupId>org.biopax.paxtools</groupId>
+				<artifactId>paxtools-trove</artifactId>
+				<version>${paxtools.version}</version>
+				<exclusions>
+					<exclusion>
+						<groupId>log4j</groupId>
+						<artifactId>log4j</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>commons-logging</groupId>
+						<artifactId>commons-logging</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>			
+			<dependency>
 				<groupId>org.slf4j</groupId>
 				<artifactId>jcl-over-slf4j</artifactId>
 				<version>${slf4j.version}</version>
@@ -287,27 +286,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.cytoscape</groupId>
-			<artifactId>model-api</artifactId>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.cytoscape</groupId>
-			<artifactId>io-api</artifactId>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.cytoscape</groupId>
-			<artifactId>viewmodel-api</artifactId>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.cytoscape</groupId>
 			<artifactId>layout-api</artifactId>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.cytoscape</groupId>
-			<artifactId>presentation-api</artifactId>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -352,6 +331,10 @@
 		<dependency>
 			<groupId>pathwaycommons.cpath</groupId>
 			<artifactId>cpath-client</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.biopax.paxtools</groupId>
+			<artifactId>paxtools-trove</artifactId>
 		</dependency>
 	</dependencies>
 

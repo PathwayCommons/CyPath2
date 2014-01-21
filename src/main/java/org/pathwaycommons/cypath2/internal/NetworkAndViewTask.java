@@ -30,10 +30,11 @@ class NetworkAndViewTask extends AbstractTask {
 	private final CPathQuery<Model> cPathQuery;
 	private final CyServices cyServices;
 	private final String networkName;
+	private final String biopaxData;
 	
 	/**
 	 * Constructor 
-	 * (advanced, for all get, traverse, and graph queries).
+	 * (advanced, for all get and graph queries).
 	 * 
 	 * @param cyServices
 	 * @param networkName
@@ -44,8 +45,25 @@ class NetworkAndViewTask extends AbstractTask {
 		this.cyServices = cyServices;
 		this.cPathQuery = cPathQuery;
 		this.networkName = networkName;
+		this.biopaxData = null;
 	}
 
+	/**
+	 * Constructor 
+	 * when you already have biopax data.
+	 * 
+	 * @param cyServices
+	 * @param networkName
+	 * @param 
+	 */
+	public NetworkAndViewTask(CyServices cyServices, String biopaxData, String networkName) 
+	{
+		this.cyServices = cyServices;
+		this.biopaxData = biopaxData;
+		this.networkName = networkName;
+		this.cPathQuery = null;
+	}
+	
 	
 	public void run(TaskMonitor taskMonitor) throws Exception {
 		
@@ -55,19 +73,23 @@ class NetworkAndViewTask extends AbstractTask {
 			taskMonitor.setProgress(0);
 			taskMonitor.setStatusMessage("Getting the network data from server...");
 	    	
-	    	String data = null;
-			try {
-				data = cPathQuery.stringResult(null); //default format is BioPAX
-			} catch (CPathException e) {
-				LOGGER.warn("cPath2 query failed", e);
-			}
+	    	String data = biopaxData; //may be null
+	    	
+	    	if(data == null && cPathQuery != null) {   	
+	    		try {
+	    			data = cPathQuery.stringResult(null); //default format is BioPAX
+	    		} catch (CPathException e) {
+	    			LOGGER.warn("cPath2 query failed", e);
+	    		}
+	    	}
 	    	
 	    	if(data == null || data.isEmpty()) {
-	    		JOptionPane.showMessageDialog(cyServices.cySwingApplication.getJFrame(), "No data returned from the server.");
+//	    		JOptionPane.showMessageDialog(cyServices.cySwingApplication.getJFrame(), "No data returned from the server.");
 	    		taskMonitor.setStatusMessage("No data returned from the server.");
-	    		taskMonitor.setProgress(1.0);
+//	    		taskMonitor.setProgress(1.0);
 	    		cancel();
 	    		return;
+//	    		throw new RuntimeException("No data returned from the server.");
 	    	}	    		
 	    	
 	    	// done.

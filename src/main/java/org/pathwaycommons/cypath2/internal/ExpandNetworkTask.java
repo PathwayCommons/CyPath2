@@ -1,7 +1,5 @@
 package org.pathwaycommons.cypath2.internal;
 
-import javax.swing.JOptionPane;
-
 import org.cytoscape.model.CyNode;
 import org.cytoscape.view.model.CyNetworkView;
 import org.cytoscape.view.model.View;
@@ -21,8 +19,8 @@ class ExpandNetworkTask extends AbstractTask implements Task {
 	public void run(TaskMonitor taskMonitor) throws Exception {
 		// TODO ExpandNetworkTask - implement run method
 		taskMonitor.setStatusMessage("TODO: This task is not implemented yet.");
-		JOptionPane.showMessageDialog(null, "TODO: This task is not implemented yet.");
 		taskMonitor.setProgress(1.0);
+		throw new UnsupportedOperationException("TODO: Oops, this feature is not implemented yet (in CyPath2 app).");
 	}
 
 }

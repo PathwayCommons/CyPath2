@@ -1,5 +1,7 @@
 package org.pathwaycommons.cypath2.internal;
 
+import org.biopax.paxtools.trove.TProvider;
+import org.biopax.paxtools.util.BPCollections;
 import org.cytoscape.task.NodeViewTaskFactory;
 import org.cytoscape.task.hide.UnHideAllEdgesTaskFactory;
 import org.cytoscape.util.swing.OpenBrowser;
@@ -50,6 +52,16 @@ public final class CyActivator extends AbstractCyActivator {
 	public void start(BundleContext bc) {
 		LOGGER.info("Starting CyPath2 app...");
 		
+		//set a system property for Paxtools to use memory-efficient collections
+		try {
+			Class.forName("org.biopax.paxtools.trove.TProvider");
+			System.setProperty("paxtools.CollectionProvider", "org.biopax.paxtools.trove.TProvider");
+			BPCollections.I.setProvider(new TProvider());
+		} catch (ClassNotFoundException e1) {
+			LOGGER.error("org.biopax.paxtools.trove.TProvider is not found on the app's classpath; " +
+				"Paxtools will use default biopax collections (HashSet, HashMap based).");
+		}		
+		
 		CySwingApplication cySwingApplication = getService(bc,CySwingApplication.class);
 		DialogTaskManager taskManager = getService(bc,DialogTaskManager.class);
 		OpenBrowser openBrowser = getService(bc,OpenBrowser.class);
@@ -82,6 +94,12 @@ public final class CyActivator extends AbstractCyActivator {
 		}
 		cyProperties.getProperties().setProperty(CyPath2.PROP_CPATH2_SERVER_URL, CyPath2.client.getActualEndPointURL());	  	
 		
+		// set the other static field - cy3 services
+		CyPath2.cyServices = cyServices;
+		
+	    // new user-set global options (e.g., filters, query type)
+		CyPath2.options = new Options();
+		
 	    // get the app description from the resource file
 	    Properties props = new Properties();
 	    try {
@@ -89,7 +107,8 @@ public final class CyActivator extends AbstractCyActivator {
 	    } catch (IOException e) { throw new RuntimeException(e);}
 	    final String description = props.getProperty("cypath2.description");
 	    		
-		CyPath2 app = new CyPath2("Pathway Commons 2 (BioPAX L3)", description, cyServices);		
+	    // new app instance
+		CyPath2 app = new CyPath2("Pathway Commons 2 (BioPAX L3)", description);		
 		// initialize (build the UI)
 		try {
 			app.init();
@@ -97,7 +116,7 @@ public final class CyActivator extends AbstractCyActivator {
 			throw new RuntimeException(e);
 		}
 		
-		// Register OSGi services
+		// Register OSGi services: WebServiceClient, WebServiceGUIClient, SearchWebServiceClient,..
 		registerAllServices(bc, app, new Properties());
 		
 		// Create a new menu/toolbar item (CyAction) that opens the CyPath2 GUI 

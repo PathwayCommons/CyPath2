@@ -329,8 +329,10 @@ final class ExternalLinks {
 	public static String getIHOPUrl(String type, List<String> synList, List<ExternalLink> dbList, int taxonomyId) 
 	{
 		if (type.equalsIgnoreCase("protein") 
-			|| type.equalsIgnoreCase("dna")
-		    	|| type.equalsIgnoreCase("rna")) 
+				|| type.equalsIgnoreCase("dna")
+		    	|| type.equalsIgnoreCase("rna")
+		    	|| type.equalsIgnoreCase("dnaregion")
+		    	|| type.equalsIgnoreCase("rnaregion")) 
 		{
 			StringBuilder url = new StringBuilder();
 
