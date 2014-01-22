@@ -3,8 +3,6 @@ package org.pathwaycommons.cypath2.internal;
 import java.io.File;
 import java.io.FileWriter;
 
-import javax.swing.JOptionPane;
-
 import org.biopax.paxtools.model.Model;
 import org.cytoscape.io.read.CyNetworkReader;
 import org.cytoscape.model.CyNetwork;
@@ -68,6 +66,8 @@ class NetworkAndViewTask extends AbstractTask {
 	public void run(TaskMonitor taskMonitor) throws Exception {
 		
 		taskMonitor.setTitle("CyPath2 Query");
+		
+		if(cancelled) return;
 		
 		try {
 			taskMonitor.setProgress(0);

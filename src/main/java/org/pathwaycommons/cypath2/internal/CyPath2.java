@@ -239,7 +239,8 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	    dataSourceFilterBox.setMinimumSize(new Dimension(200, 100));
 
 	    JSplitPane filtersPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, dataSourceFilterBox, organismFilterBox);
-	    filtersPane.setBorder(new TitledBorder("Global Filters (for all full-text search, top pathways, and graph queries)"));
+	    filtersPane.setBorder(new TitledBorder("Global Filters - for all queries, including Top Pathways and " +
+	    		"Apps->Extend Network... node view context menu."));
 	    filtersPane.setDividerLocation(400);
 	    filtersPane.setResizeWeight(0.5f);
 	    filtersPane.setAlignmentX(Component.LEFT_ALIGNMENT);

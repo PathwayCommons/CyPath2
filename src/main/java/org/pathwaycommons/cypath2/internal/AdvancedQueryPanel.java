@@ -80,7 +80,7 @@ final class AdvancedQueryPanel extends JPanel {
         final JRadioButton up = new JRadioButton("Upstream"); 
         
 	    ButtonGroup bg = new ButtonGroup();
-	    JRadioButton b = new JRadioButton("Get (multiple sub-graphs as one 'network')");	    
+	    JRadioButton b = new JRadioButton("Get (interactions/pathways by URIs)");    
         //default option (1)
 	    b.setSelected(true);
 	    graphType = null;
@@ -258,17 +258,19 @@ final class AdvancedQueryPanel extends JPanel {
 	        }
 	    });	
 	    
-	    controlPanel.add(execQueryButton);
+	    final JPanel execQueryButtonPanel = new JPanel();
+	    execQueryButtonPanel.setMaximumSize(new Dimension(400, 100));
+	    execQueryButtonPanel.add(execQueryButton);
+	    controlPanel.add(execQueryButtonPanel);
     
         // add the sources/targets list and the label
 	    JEditorPane infoLabel = new JEditorPane ("text/html", 
-	    	"Tip: <ol><li>Use bio entities from search results (i.e., in Search tab, double-click on a hit) " +
-	    	"or enter standard gene, protein, metabolite identifiers into the input field below " +
-	    	"(those that actually exist in our database will be added to the sources/targets list).</li>" +
+	    	"<ol><li>Use bio entities from search results (in Search tab, double-click on a hit) " +
+	    	"or enter standard gene, protein, metabolite identifiers into the input field below.</li>" +
 	    	"<li>Review and refine (double-click to remove an item).</li>" +
 	    	"<li>Select one or multiple items (sources).</li>" +
 	    	"<li>Select query type and direction in the right panel.</li>" +
-	    	"<li>Click 'Execute Query' (to retrive the BioPAX data and create a new network and view).</li></ol><br/>");
+	    	"<li>Click 'Execute Query' (gets BioPAX data and creates new network and view).</li></ol><br/>");
 	    infoLabel.setEditable(false);
 	    infoLabel.setOpaque(false);
 	    infoLabel.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
@@ -372,11 +374,16 @@ final class AdvancedQueryPanel extends JPanel {
 	        	
 	        	inputFieldButton.setEnabled(false);
 	        	try {
-	        		CyPath2.cyServices.taskManager.execute(new TaskIterator(checkAndAdd));
-					if(!notFound.isEmpty())
-						JOptionPane.showMessageDialog(inputField, 
-			        		"The following IDs were not added " +
-			        			"(no xrefs found in the database): " + notFound);			
+	        		CyPath2.cyServices.taskManager.execute(new TaskIterator(checkAndAdd, 
+	        			new AbstractTask() {//report
+						@Override
+						public void run(TaskMonitor taskMonitor) throws Exception {
+							if(!notFound.isEmpty())
+								JOptionPane.showMessageDialog(inputField, 
+					        		"The following IDs were not added " +
+					        			"(no xrefs found in the database): " + notFound);									
+						}
+					}));
 	        	} catch (Exception e) {
 	        		JOptionPane.showMessageDialog(inputField, 
 	        			"Failed to check the input and update the list: " + e.getMessage());
