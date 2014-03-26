@@ -63,12 +63,13 @@ import cpath.service.jaxb.SearchHit;
 import cpath.service.jaxb.SearchResponse;
 
 /**
- * CyPath2: CPathSquared Web Service client integrated into the Cytoscape Web Services GUI Framework.
+ * CyPC: cPath2/PC Web Service client integrated 
+ * into the Cytoscape Web Services GUI Framework.
  */
-final class CyPath2 extends AbstractWebServiceGUIClient 
+final class CyPC extends AbstractWebServiceGUIClient 
 	implements NetworkImportWebServiceClient, SearchWebServiceClient
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CyPath2.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CyPC.class);
     
 	static final String PROP_CPATH2_SERVER_URL = "cypath2.server.url";
     
@@ -91,7 +92,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
      * @param description
      * @param cyServices
      */
-    public CyPath2(String displayName, String description) 
+    public CyPC(String displayName, String description) 
     {    	   	
     	super(client.getEndPointURL(), displayName, description);
 		
@@ -560,7 +561,7 @@ final class CyPath2 extends AbstractWebServiceGUIClient
 	    			@Override
 	    			public void run(TaskMonitor taskMonitor) throws Exception {
 	    				try {
-	    					taskMonitor.setTitle("CyPath2 Top Pathways");
+	    					taskMonitor.setTitle("CyPathwayCommons Top Pathways");
 	    					taskMonitor.setProgress(0.1);
 	    					taskMonitor.setStatusMessage("Getting top pathways from the server...");
 	    					final SearchResponse resp = client.createTopPathwaysQuery()

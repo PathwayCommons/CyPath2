@@ -71,7 +71,7 @@ final class AdvancedQueryPanel extends JPanel {
         
         //add radio buttons for different query types
     	final JPanel queryTypePanel = new JPanel();
-        queryTypePanel.setBorder(CyPath2.createTitledBorder("Graph Query Type"));
+        queryTypePanel.setBorder(CyPC.createTitledBorder("Graph Query Type"));
         queryTypePanel.setLayout(new GridBagLayout());   
         
         //create direction buttons in advance (to disable/enable)
@@ -168,7 +168,7 @@ final class AdvancedQueryPanel extends JPanel {
         
         // add direction, limit options and the 'go' button to the panel	        
     	JPanel directionPanel = new JPanel();
-    	directionPanel.setBorder(CyPath2.createTitledBorder("Direction"));
+    	directionPanel.setBorder(CyPC.createTitledBorder("Direction"));
     	directionPanel.setLayout(new GridBagLayout());
     	bg = new ButtonGroup();	    
     	down.addActionListener(new ActionListener() {
@@ -235,22 +235,22 @@ final class AdvancedQueryPanel extends JPanel {
 	        	}
 	        	
 	        	if(graphType == null) {
-	        		final CPathGetQuery getQ = CyPath2.client
+	        		final CPathGetQuery getQ = CyPC.client
 	        				.createGetQuery().sources(srcs);
-	        		CyPath2.cyServices.taskManager.execute(new TaskIterator(
-	        			new NetworkAndViewTask(CyPath2.cyServices, getQ, null)
+	        		CyPC.cyServices.taskManager.execute(new TaskIterator(
+	        			new NetworkAndViewTask(CyPC.cyServices, getQ, null)
 	        			));
 	        	} else {
-	        		final CPathGraphQuery graphQ = CyPath2.client
+	        		final CPathGraphQuery graphQ = CyPC.client
 	        			.createGraphQuery()
 	        			.kind(graphType)
 	        			.sources(srcs).targets(tgts)
-	        			.datasourceFilter(CyPath2.options.selectedDatasources())
+	        			.datasourceFilter(CyPC.options.selectedDatasources())
 	        			.direction(direction)
 	        			//.limit(1) TODO set limit (optional; default is 1)
-	        			.organismFilter(CyPath2.options.selectedOrganisms());
-	        		CyPath2.cyServices.taskManager.execute(new TaskIterator(
-	        			new NetworkAndViewTask(CyPath2.cyServices, graphQ, null)
+	        			.organismFilter(CyPC.options.selectedOrganisms());
+	        		CyPC.cyServices.taskManager.execute(new TaskIterator(
+	        			new NetworkAndViewTask(CyPC.cyServices, graphQ, null)
 		        		));
 	        	}
 	        	
@@ -285,14 +285,14 @@ final class AdvancedQueryPanel extends JPanel {
 		listPane.setToolTipText("The list of URIs (of BioPAX elements) from search results " +
 	    	"or standard identifiers from the input field below to be used with a BioPAX graph query.");
         listPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        listPane.setBorder(CyPath2.createTitledBorder("Select sources/targets from:"));
+        listPane.setBorder(CyPC.createTitledBorder("Select sources/targets from:"));
         listPane.setPreferredSize(new Dimension(400, 400));
         listPane.setMinimumSize(new Dimension(400, 200));
         
 		// create the custom query field and examples label
 	  	final JTextField inputField = new JTextField(0);
 	    inputField.setBorder(BorderFactory.createCompoundBorder(
-	    		CyPath2.createTitledBorder("Add more items by ID:"),//inputField.getBorder(),
+	    		CyPC.createTitledBorder("Add more items by ID:"),//inputField.getBorder(),
 	    		new PulsatingBorder(inputField)));
 	    inputField.setAlignmentX(Component.LEFT_ALIGNMENT);
 	    inputField.setPreferredSize(new Dimension(400, 50));
@@ -324,7 +324,7 @@ final class AdvancedQueryPanel extends JPanel {
 	    		"(optionally, checks availability first)");
 	    inputFieldButton.addActionListener(new ActionListener() {	    	
 	    	//re-usable query object ('sources' parameter is to be set every time it's used)
-	    	final CPathGetQuery query = CyPath2.client.createGetQuery();	    	
+	    	final CPathGetQuery query = CyPC.client.createGetQuery();	    	
 	        
 	    	public void actionPerformed(ActionEvent actionEvent) {	
 	        	final String inputFieldValue = inputField.getText();
@@ -374,7 +374,7 @@ final class AdvancedQueryPanel extends JPanel {
 	        	
 	        	inputFieldButton.setEnabled(false);
 	        	try {
-	        		CyPath2.cyServices.taskManager.execute(new TaskIterator(checkAndAdd, 
+	        		CyPC.cyServices.taskManager.execute(new TaskIterator(checkAndAdd, 
 	        			new AbstractTask() {//report
 						@Override
 						public void run(TaskMonitor taskMonitor) throws Exception {

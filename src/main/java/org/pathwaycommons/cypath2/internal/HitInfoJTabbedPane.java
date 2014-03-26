@@ -73,9 +73,9 @@ final class HitInfoJTabbedPane extends JTabbedPane {
                 if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
                 	//import/create a network (parent pathways) if the link is clicked
                		String uri = hyperlinkEvent.getURL().toString();
-               		final CPathGetQuery query = CyPath2.client.createGetQuery().sources(Collections.singleton(uri));
-               		CyPath2.cyServices.taskManager.execute(new TaskIterator(
-                   		new NetworkAndViewTask(CyPath2.cyServices, query, current.toString())));
+               		final CPathGetQuery query = CyPC.client.createGetQuery().sources(Collections.singleton(uri));
+               		CyPC.cyServices.taskManager.execute(new TaskIterator(
+                   		new NetworkAndViewTask(CyPC.cyServices, query, current.toString())));
                 }
             }
         });
@@ -123,7 +123,7 @@ final class HitInfoJTabbedPane extends JTabbedPane {
 				@Override
 				public void run(TaskMonitor taskMonitor) throws Exception {
 					try {
-						taskMonitor.setTitle("CyPath2 auto-query");
+						taskMonitor.setTitle("CyPathwayCommons auto-query");
 						taskMonitor.setProgress(0.1);
 						taskMonitor.setStatusMessage("Getting current hit's (" + item 
 								+ ") info from the server...");
@@ -139,7 +139,7 @@ final class HitInfoJTabbedPane extends JTabbedPane {
 				}
 			});			
 			// kick off the task execution
-			CyPath2.cyServices.taskManager.execute(taskIterator);
+			CyPC.cyServices.taskManager.execute(taskIterator);
 		}
 		
 		current = item;
@@ -165,18 +165,18 @@ final class HitInfoJTabbedPane extends JTabbedPane {
                		String uri = hyperlinkEvent.getURL().toString();
                		if(!currentItem.getBiopaxClass().equalsIgnoreCase("Pathway")) {
         	        	//create new 'neighborhood' query; use global organism and datasource filters	
-               			final CPathGraphQuery graphQuery = CyPath2.client.createGraphQuery()
-               				.datasourceFilter(CyPath2.options.selectedDatasources())
-               				.organismFilter(CyPath2.options.selectedOrganisms())
+               			final CPathGraphQuery graphQuery = CyPC.client.createGraphQuery()
+               				.datasourceFilter(CyPC.options.selectedDatasources())
+               				.organismFilter(CyPC.options.selectedOrganisms())
                				.sources(Collections.singleton(uri))
                				.kind(GraphType.NEIGHBORHOOD);
-               			CyPath2.cyServices.taskManager.execute(new TaskIterator(
-                   			new NetworkAndViewTask(CyPath2.cyServices, graphQuery, currentItem.toString())));
+               			CyPC.cyServices.taskManager.execute(new TaskIterator(
+                   			new NetworkAndViewTask(CyPC.cyServices, graphQuery, currentItem.toString())));
                		} else { // use '/get' command
-               			final CPathGetQuery getQuery = CyPath2.client.createGetQuery()
+               			final CPathGetQuery getQuery = CyPC.client.createGetQuery()
                				.sources(Collections.singleton(uri));
-               			CyPath2.cyServices.taskManager.execute(new TaskIterator(
-                   			new NetworkAndViewTask(CyPath2.cyServices, getQuery, currentItem.toString())));
+               			CyPC.cyServices.taskManager.execute(new TaskIterator(
+                   			new NetworkAndViewTask(CyPC.cyServices, getQuery, currentItem.toString())));
                		}
                 }
             }

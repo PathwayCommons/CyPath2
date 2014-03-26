@@ -27,7 +27,7 @@ public class ExpandNetworkTask extends AbstractTask implements Task {
 
 	@ProvidesTitle
 	public String tunablesDlgTitle() {
-		return "CyPath2: Expand Network (into a new network)";
+		return "CyPathwayCommons: Expand Network (into a new network)";
 	}
 	
 	@Tunable(description = "Use (an identifier) column:", gravity=701, groups = " ", 
@@ -38,7 +38,7 @@ public class ExpandNetworkTask extends AbstractTask implements Task {
 	public ListSingleSelection<String> columnSelection;
 	
 	@Tunable(description = "Graph query type:", gravity=705, groups = " ", 
-			tooltip = "NOTE: filter values set in CyPath2 'Options' panel apply for this query as well.")
+			tooltip = "NOTE: filter values set in CyPathwayCommons 'Options' panel apply for this query as well.")
 	public ListSingleSelection<String> querySelection;
 	
 	private final CyNetwork network;
@@ -53,7 +53,7 @@ public class ExpandNetworkTask extends AbstractTask implements Task {
 
 	@Override
 	public void run(TaskMonitor taskMonitor) throws Exception {
-		taskMonitor.setTitle("CyPath2: Expanding Selected Nodes to a New Network");
+		taskMonitor.setTitle("CyPathwayCommons: Expanding Selected Nodes to a New Network");
 		if(cancelled) return;
 		
 		final String column = columnSelection.getSelectedValue();
@@ -80,14 +80,14 @@ public class ExpandNetworkTask extends AbstractTask implements Task {
 		
 		//execute, create a new network and view (if any data will be returned from the server)
 		taskMonitor.setStatusMessage("Executing " + graphType + " query (in Pathway Commons)");		
-		final CPathGraphQuery graphQ = CyPath2.client.createGraphQuery()
+		final CPathGraphQuery graphQ = CyPC.client.createGraphQuery()
     			.kind(("NEIGHBORHOOD".equals(graphType)) ? GraphType.NEIGHBORHOOD : GraphType.PATHSBETWEEN)
     			.sources(values)
-    			.datasourceFilter(CyPath2.options.selectedDatasources())
+    			.datasourceFilter(CyPC.options.selectedDatasources())
     			//.limit(1) TODO set limit via tunables (default is 1)
-    			.organismFilter(CyPath2.options.selectedOrganisms());
-    	CyPath2.cyServices.taskManager.execute(new TaskIterator(
-    			new NetworkAndViewTask(CyPath2.cyServices, graphQ, null)
+    			.organismFilter(CyPC.options.selectedOrganisms());
+    	CyPC.cyServices.taskManager.execute(new TaskIterator(
+    			new NetworkAndViewTask(CyPC.cyServices, graphQ, null)
         		));	
 		
     	taskMonitor.setStatusMessage("Done");   	

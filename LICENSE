@@ -470,7 +470,7 @@ safest to attach them to the start of each source file to most effectively
 convey the exclusion of warranty; and each file should have at least the
 "copyright" line and a pointer to where the full notice is found.
 
-    CyPath2 is a Cytoscape 3 web services client app (plugin). It provides UI for querying cPath2 BioPAX database (model) and importing the results (sub-networks) into Cytoscape.
+    CyPathwayCommons is a Cytoscape 3 web services client app (plugin). It provides UI for querying cPath2 BioPAX database (model) and importing the results (sub-networks) into Cytoscape.
     Copyright (C) 2013  Pathway Commons
 
     This library is free software; you can redistribute it and/or

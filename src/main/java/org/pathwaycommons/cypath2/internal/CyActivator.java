@@ -45,12 +45,12 @@ public final class CyActivator extends AbstractCyActivator {
 	
 	public CyActivator() {
 		super();
-		LOGGER.info("Creating CyPath2 bundle activator...");
+		LOGGER.info("Creating CyPathwayCommons bundle activator...");
 	}
 
 
 	public void start(BundleContext bc) {
-		LOGGER.info("Starting CyPath2 app...");
+		LOGGER.info("Starting CyPathwayCommons app...");
 		
 		//set a system property for Paxtools to use memory-efficient collections
 		try {
@@ -85,20 +85,20 @@ public final class CyActivator extends AbstractCyActivator {
 				cyProperties, cyRootNetworkManager, unHideAllEdgesTaskFactory);
 			    
 	    // Create/init a cpath2 client instance
-		String cPath2Url = cyProperties.getProperties().getProperty(CyPath2.PROP_CPATH2_SERVER_URL);
+		String cPath2Url = cyProperties.getProperties().getProperty(CyPC.PROP_CPATH2_SERVER_URL);
 		if(cPath2Url != null && !cPath2Url.isEmpty())
-			CyPath2.client = CPathClient.newInstance(cPath2Url); 
+			CyPC.client = CPathClient.newInstance(cPath2Url); 
 		else {
 			//the default cpath2 URL unless -DcPath2Url=<someURL> jvm option used
-			CyPath2.client = CPathClient.newInstance(); 
+			CyPC.client = CPathClient.newInstance(); 
 		}
-		cyProperties.getProperties().setProperty(CyPath2.PROP_CPATH2_SERVER_URL, CyPath2.client.getActualEndPointURL());	  	
+		cyProperties.getProperties().setProperty(CyPC.PROP_CPATH2_SERVER_URL, CyPC.client.getActualEndPointURL());	  	
 		
 		// set the other static field - cy3 services
-		CyPath2.cyServices = cyServices;
+		CyPC.cyServices = cyServices;
 		
 	    // new user-set global options (e.g., filters, query type)
-		CyPath2.options = new Options();
+		CyPC.options = new Options();
 		
 	    // get the app description from the resource file
 	    Properties props = new Properties();
@@ -108,7 +108,7 @@ public final class CyActivator extends AbstractCyActivator {
 	    final String description = props.getProperty("cypath2.description");
 	    		
 	    // new app instance
-		CyPath2 app = new CyPath2("Pathway Commons 2 (BioPAX L3)", description);		
+		CyPC app = new CyPC("Pathway Commons 2 (BioPAX L3)", description);		
 		// initialize (build the UI)
 		try {
 			app.init();
@@ -119,11 +119,11 @@ public final class CyActivator extends AbstractCyActivator {
 		// Register OSGi services: WebServiceClient, WebServiceGUIClient, SearchWebServiceClient,..
 		registerAllServices(bc, app, new Properties());
 		
-		// Create a new menu/toolbar item (CyAction) that opens the CyPath2 GUI 
+		// Create a new menu/toolbar item (CyAction) that opens the CyPathwayCommons GUI 
 		Map<String,String> showTheDialogActionProps = new HashMap<String, String>();
-		showTheDialogActionProps.put(ID,"showCyPath2DialogAction");
+		showTheDialogActionProps.put(ID,"showCyPathwayCommonsDialogAction");
 		showTheDialogActionProps.put(TITLE,"Search/Import Network...");		
-		showTheDialogActionProps.put(PREFERRED_MENU, APPS_MENU + ".CyPath2");
+		showTheDialogActionProps.put(PREFERRED_MENU, APPS_MENU + ".CyPathwayCommons");
 		showTheDialogActionProps.put(MENU_GRAVITY,"2.0");
 //		showTheDialogActionProps.put(TOOL_BAR_GRAVITY,"3.17");
 //		showTheDialogActionProps.put(LARGE_ICON_URL,getClass().getResource("pc2.png").toString());
@@ -138,16 +138,16 @@ public final class CyActivator extends AbstractCyActivator {
 		
 		// Create "About..." menu item and action
 		Map<String,String> showAboutDialogActionProps = new HashMap<String, String>();
-		showAboutDialogActionProps.put(ID,"showCyPath2AboutDialogAction");
+		showAboutDialogActionProps.put(ID,"showCyPathwayCommonsAboutDialogAction");
 		showAboutDialogActionProps.put(TITLE,"About...");		
-		showAboutDialogActionProps.put(PREFERRED_MENU, APPS_MENU + ".CyPath2");
+		showAboutDialogActionProps.put(PREFERRED_MENU, APPS_MENU + ".CyPathwayCommons");
 		showAboutDialogActionProps.put(MENU_GRAVITY,"1.0");
 		showAboutDialogActionProps.put(SMALL_ICON_URL,getClass().getResource("pc2_small.png").toString());
 		showAboutDialogActionProps.put(IN_TOOL_BAR,"false");
 		showAboutDialogActionProps.put(IN_MENU_BAR,"true");
 		ShowAboutDialogAction showAboutDialogAction = new ShowAboutDialogAction(
 				showAboutDialogActionProps, cyServices,
-				"CyPath2", description
+				"CyPathwayCommons", description
 			);
 		// register the service
 		registerService(bc, showAboutDialogAction, CyAction.class, new Properties());
@@ -158,7 +158,7 @@ public final class CyActivator extends AbstractCyActivator {
 		nodeProp.setProperty("preferredTaskManager", "menu");
 		nodeProp.setProperty(PREFERRED_MENU, NODE_APPS_MENU);
 		nodeProp.setProperty(MENU_GRAVITY, "13.0");
-		nodeProp.setProperty(TITLE, "CyPath2: Extend Network...");
+		nodeProp.setProperty(TITLE, "CyPathwayCommons: Extend Network...");
 		registerService(bc, expandNodeContextMenuFactory, NodeViewTaskFactory.class, nodeProp);	
 		
 			
