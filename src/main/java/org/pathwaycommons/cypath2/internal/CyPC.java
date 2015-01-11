@@ -36,6 +36,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
@@ -358,7 +359,12 @@ final class CyPC extends AbstractWebServiceGUIClient
 	        							+ " (page #" + searchResponse.getPageNo() + ")");
 	        					} else {
 	        						info.setText("No Matches Found");
-	        						JOptionPane.showMessageDialog(searchQueryPanel, "No Matches Found");
+		    						SwingUtilities.invokeLater(new Runnable() {
+										@Override
+										public void run() {
+											JOptionPane.showMessageDialog(searchQueryPanel, "No Matches Found");
+										}
+									});
 	        					}
 	        				} catch (CPathException e) {
 	        					JOptionPane.showMessageDialog(searchQueryPanel, "Error: " + e);
@@ -573,7 +579,12 @@ final class CyPC extends AbstractWebServiceGUIClient
 	    						topPathwaysModel.update(resp);	
 	    					else {
 	    						taskMonitor.setStatusMessage("Not Found");
-	    						JOptionPane.showMessageDialog(panel, "No Matches Found");
+	    						SwingUtilities.invokeLater(new Runnable() {
+									@Override
+									public void run() {
+										JOptionPane.showMessageDialog(panel, "No Matches Found");
+									}
+								});
 	    					}
 	    				} catch (Throwable e) { 
 	    					//fail on both when there is no data (server error) and runtime/osgi errors
