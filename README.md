@@ -1,4 +1,7 @@
-<a href="http://code.google.com/p/pathway-commons/"><img src="http://code.google.com/p/pathway-commons/logo" width="77px"></a> CyPathwayCommons
-=======
+#CyPath2 (or CyPathwayCommons)#
 
-CyPathwayCommons is a Cytoscape 3 web services client app (plugin). It provides UI for querying cPath2 BioPAX database (model) and importing the results (sub-networks) into Cytoscape.
+[![Build Status](https://secure.travis-ci.org/PathwayCommons/CyPath2.png?branch=master)](http://travis-ci.org/PathwayCommons/CyPath2) 
+---
+
+This is a [Cytoscape 3](http://www.cytoscape.org) app (plugin) that use the cPath2 Java client and API libraries. 
+It provides UI and connection to, searching and quering the [PC2](http://www.pathwaycommons.org/pc2/) BioPAX database and importing the result sub-networks into Cytoscape.
