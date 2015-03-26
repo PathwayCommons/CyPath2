@@ -153,13 +153,13 @@
 			<url>http://code.cytoscape.org/nexus/content/repositories/releases/</url>
 		</repository>
 		<repository>
-			<id>pathway-commons</id>
-			<name>Pathway Commons Repository at Google Code</name>
-			<url>http://repo.pathway-commons.googlecode.com/hg/</url>
+			<id>ossrh-public</id>
+			<name>OSSRH Maven Repository</name>
+			<url>https://oss.sonatype.org/content/groups/public</url>
 			<snapshots>
 				<enabled>true</enabled>
 			</snapshots>
-		</repository>		
+		</repository>
 		<repository>
 			<id>biopax.releases</id>
 			<name>BioPAX Repository</name>
