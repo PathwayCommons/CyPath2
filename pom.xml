@@ -5,24 +5,26 @@
 	
 	<properties>
 		<bundle.namespace>org.pathwaycommons.cypath2.internal</bundle.namespace>
-		<bundle.symbolicName>org.pathwaycommons.cypath2-impl</bundle.symbolicName>
+		<bundle.symbolicName>org.pathwaycommons.cypathwaycommons</bundle.symbolicName>
 		<bundle.Name>CyPath2</bundle.Name>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<cytoscape.version>3.1.0</cytoscape.version>
+		<cytoscape.version>3.2.1</cytoscape.version>
 		<osgi.api.version>4.2.0</osgi.api.version>
-		<paxtools.version>4.3.0</paxtools.version>
-		<cpath2.version>6.0.0-SNAPSHOT</cpath2.version>
+		<paxtools.version>5.0.0-SNAPSHOT</paxtools.version>
+		<cpath2.version>6.1.0-SNAPSHOT</cpath2.version>
 		<spring.version>3.2.8.RELEASE</spring.version>
 		<maven-enforcer-plugin>1.2</maven-enforcer-plugin>
 		<slf4j.version>1.7.5</slf4j.version>
 		<java.version>1.7</java.version>
-		<maven.version.range>[3.0.0,4.0.0)</maven.version.range>							
+		<maven.version.range>[3.0.0,4.0.0)</maven.version.range>
+		<maven-bundle-plugin.version>2.5.4</maven-bundle-plugin.version>
+		<maven-compiler-plugin.version>3.3</maven-compiler-plugin.version>
 	</properties>
 	
 	<groupId>org.pathwaycommons</groupId>
-	<artifactId>cypath2-impl</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<artifactId>cypathwaycommons</artifactId>
+	<version>1.1.0-SNAPSHOT</version>
 	
 	<name>CyPathwayCommons</name>
 	<description>
@@ -31,7 +33,7 @@
 	interactions, collected from several major pathway data providers 
 	based on their BioPAX and PSI-MI formatted export files. 
 	The PC team selects, validates, normalizes, merges, indexes 
-	the data and runs a web service (www.pathwaycommons.org/pc2/), 
+	the data and runs a web service (http://www.pathwaycommons.org/pc2/),
 	powered by the cPath2 software, to which this app connects.
 	</description>
 
@@ -65,10 +67,11 @@
 			<plugin>
 				<groupId>org.apache.felix</groupId>
 				<artifactId>maven-bundle-plugin</artifactId>
-				<version>2.3.7</version>
+				<version>${maven-bundle-plugin.version}</version>
 				<extensions>true</extensions>
 				<configuration>
 					<instructions>
+						<Cytoscape-API-Compatibility>3.1</Cytoscape-API-Compatibility>
 						<Bundle-SymbolicName>${bundle.symbolicName}</Bundle-SymbolicName>
 						<Bundle-Name>${bundle.Name}</Bundle-Name>
 						<Bundle-Version>${project.version}</Bundle-Version>
@@ -78,19 +81,13 @@
 						<Embed-Dependency>*;scope=runtime|compile;optional=false</Embed-Dependency>
 						<Embed-Transitive>true</Embed-Transitive>
 						<Import-Package>*;resolution:=optional</Import-Package>
-<!-- does not work as biopax-impl is not in the Apps Store:
-						<Cytoscape-App-Dependencies>biopax-impl;3.1.0-SNAPSHOT</Cytoscape-App-Dependencies>
--->
-<!-- not required for osgi bundle apps:	
-						<Cytoscape-API-Compatibility>3.0</Cytoscape-API-Compatibility>
--->						
 					</instructions>
 				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.0</version>
+				<version>${maven-compiler-plugin.version}</version>
 				<configuration>
 					<source>${java.version}</source>
 					<target>${java.version}</target>
@@ -158,22 +155,6 @@
 			<url>https://oss.sonatype.org/content/groups/public</url>
 			<snapshots>
 				<enabled>true</enabled>
-			</snapshots>
-		</repository>
-		<repository>
-			<id>biopax.releases</id>
-			<name>BioPAX Repository</name>
-			<url>http://www.biopax.org/m2repo/releases/</url>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</repository>
-		<repository>
-			<id>biopax.snapshots</id>
-			<name>BioPAX Snapshots Repository</name>
-			<url>http://www.biopax.org/m2repo/snapshots/</url>
-			<snapshots>
-				<enabled>false</enabled>
 			</snapshots>
 		</repository>
 		<repository>
@@ -256,6 +237,17 @@
 						<groupId>log4j</groupId>
 						<artifactId>log4j</artifactId>
 					</exclusion>
+					<exclusion>
+						<groupId>commons-logging</groupId>
+						<artifactId>commons-logging</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+			<dependency>
+				<groupId>org.biopax.paxtools</groupId>
+				<artifactId>normalizer</artifactId>
+				<version>${paxtools.version}</version>
+				<exclusions>
 					<exclusion>
 						<groupId>commons-logging</groupId>
 						<artifactId>commons-logging</artifactId>

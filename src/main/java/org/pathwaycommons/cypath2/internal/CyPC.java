@@ -19,6 +19,8 @@ import java.util.Map;
 import java.util.Observer;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -83,6 +85,8 @@ final class CyPC extends AbstractWebServiceGUIClient
     
     static final String CPATH_SERVER_NAME_ATTR = "CPATH_SERVER_NAME";
     static final String CPATH_SERVER_URL_ATTR = "CPATH_SERVER_URL";
+
+	static final ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
 	
 	final JList advQueryPanelItemsList;
     
@@ -91,7 +95,6 @@ final class CyPC extends AbstractWebServiceGUIClient
      * 
      * @param displayName
      * @param description
-     * @param cyServices
      */
     public CyPC(String displayName, String description) 
     {    	   	
@@ -425,7 +428,7 @@ final class CyPC extends AbstractWebServiceGUIClient
                     if (selectedIndex >=0) {
                     	SearchHit item = (SearchHit)resList.getModel().getElementAt(selectedIndex);
                 		// show current hit's summary
-                    	currentHitInfoPane.setCurrentItem(item);   
+                    	currentHitInfoPane.setCurrentItem(item, cachedThreadPool);
                     }
 //                }
             }
@@ -513,7 +516,7 @@ final class CyPC extends AbstractWebServiceGUIClient
                     if (selectedIndex >=0) {
                     	SearchHit item = (SearchHit) l.getModel().getElementAt(selectedIndex);
                 		// update hit's summary/details pane
-                		southPane.setCurrentItem(item);				
+                		southPane.setCurrentItem(item, cachedThreadPool);
                     }
 //                }
             }
@@ -611,5 +614,10 @@ final class CyPC extends AbstractWebServiceGUIClient
         
         return panel;
 	}
-    
+
+	@Override
+	protected void finalize() throws Throwable {
+		cachedThreadPool.shutdown();
+		super.finalize();
+	}
 }

@@ -211,7 +211,7 @@ final class HitsModel extends Observable {
 		}		
 		
 		//list parent pathways		
-		if(!hit.getPathway().isEmpty() && 
+		if(!hit.getPathway().isEmpty() && //and unless the only parent is this same pathway
 			!( hit.getPathway().size() == 1 && uri.equalsIgnoreCase(hit.getPathway().get(0))) ) 
 		{
 			html.append("<h3>Parent Pathways:</h3><ul>");

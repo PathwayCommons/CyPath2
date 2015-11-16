@@ -3,6 +3,7 @@ package org.pathwaycommons.cypath2.internal;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.util.Collections;
+import java.util.concurrent.ExecutorService;
 
 import javax.swing.JEditorPane;
 import javax.swing.JPanel;
@@ -15,14 +16,14 @@ import javax.swing.event.HyperlinkListener;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.StyleSheet;
 
-import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.TaskIterator;
-import org.cytoscape.work.TaskMonitor;
 
 import cpath.query.CPathGetQuery;
 import cpath.query.CPathGraphQuery;
 import cpath.service.GraphType;
 import cpath.service.jaxb.SearchHit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Hit Summary/Details Panel class.
@@ -34,11 +35,10 @@ final class HitInfoJTabbedPane extends JTabbedPane {
     private final HitsModel hitsModel;        
     private SearchHit current; //selected one
 
-    /**
-     * Constructor.
-     * @param browser 
-     */
-    public HitInfoJTabbedPane(HitsModel hitsModel) {          	
+	private static final Logger LOG = LoggerFactory.getLogger(HitInfoJTabbedPane.class);
+
+
+    public HitInfoJTabbedPane(HitsModel hitsModel) {
     	this.hitsModel = hitsModel;
     	
     	//build 'summary' tab
@@ -105,10 +105,11 @@ final class HitInfoJTabbedPane extends JTabbedPane {
 
 	/**
      * Sets the current item and HTML to display
-     * 
-     * @param item
-     */
-    public synchronized void setCurrentItem(final SearchHit item) {
+     *
+	 * @param item
+	 * @param exec
+	 */
+    public synchronized void setCurrentItem(final SearchHit item, ExecutorService exec) {
 		String summaryHtml = hitsModel.hitsSummaryMap.get(item.getUri());
 		summaryTextPane.setText(summaryHtml);
 		summaryTextPane.setCaretPosition(0);
@@ -117,29 +118,21 @@ final class HitInfoJTabbedPane extends JTabbedPane {
 		String detailsHtml = hitsModel.hitsDetailsMap.get(item.getUri());
 		if(detailsHtml != null && !detailsHtml.isEmpty())   		
 			detailsTextPane.setText(detailsHtml);
-		else { //if(detailsTextPane.isVisible()) {
+		else {
 			detailsTextPane.setText("");
-			TaskIterator taskIterator = new TaskIterator(new AbstractTask() {
+			//get/update info in another thread...
+			exec.execute(new Runnable() {
 				@Override
-				public void run(TaskMonitor taskMonitor) throws Exception {
+				public void run() {
 					try {
-						taskMonitor.setTitle("CyPathwayCommons auto-query");
-						taskMonitor.setProgress(0.1);
-						taskMonitor.setStatusMessage("Getting current hit's (" + item 
-								+ ") info from the server...");
-						final String html = hitsModel.fetchDetails(item);
+						LOG.debug("CyPathwayCommons, getting current hit's (" + item + ") info from the server...");
+						final String html = hitsModel.fetchDetails(item); //runs several web queries
 						detailsTextPane.setText(html);
-					} catch (Throwable e) { 
-						//fail on server error and runtime/osgi error
+					} catch (Throwable e) {
 						throw new RuntimeException(e);
-					} finally {
-						taskMonitor.setStatusMessage("Done");
-						taskMonitor.setProgress(1.0);
 					}
 				}
-			});			
-			// kick off the task execution
-			CyPC.cyServices.taskManager.execute(taskIterator);
+			});
 		}
 		
 		current = item;
