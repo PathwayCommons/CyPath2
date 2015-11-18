@@ -107,37 +107,38 @@ final class HitInfoJTabbedPane extends JTabbedPane {
      * Sets the current item and HTML to display
      *
 	 * @param item
-	 * @param exec
 	 */
-    public synchronized void setCurrentItem(final SearchHit item, ExecutorService exec) {
+    public synchronized void setCurrentItem(final SearchHit item) {
 		String summaryHtml = hitsModel.hitsSummaryMap.get(item.getUri());
 		summaryTextPane.setText(summaryHtml);
 		summaryTextPane.setCaretPosition(0);
-		
+
 		//get or build the second (details) tab content    		
 		String detailsHtml = hitsModel.hitsDetailsMap.get(item.getUri());
-		if(detailsHtml != null && !detailsHtml.isEmpty())   		
+		if (detailsHtml != null && !detailsHtml.isEmpty()) {
 			detailsTextPane.setText(detailsHtml);
-		else {
+			current = item;
+			detailsTextPane.setCaretPosition(0);
+			repaint();
+		} else {
 			detailsTextPane.setText("");
 			//get/update info in another thread...
-			exec.execute(new Runnable() {
+			CyPC.cachedThreadPool.execute(new Runnable() {
 				@Override
 				public void run() {
 					try {
 						LOG.debug("CyPathwayCommons, getting current hit's (" + item + ") info from the server...");
 						final String html = hitsModel.fetchDetails(item); //runs several web queries
 						detailsTextPane.setText(html);
+						current = item;
+						detailsTextPane.setCaretPosition(0);
+						repaint();
 					} catch (Throwable e) {
 						throw new RuntimeException(e);
 					}
 				}
 			});
 		}
-		
-		current = item;
-		detailsTextPane.setCaretPosition(0);
-		repaint();
 	}
     
     /*

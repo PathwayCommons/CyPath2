@@ -187,7 +187,7 @@ final class HitsModel extends Observable {
 	 * in a temporary map to re-use in the future.
 	 * 
 	 * @param hit
-	 * @return
+	 * @return content - details about the search hit
 	 */
 	public String fetchDetails(final SearchHit hit) {
         	

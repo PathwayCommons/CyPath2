@@ -51,10 +51,7 @@ import javax.swing.event.ListSelectionListener;
 import org.cytoscape.io.webservice.NetworkImportWebServiceClient;
 import org.cytoscape.io.webservice.SearchWebServiceClient;
 import org.cytoscape.io.webservice.swing.AbstractWebServiceGUIClient;
-import org.cytoscape.work.AbstractTask;
-import org.cytoscape.work.Task;
 import org.cytoscape.work.TaskIterator;
-import org.cytoscape.work.TaskMonitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -165,7 +162,7 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
      * Execute a neighborhood graph query and 
      * create a new network and view. 
      * 
-     * @param query - only string is accepted - separated by spaces IDs or URIs of bioentities.
+     * @param query - only string is accepted - separated by spaces IDs or URIs of bio entities.
      */
 	public TaskIterator createTaskIterator(Object query) {
 		if(!(query instanceof String))
@@ -175,8 +172,7 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 		final String[] ids = ((String)query).split("\\s+");
 		
 		return new TaskIterator(new NetworkAndViewTask(cyServices, 
-				client.createGraphQuery().kind(GraphType.NEIGHBORHOOD).sources(ids), 
-				null));
+				client.createGraphQuery().kind(GraphType.NEIGHBORHOOD).sources(ids), null));
 	}
 	
 	/*
@@ -330,12 +326,11 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	        		searchButton.setEnabled(true);
 	        	} else {
 	        		info.setText("");
-	        		Task search = new Task() {
+					cachedThreadPool.execute(new Runnable() {
 	        			@Override
-	        			public void run(TaskMonitor taskMonitor) throws Exception {
+	        			public void run() {
 	        				try {
-	        					taskMonitor.setProgress(0);
-	        					taskMonitor.setStatusMessage("Executing search for " + keyword);        					
+	        					LOGGER.info("Executing search for " + keyword);
 	        					final SearchResponse searchResponse = client.createSearchQuery()
 	        							.typeFilter(hitsModel.searchFor)
 	        							.datasourceFilter(options.selectedDatasources())
@@ -357,32 +352,32 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 										}
 									});
 	        					}
-	        				} catch (CPathException e) {
-	        					JOptionPane.showMessageDialog(searchQueryPanel, "Error: " + e);
-								hitsModel.update(new SearchResponse()); //clear
-	        				} catch (Throwable e) { 
+	        				} catch (final Throwable e) {
 	        					// using Throwable helps catch unresolved runtime dependency issues!
-	        					JOptionPane.showMessageDialog(searchQueryPanel, "Error: " + e);
-	        					throw new RuntimeException(e);
+								SwingUtilities.invokeLater(new Runnable() {
+									@Override
+									public void run() {
+										JOptionPane.showMessageDialog(searchQueryPanel, "Error: " + e);
+									}
+								});
+								if(!(e instanceof CPathException)) throw new RuntimeException(e);
+								hitsModel.update(new SearchResponse()); //clear
 	        				} finally {
-	        					taskMonitor.setStatusMessage("Done");
-	        					taskMonitor.setProgress(1);
-	        					searchButton.setEnabled(true);
-	        					Window parentWindow = ((Window) searchQueryPanel.getRootPane().getParent());
-	        					searchQueryPanel.repaint();
-	        					parentWindow.toFront();
+								SwingUtilities.invokeLater(new Runnable() {
+									@Override
+									public void run() {
+										searchButton.setEnabled(true);
+										searchQueryPanel.repaint();
+										((Window) searchQueryPanel.getRootPane().getParent()).toFront();
+									}
+								});
 	        				}
 	        			}
-
-	        			@Override
-	        			public void cancel() {
-	        			}
-	        		};
-
-	        		cyServices.taskManager.execute(new TaskIterator(search));
-	        	}	             	
+	        		});
+	        	}
 	        }
 	    });
+
 	    searchButton.setAlignmentX(Component.LEFT_ALIGNMENT); 
         
 	    final JPanel keywordPane = new JPanel();
@@ -416,7 +411,7 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
                     if (selectedIndex >=0) {
                     	SearchHit item = (SearchHit)resList.getModel().getElementAt(selectedIndex);
                 		// show current hit's summary
-                    	currentHitInfoPane.setCurrentItem(item, cachedThreadPool);
+                    	currentHitInfoPane.setCurrentItem(item);
                     }
 //                }
             }
@@ -503,7 +498,7 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
                     if (selectedIndex >=0) {
                     	SearchHit item = (SearchHit) l.getModel().getElementAt(selectedIndex);
                 		// update hit's summary/details pane
-                		southPane.setCurrentItem(item, cachedThreadPool);
+                		southPane.setCurrentItem(item);
                     }
 //                }
             }
@@ -553,13 +548,16 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	        public void actionPerformed(ActionEvent actionEvent) {
 	        	updateButton.setEnabled(false);	        			
 	            // load pathways from server
-	    		TaskIterator taskIterator = new TaskIterator(new AbstractTask() {
+//	    		TaskIterator taskIterator = new TaskIterator(new AbstractTask() {
+				cachedThreadPool.execute(new Runnable() {
 	    			@Override
-	    			public void run(TaskMonitor taskMonitor) throws Exception {
+//	    			public void run(TaskMonitor taskMonitor) throws Exception {
+					public void run() {
 	    				try {
-	    					taskMonitor.setTitle("CyPathwayCommons Top Pathways");
-	    					taskMonitor.setProgress(0.1);
-	    					taskMonitor.setStatusMessage("Getting top pathways from the server...");
+//	    					taskMonitor.setTitle("CyPathwayCommons Top Pathways");
+//	    					taskMonitor.setProgress(0.1);
+//	    					taskMonitor.setStatusMessage("Getting top pathways from the server...");
+							LOGGER.info("Getting top pathways from the PC2 server...");
 	    					final SearchResponse resp = client.createTopPathwaysQuery()
 	    						.organismFilter(options.selectedOrganisms())
 	    							.datasourceFilter(options.selectedDatasources())
@@ -568,7 +566,7 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	    					if(resp != null)
 	    						topPathwaysModel.update(resp);	
 	    					else {
-	    						taskMonitor.setStatusMessage("Not Found");
+//	    						taskMonitor.setStatusMessage("Not Found");
 	    						SwingUtilities.invokeLater(new Runnable() {
 									@Override
 									public void run() {
@@ -580,8 +578,8 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	    					//fail on both when there is no data (server error) and runtime/osgi errors
 	    					throw new RuntimeException(e);
 	    				} finally {
-	    					taskMonitor.setStatusMessage("Done");
-	    					taskMonitor.setProgress(1.0);
+//	    					taskMonitor.setStatusMessage("Done");
+//	    					taskMonitor.setProgress(1.0);
 	    					Window parentWindow = ((Window) panel.getRootPane().getParent());
 	    					panel.repaint();
 	    					parentWindow.toFront();
@@ -590,7 +588,7 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	    			}
 	    		});			
 	    		// kick off the task execution
-	    		cyServices.taskManager.execute(taskIterator);
+//	    		cyServices.taskManager.execute(taskIterator);
 	        }
 	    });
 	    updateButton.setAlignmentX(Component.LEFT_ALIGNMENT); 

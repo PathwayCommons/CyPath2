@@ -15,8 +15,6 @@ import org.cytoscape.application.swing.CyAction;
 import org.cytoscape.application.swing.CySwingApplication;
 import org.cytoscape.application.swing.CytoPanelComponent;
 import org.cytoscape.application.CyApplicationManager;
-//import org.cytoscape.view.vizmap.VisualMappingFunctionFactory;
-//import org.cytoscape.view.vizmap.VisualStyleFactory;
 import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.subnetwork.CyRootNetworkManager;
 import org.cytoscape.property.CyProperty;
@@ -30,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import org.cytoscape.service.util.AbstractCyActivator;
 
 import cpath.client.CPathClient;
-import cpath.client.util.CPathException;
 
 import java.io.IOException;
 import java.util.HashMap;

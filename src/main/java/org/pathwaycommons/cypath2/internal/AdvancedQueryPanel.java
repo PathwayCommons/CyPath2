@@ -12,28 +12,12 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.ButtonGroup;
-import javax.swing.DefaultListModel;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JEditorPane;
-import javax.swing.JList;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
-import javax.swing.JTextField;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 
-import org.cytoscape.work.AbstractTask;
-import org.cytoscape.work.Task;
 import org.cytoscape.work.TaskIterator;
-import org.cytoscape.work.TaskMonitor;
 
 import cpath.client.CPathClient;
 import cpath.client.CPathClient.Direction;
@@ -51,10 +35,8 @@ final class AdvancedQueryPanel extends JPanel {
 	
 	public AdvancedQueryPanel(JList list) {
 		this.list = list;
-		
 		graphType = GraphType.NEIGHBORHOOD;
 		direction = Direction.DOWNSTREAM;
-		
 		create();
 	}
 	
@@ -323,10 +305,7 @@ final class AdvancedQueryPanel extends JPanel {
 	    		"from the input box to the sources/targets list " +
 	    		"(optionally, checks availability first)");
 	    inputFieldButton.addActionListener(new ActionListener() {	    	
-	    	//re-usable query object ('sources' parameter is to be set every time it's used)
-	    	final CPathGetQuery query = CyPC.client.createGetQuery();	    	
-	        
-	    	public void actionPerformed(ActionEvent actionEvent) {	
+			public void actionPerformed(ActionEvent actionEvent) {
 	        	final String inputFieldValue = inputField.getText();
 	        	//exit (do nothing) when no input provided
 	        	if(inputFieldValue.isEmpty()) 
@@ -335,61 +314,64 @@ final class AdvancedQueryPanel extends JPanel {
 	        	final String[] inputIds = inputFieldValue.split("[,\\s]+");	        	
 	        	// to report IDs for which there are no Xrefs in the database
 	        	final Set<String> notFound = new HashSet<String>();
-	        	Task checkAndAdd = new AbstractTask() {	
+
+//				Adding new items to the list
+				CyPC.cachedThreadPool.execute(new Runnable() {
 					@Override
-					public void run(TaskMonitor tm) throws Exception {
-						tm.setTitle("Adding new items to the list");
-						notFound.clear();
-						int i = 0;
-						for(String id : inputIds) {
-							i++;
-							//skip empty
-							if(id.trim().isEmpty()) continue;
-							
-							// Here we exploit "Get by ID" cpath2 web service feature, 
-							// which can return a single BioPAX Xref object if a single ID was 
-							// used (instead of URI) in the query, and the Xref it maps to 
-							// actually exists in the Pathway Commons database. 
-							if(checkInputValuesBox.isSelected()) {
-								tm.setStatusMessage("checking: " + id);
-								String result = query.sources(Collections.singleton(id))
-									.stringResult(null); //BioPAX as string or nothing
-								if(result != null) {
-									NvpListItem newItem = new NvpListItem(id, id); //id can be used as URI in (less specific) graph queries
-									if(!((DefaultListModel)list.getModel()).contains(newItem))
-										((DefaultListModel)list.getModel()).addElement(newItem);
+					public void run() {
+						try {
+							inputFieldButton.setEnabled(false);
+							notFound.clear();
+							//re-usable query object ('sources' parameter is to be set every time it's used)
+							final CPathGetQuery query = CyPC.client.createGetQuery();
+							int i = 0;
+							for (String id : inputIds) {
+								i++;
+								//skip empty
+								if (id.trim().isEmpty()) continue;
+
+								// Here we exploit "Get by ID" cpath2 web service feature,
+								// which can return a single BioPAX Xref object if a single ID was
+								// used (instead of URI) in the query, and the Xref it maps to
+								// actually exists in the Pathway Commons database.
+								if (checkInputValuesBox.isSelected()) {
+									String result = query.sources(Collections.singleton(id)).stringResult(null); //gets BioPAX
+									if (result != null) {
+										NvpListItem newItem = new NvpListItem(id, id); //id can be used as URI in (less specific) graph queries
+										if (!((DefaultListModel) list.getModel()).contains(newItem))
+											((DefaultListModel) list.getModel()).addElement(newItem);
+									} else {
+										notFound.add(id);
+									}
 								} else {
-									notFound.add(id);
+									NvpListItem newItem = new NvpListItem(id, id);
+									if (!((DefaultListModel) list.getModel()).contains(newItem))
+										((DefaultListModel) list.getModel()).addElement(newItem);
 								}
-								//report progress only if checkInputValuesBox is selected (thus slower progress)
-								tm.setProgress(i/inputIds.length);
-							} else {
-								NvpListItem newItem = new NvpListItem(id, id);
-								if(!((DefaultListModel)list.getModel()).contains(newItem))
-									((DefaultListModel)list.getModel()).addElement(newItem);
 							}
+
+							if (!notFound.isEmpty()) {
+								SwingUtilities.invokeLater(new Runnable() {
+									@Override
+									public void run() {
+										JOptionPane.showMessageDialog(inputField, "The following IDs were not added " +
+												"(no xrefs found in the database): " + notFound);
+									}
+								});
+							}
+						} catch (final Exception e) {
+							SwingUtilities.invokeLater(new Runnable() {
+								@Override
+								public void run() {
+									JOptionPane.showMessageDialog(inputField,
+											"Failed to check the input and update the list: " + e);
+								}
+							});
+						} finally {
+							inputFieldButton.setEnabled(true);
 						}
 					}
-				};
-	        	
-	        	inputFieldButton.setEnabled(false);
-	        	try {
-	        		CyPC.cyServices.taskManager.execute(new TaskIterator(checkAndAdd, 
-	        			new AbstractTask() {//report
-						@Override
-						public void run(TaskMonitor taskMonitor) throws Exception {
-							if(!notFound.isEmpty())
-								JOptionPane.showMessageDialog(inputField, 
-					        		"The following IDs were not added " +
-					        			"(no xrefs found in the database): " + notFound);									
-						}
-					}));
-	        	} catch (Exception e) {
-	        		JOptionPane.showMessageDialog(inputField, 
-	        			"Failed to check the input and update the list: " + e.getMessage());
-	        	} finally {
-					inputFieldButton.setEnabled(true);
-				}	        	
+				});
 	        }
 	    }); 
         
@@ -398,12 +380,9 @@ final class AdvancedQueryPanel extends JPanel {
         inputPanel.add(listPane);
         inputPanel.add(inputField); 
         inputPanel.add(inputFieldLabel);
-        inputPanel.add(new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, 
-        		inputFieldButton, checkInputValuesBox));
-        
+        inputPanel.add(new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, inputFieldButton, checkInputValuesBox));
         add(infoLabel, BorderLayout.NORTH);
-        add(inputPanel, BorderLayout.CENTER);
-        add(controlPanel, BorderLayout.EAST);
-//        add(execQueryButton, BorderLayout.SOUTH);
+		add(inputPanel, BorderLayout.CENTER);
+		add(controlPanel, BorderLayout.EAST);
     }	
 }
