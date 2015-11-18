@@ -1,6 +1,3 @@
-/**
- * 
- */
 package org.pathwaycommons.cypath2.internal;
 
 import java.awt.Component;

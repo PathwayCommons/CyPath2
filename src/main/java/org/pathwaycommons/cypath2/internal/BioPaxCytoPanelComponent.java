@@ -1,39 +1,12 @@
 package org.pathwaycommons.cypath2.internal;
 
-/*
- * #%L
- * Cytoscape BioPAX Impl (biopax-impl)
- * $Id:$
- * $HeadURL:$
- * %%
- * Copyright (C) 2006 - 2013 The Cytoscape Consortium
- * %%
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/lgpl-2.1.html>.
- * #L%
- */
-
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Component;
 import java.awt.Font;
-import java.net.URL;
+import java.util.Collection;
 
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
-import javax.swing.JEditorPane;
-import javax.swing.JPanel;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
@@ -41,48 +14,48 @@ import javax.swing.event.HyperlinkListener;
 import org.cytoscape.application.swing.CytoPanelComponent;
 import org.cytoscape.application.swing.CytoPanelName;
 import org.cytoscape.model.CyNetwork;
+import org.cytoscape.model.CyNode;
 
 /**
- * Cytoscape Results Panel (east) implementation.
- * 
+ * Cytoscape 3 Results Panel (east) implementation.
  *
  * @author Ethan Cerami
- * @author Igor Rodchenkov (refactoring)
+ * @author Igor Rodchenkov
  */
-public class BioPaxCytoPanelComponent extends JPanel implements CytoPanelComponent {
+public class BioPaxCytoPanelComponent implements CytoPanelComponent {
 
-	private final Icon icon;
-	
-	private static final long serialVersionUID = 1L;
+	private final static long serialVersionUID = 1L;
+	private final static String DETAILS_CARD = "DETAILS";
+	private final static String LEGEND_BIOPAX_CARD = "LEGEND_BIOPAX";
+	private final static String LEGEND_BINARY_CARD = "LEGEND_BINARY";
 
-	private JEditorPane label;
-    private JPanel cards;
+	private final JEditorPane label;
+    private final JPanel cards;
 	private final CyServices cyServices;
-
-    private final static String DETAILS_CARD = "DETAILS";
-    private final static String LEGEND_BIOPAX_CARD = "LEGEND_BIOPAX";
-    private final static String LEGEND_BINARY_CARD = "LEGEND_BINARY";
+	private final Icon icon;
+	private final BioPaxDetailsPanel bpDetailsPanel;
+	private final JPanel component;
     
 	/**
 	 * Constructor.
-	 * 
-	 * @param bpDetailsPanel
-     * @param cyServices
+	 *
+     * @param cyServices cy3 services wrapper
 	 */
-	public BioPaxCytoPanelComponent(BioPaxDetailsPanel bpDetailsPanel, CyServices cyServices) 
+	public BioPaxCytoPanelComponent(CyServices cyServices)
 	{
+		this.bpDetailsPanel = new BioPaxDetailsPanel(cyServices.openBrowser);
 		this.cyServices = cyServices;
-		
-        cards = new JPanel(new CardLayout());
+		this.icon = new ImageIcon(getClass().getResource("read_obj.gif"));
+		this.component = new JPanel(new BorderLayout());
+        this.cards = new JPanel(new CardLayout());
+
         LegendPanel bioPaxLegendPanel = new LegendPanel(LegendPanel.BIOPAX_LEGEND, cyServices);
         LegendPanel binaryLegendPanel = new LegendPanel(LegendPanel.BINARY_LEGEND, cyServices);
 
         cards.add (bpDetailsPanel, DETAILS_CARD);
         cards.add (bioPaxLegendPanel, LEGEND_BIOPAX_CARD);
         cards.add (binaryLegendPanel, LEGEND_BINARY_CARD);
-        
-        this.setLayout(new BorderLayout());
-		this.add(cards, BorderLayout.CENTER);
+		component.add(cards, BorderLayout.CENTER);
 
         label = new JEditorPane ("text/html", "<a href='LEGEND'>Visual Legend</a>");
         label.setEditable(false);
@@ -106,15 +79,12 @@ public class BioPaxCytoPanelComponent extends JPanel implements CytoPanelCompone
         Font newFont = new Font (font.getFamily(), font.getStyle(), font.getSize()-2);
         label.setFont(newFont);
         label.setBorder(new EmptyBorder(5,3,3,3));
-        this.add(label, BorderLayout.SOUTH);
-		
-		URL url = getClass().getResource("read_obj.gif");
-		icon = new ImageIcon(url);
+		component.add(label, BorderLayout.SOUTH);
 	}
 	
 	@Override
 	public Component getComponent() {
-		return this;
+		return component;
 	}
 
 	@Override
@@ -137,9 +107,14 @@ public class BioPaxCytoPanelComponent extends JPanel implements CytoPanelCompone
      */
     public void showDetails() {
     	if(BioPaxUtil.isFromBiopax(cyServices.applicationManager.getCurrentNetwork())) {
-    		CardLayout cl = (CardLayout)(cards.getLayout());
-    		cl.show(cards, DETAILS_CARD);
-    		label.setText("<a href='LEGEND'>Visual Legend</a>");
+			SwingUtilities.invokeLater(new Runnable() {
+				@Override
+				public void run() {
+					CardLayout cl = (CardLayout)(cards.getLayout());
+					cl.show(cards, DETAILS_CARD);
+					label.setText("<a href='LEGEND'>Visual Legend</a>");
+				}
+			});
     	}
     }
 
@@ -147,25 +122,39 @@ public class BioPaxCytoPanelComponent extends JPanel implements CytoPanelCompone
      * Show Legend Panel.
      */
     public void showLegend() {
-        CyNetwork network = cyServices.applicationManager.getCurrentNetwork();
-        
-        if(network == null)
-        	return;
+        final CyNetwork network = cyServices.applicationManager.getCurrentNetwork();
+        if(network != null) {
+			SwingUtilities.invokeLater(new Runnable() {
+				@Override
+				public void run() {
+					CardLayout cl = (CardLayout) (cards.getLayout());
+					if (BioPaxUtil.isSifFromBiopax(network)) {
+						cl.show(cards, LEGEND_BINARY_CARD);
+						label.setText("<a href='DETAILS'>View Details</a>");
+					} else if (BioPaxUtil.isDefaultBiopax(network)) {
+						cl.show(cards, LEGEND_BIOPAX_CARD);
+						label.setText("<a href='DETAILS'>View Details</a>");
+					} else if (BioPaxUtil.isFromBiopax(network)) {
+						cl.show(cards, DETAILS_CARD);
+						label.setText("<a href='LEGEND'>Visual Legend</a>");
+						//TODO add for SBGN later; ignore other...
+					}
+				}
+			});
+		}
+    }
 
-        CardLayout cl = (CardLayout)(cards.getLayout());       
+	public void updateNodeDetails(final CyNetwork network, final Collection<CyNode> selected) {
+		SwingUtilities.invokeLater(new Runnable() {
+			@Override
+			public void run() {
+				bpDetailsPanel.updateNodeDetails(network,selected);
+			}
+		});
+	}
 
-        if (BioPaxUtil.isSifFromBiopax(network)) {
-        	cl.show(cards, LEGEND_BINARY_CARD);
-        	label.setText("<a href='DETAILS'>View Details</a>");
-        } else if(BioPaxUtil.isDefaultBiopax(network)) { 
-        	cl.show(cards, LEGEND_BIOPAX_CARD);
-        	label.setText("<a href='DETAILS'>View Details</a>");
-        } else if (BioPaxUtil.isFromBiopax(network)){
-        	cl.show(cards, DETAILS_CARD);
-        	label.setText("<a href='LEGEND'>Visual Legend</a>");
-        	//TODO add for SBGN later; ignore other...
-        }
-        
-    }	
-	
+
+	public void resetText() {
+		bpDetailsPanel.resetText();;
+	}
 }

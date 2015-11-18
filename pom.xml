@@ -5,7 +5,7 @@
 	
 	<properties>
 		<bundle.namespace>org.pathwaycommons.cypath2.internal</bundle.namespace>
-		<bundle.symbolicName>org.pathwaycommons.cypathwaycommons</bundle.symbolicName>
+		<bundle.symbolicName>org.pathwaycommons.cypath2</bundle.symbolicName>
 		<bundle.Name>CyPath2</bundle.Name>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -23,7 +23,7 @@
 	</properties>
 	
 	<groupId>org.pathwaycommons</groupId>
-	<artifactId>cypathwaycommons</artifactId>
+	<artifactId>cypath2</artifactId>
 	<version>1.1.0-SNAPSHOT</version>
 	
 	<name>CyPathwayCommons</name>
@@ -38,7 +38,7 @@
 	</description>
 
 	<organization>
-		<name>Pathway Commons: Gary Bader Lab (University of Toronto) and CBIO (MSKCC)</name>
+		<name>Pathway Commons</name>
 		<url>http://www.pathwaycommons.org</url>
 	</organization>
 

@@ -1,31 +1,5 @@
 package org.pathwaycommons.cypath2.internal;
 
-/*
- * #%L
- * Cytoscape BioPAX Impl (biopax-impl)
- * $Id:$
- * $HeadURL:$
- * %%
- * Copyright (C) 2006 - 2013
- *   Memorial Sloan-Kettering Cancer Center
- *   The Cytoscape Consortium
- * %%
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/lgpl-2.1.html>.
- * #L%
- */
-
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -285,18 +259,18 @@ public class BioPaxDetailsPanel extends JPanel {
 
 /**
  * Editor Kit which is capable of handling long words.
- * <p/>
+ *
  * Here is a description of the problem:
  * By default, JTextPane uses an InlineView. It was designed to avoid
  * wrapping.  Text can't be broken if it doesn't contain spaces.
- * <p/>
+ *
  * This is a real problem with the BioPaxDetailsPanel, as BioPax Unique
  * Identifiers can get really long, and this prevents the user from
  * resizing the CytoPanel to any arbitrary size.
- * <p/>
+ *
  * The solution below comes from:
  * http://joust.kano.net/weblog/archives/000074.html
- * <p/>
+ *
  * (The following code is released in the public domain.)
  *
  * @author Joust Team.

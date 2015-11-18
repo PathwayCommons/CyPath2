@@ -101,32 +101,22 @@ public final class CyActivator extends AbstractCyActivator {
 		CyPC.options = new Options();
 		
 	    // get the app description from the resource file
-	    Properties props = new Properties();
+	    final Properties props = new Properties();
 	    try {
 	    	props.load(getClass().getResourceAsStream("/cypath2.properties"));
 	    } catch (IOException e) { throw new RuntimeException(e);}
 	    final String description = props.getProperty("cypath2.description");
 	    		
-	    // new app instance
-		CyPC app = new CyPC("Pathway Commons 2 (BioPAX L3)", description);		
-		// initialize (build the UI)
-		try {
-			app.init();
-		} catch (CPathException e) {
-			throw new RuntimeException(e);
-		}
+	    // Create and initialize (build the GUI) new CyPC instance
+		CyPC app = new CyPC("Pathway Commons 2 (BioPAX L3)", description);
+		app.init();
 		
-		// Register OSGi services: WebServiceClient, WebServiceGUIClient, SearchWebServiceClient,..
-		registerAllServices(bc, app, new Properties());
-		
-		// Create a new menu/toolbar item (CyAction) that opens the CyPathwayCommons GUI 
+		// Create a new menu/toolbar item (CyAction) that opens the CyPathwayCommons GUI
 		Map<String,String> showTheDialogActionProps = new HashMap<String, String>();
 		showTheDialogActionProps.put(ID,"showCyPathwayCommonsDialogAction");
 		showTheDialogActionProps.put(TITLE,"Search/Import Network...");		
 		showTheDialogActionProps.put(PREFERRED_MENU, APPS_MENU + ".CyPathwayCommons");
 		showTheDialogActionProps.put(MENU_GRAVITY,"2.0");
-//		showTheDialogActionProps.put(TOOL_BAR_GRAVITY,"3.17");
-//		showTheDialogActionProps.put(LARGE_ICON_URL,getClass().getResource("pc2.png").toString());
 		showTheDialogActionProps.put(SMALL_ICON_URL,getClass().getResource("pc2_small.png").toString());
 		showTheDialogActionProps.put(IN_TOOL_BAR,"false");
 		showTheDialogActionProps.put(IN_MENU_BAR,"true");
@@ -159,16 +149,18 @@ public final class CyActivator extends AbstractCyActivator {
 		nodeProp.setProperty(PREFERRED_MENU, NODE_APPS_MENU);
 		nodeProp.setProperty(MENU_GRAVITY, "13.0");
 		nodeProp.setProperty(TITLE, "CyPathwayCommons: Extend Network...");
-		registerService(bc, expandNodeContextMenuFactory, NodeViewTaskFactory.class, nodeProp);	
-		
-			
-		BioPaxDetailsPanel bioPaxDetailsPanel = new BioPaxDetailsPanel(openBrowser);
-		BioPaxCytoPanelComponent cytoPanelComponent = new BioPaxCytoPanelComponent(bioPaxDetailsPanel, cyServices);
+		registerService(bc, expandNodeContextMenuFactory, NodeViewTaskFactory.class, nodeProp);
+
+		// init the biopax node selection listener and eastern cytopanel component (results panel) features
+		final BioPaxCytoPanelComponent cytoPanelComponent = new BioPaxCytoPanelComponent(cyServices);
 		registerService(bc, cytoPanelComponent, CytoPanelComponent.class, new Properties());
-		
-		// a biopax node selection listener and eastern cytopanel (results panel) feature
-		BioPaxTracker bioPaxTracker = new BioPaxTracker(bioPaxDetailsPanel, cytoPanelComponent, cyServices);	
+
+		//Registers: SetCurrentNetworkViewListener, RowsSetListener
+		final BioPaxTracker bioPaxTracker = new BioPaxTracker(cytoPanelComponent, cyServices);
 		registerAllServices(bc, bioPaxTracker, new Properties());
+
+		// Register: WebServiceClient, WebServiceGUIClient, SearchWebServiceClient,..
+		registerAllServices(bc, app, new Properties());
 	}
 }
 

@@ -25,8 +25,7 @@ import org.cytoscape.view.model.CyNetworkView;
  * @author Igor Rodchenkov (re-factoring, porting).
  */
 public class BioPaxTracker implements SetCurrentNetworkViewListener, RowsSetListener {
-	
-	private final BioPaxDetailsPanel bpPanel;
+
 	private final BioPaxCytoPanelComponent cytoPanelComponent;
 	private final CyServices cyServices;
 
@@ -35,19 +34,15 @@ public class BioPaxTracker implements SetCurrentNetworkViewListener, RowsSetList
 	/**
 	 * Constructor.
 	 *
-	 * @param bpPanel BioPaxDetails Panel Object.
 	 * @param cytoPanelComponent
 	 * @param cyServices
 	 */
-	public BioPaxTracker(BioPaxDetailsPanel bpPanel, 
-			BioPaxCytoPanelComponent cytoPanelComponent, 
+	public BioPaxTracker(BioPaxCytoPanelComponent cytoPanelComponent,
 			CyServices cyServices) 
 	{
-		this.bpPanel = bpPanel;
 		this.cytoPanelComponent = cytoPanelComponent;
 		this.cyServices = cyServices;
 	}
-
 
 	/**
 	 * Network Focus Event.
@@ -61,9 +56,8 @@ public class BioPaxTracker implements SetCurrentNetworkViewListener, RowsSetList
        		SwingUtilities.invokeLater(new Runnable() {
        			@Override
        			public void run() {
-       	            bpPanel.resetText();
-       	            CytoPanel cytoPanel = cyServices
-       	            		.cySwingApplication.getCytoPanel(CytoPanelName.EAST);
+					cytoPanelComponent.resetText();
+       	            CytoPanel cytoPanel = cyServices.cySwingApplication.getCytoPanel(CytoPanelName.EAST);
        	            cytoPanel.setState(CytoPanelState.DOCK);
        			}
        		});
@@ -87,8 +81,6 @@ public class BioPaxTracker implements SetCurrentNetworkViewListener, RowsSetList
 			for (CyNode node : network.getNodeList()) {
 				if (network.getRow(node).get(CyNetwork.SELECTED, Boolean.class)) {
 					selected.add(node);
-//					if(selected.size() == MAX_SELECTED_NODES_INFO)
-//						break; //stop
 				}
 			}
 
@@ -96,7 +88,7 @@ public class BioPaxTracker implements SetCurrentNetworkViewListener, RowsSetList
 				SwingUtilities.invokeLater(new Runnable() {
 					public void run() {
 						// Show the details
-						bpPanel.updateNodeDetails(network, selected);
+						cytoPanelComponent.updateNodeDetails(network, selected);
 						// If legend is showing, show details
 						cytoPanelComponent.showDetails();
 					}

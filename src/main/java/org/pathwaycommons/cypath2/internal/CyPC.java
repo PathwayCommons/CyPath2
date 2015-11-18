@@ -69,8 +69,7 @@ import cpath.service.jaxb.SearchResponse;
  * CyPC: cPath2/PC Web Service client integrated 
  * into the Cytoscape Web Services GUI Framework.
  */
-final class CyPC extends AbstractWebServiceGUIClient 
-	implements NetworkImportWebServiceClient, SearchWebServiceClient
+final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWebServiceClient, SearchWebServiceClient
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(CyPC.class);
     
@@ -82,19 +81,17 @@ final class CyPC extends AbstractWebServiceGUIClient
     
     static final Map<String,String> uriToOrganismNameMap = new HashMap<String, String>();
     static final Map<String,String> uriToDatasourceNameMap = new HashMap<String, String>();
-    
-    static final String CPATH_SERVER_NAME_ATTR = "CPATH_SERVER_NAME";
-    static final String CPATH_SERVER_URL_ATTR = "CPATH_SERVER_URL";
 
 	static final ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
 	
 	final JList advQueryPanelItemsList;
     
 	/**
-     * Creates a new Web Services client.
+     * Constructor.
+	 * Creates a new Web Services client.
      * 
-     * @param displayName
-     * @param description
+     * @param displayName app display name
+     * @param description app description
      */
     public CyPC(String displayName, String description) 
     {    	   	
@@ -120,50 +117,49 @@ final class CyPC extends AbstractWebServiceGUIClient
     }
  
     /**
-     * Creates the UI and loads 
+     * Creates the GUI and loads
      * some initial data from the server.
-     * @throws CPathException 
-     * 
      */
-    public void init() throws CPathException {   	
-    	// init datasources and org. maps (in a separate thread)
-//    	ClassLoaderHack.runWithHack(new Runnable() {			
-//			@Override
-//			public void run() {
+    public void init()  {
+    	// init datasources and organisms maps (in a separate thread)
+//    	ClassLoaderHack.runWithHack(new Runnable() {...
+// 		}, com.sun.xml.bind.v2.ContextFactory.class);
+		cachedThreadPool.execute(new Runnable() {
+			@Override
+			public void run() {
 				SearchResponse res;
 				try {
 					res = client.createSearchQuery()
 							.typeFilter("Provenance")
 							.allPages() //sets .queryString("*") automatically
 							.result();
-					for(SearchHit bs : res.getSearchHit()) {
+					for (SearchHit bs : res.getSearchHit()) {
 						uriToDatasourceNameMap.put(bs.getUri(), bs.getName());
 					}
-			        res = client.createSearchQuery()
-			        	.typeFilter("BioSource")
-			        	.allPages() //sets .queryString("*") automatically
-			        	.result();
-			        for(SearchHit bs : res.getSearchHit()) {
-			        	uriToOrganismNameMap.put(bs.getUri(), bs.getName());
-			        }  	
+					res = client.createSearchQuery()
+							.typeFilter("BioSource")
+							.allPages() //sets .queryString("*") automatically
+							.result();
+					for (SearchHit bs : res.getSearchHit()) {
+						uriToOrganismNameMap.put(bs.getUri(), bs.getName());
+					}
 				} catch (CPathException e) {
 					throw new RuntimeException(e);
 				}
-//			}
-//		}, com.sun.xml.bind.v2.ContextFactory.class);
-    	
-        // create the UI
-		final JTabbedPane  tabbedPane = new JTabbedPane();
-        tabbedPane.add("Search", createSearchQueryPanel());
-        tabbedPane.add("Top Pathways", createTopPathwaysPanel());
-        tabbedPane.add("Advanced Query", new AdvancedQueryPanel(advQueryPanelItemsList));
-        tabbedPane.add("Options", createOptionsPane());        
-    	JPanel mainPanel = (JPanel) gui;
-        mainPanel.setPreferredSize(new Dimension (900,600));
-        mainPanel.setLayout (new BorderLayout());
-        mainPanel.add(tabbedPane, BorderLayout.CENTER);
-    }   
-    
+
+				// create the UI
+				final JTabbedPane tabbedPane = new JTabbedPane();
+				tabbedPane.add("Search", createSearchQueryPanel());
+				tabbedPane.add("Top Pathways", createTopPathwaysPanel());
+				tabbedPane.add("Advanced Query", new AdvancedQueryPanel(advQueryPanelItemsList));
+				tabbedPane.add("Options", createOptionsPane());
+
+				gui.setPreferredSize(new Dimension(900, 600));
+				gui.setLayout(new BorderLayout());
+				gui.add(tabbedPane, BorderLayout.CENTER);
+			}
+		});
+    }
 
 	/**
      * Execute a neighborhood graph query and 
@@ -182,13 +178,9 @@ final class CyPC extends AbstractWebServiceGUIClient
 				client.createGraphQuery().kind(GraphType.NEIGHBORHOOD).sources(ids), 
 				null));
 	}
-
 	
-	/**
+	/*
 	 * Creates a Titled Border with appropriate font settings.
-	 * 
-	 * @param title
-	 * @return
 	 */
 	static Border createTitledBorder(String title) {
 		TitledBorder border = BorderFactory.createTitledBorder(
@@ -202,12 +194,9 @@ final class CyPC extends AbstractWebServiceGUIClient
 		border.setTitleColor(new Color(102, 51, 51));
 		return border;
 	}
-
 	
-    /**
+    /*
 	 * Creates the app's options panel.
-	 * 
-	 * @return
 	 */
 	Component createOptionsPane() {
 	   	JPanel panel = new JPanel();
@@ -256,7 +245,6 @@ final class CyPC extends AbstractWebServiceGUIClient
 	    
 	    return panel;
 	}
-
 
 	private Component createSearchQueryPanel() {
 		
@@ -488,7 +476,6 @@ final class CyPC extends AbstractWebServiceGUIClient
 
         return queryAndResults; //panel;
     }
-	
 	
 	private JPanel createTopPathwaysPanel() {
 			
