@@ -68,7 +68,7 @@ final class HitsFilterPanel extends JPanel implements Observer {
         
         tree = new JTreeWithCheckNodes(rootNode);
         tree.setOpaque(false);
-        filterTreePanel = new CollapsablePanel("Filter");
+        filterTreePanel = new CollapsablePanel("Filter results");
         filterTreePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         filterTreePanel.getContentPane().add(tree);
 
@@ -167,8 +167,6 @@ final class HitsFilterPanel extends JPanel implements Observer {
 	
 	/**
 	 * Updates the filters tree from a new search results.
-	 * 
-	 * @param searchResponse
 	 */
 	@Override
 	public void update(Observable o, Object arg) {

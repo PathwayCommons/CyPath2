@@ -4,7 +4,6 @@ import java.awt.BorderLayout;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.MalformedURLException;
 import java.net.URL;
 
 import javax.swing.JEditorPane;
@@ -18,25 +17,17 @@ import javax.swing.event.HyperlinkListener;
  * Displays the Default Visual Style Legend for the BioPAX Mapper.
  *
  * @author Ethan Cerami
+ * @author Igor Rodchenkov
  */
 public class LegendPanel extends JPanel {
 
 	private static final long serialVersionUID = 1L;
 
-	/**
-     * BioPAX Legend.
-     */
-    public static int BIOPAX_LEGEND = 0;
+	static final int BIOPAX_LEGEND = 0;
+	static final int BINARY_LEGEND = 1;
 
-    /**
-     * Binary Legend.
-     */
-    public static int BINARY_LEGEND = 1;
 
-    /**
-	 * Constructor.
-	 */
-	public LegendPanel(int mode, final CyServices cyServices) {
+	public LegendPanel(int mode) {
 		this.setLayout(new BorderLayout());
 
 		JTextPane textPane = new JTextPane();
@@ -44,7 +35,7 @@ public class LegendPanel extends JPanel {
 		textPane.setContentType("text/html");
         textPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
 
-        URL legendUrl;
+        URL legendUrl; //TODO update legend html templates to reflect new SIF rules/patterns
         if (mode == BIOPAX_LEGEND) {
             legendUrl = LegendPanel.class.getResource("legend.html");
         } else {
@@ -68,8 +59,13 @@ public class LegendPanel extends JPanel {
                 if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
                     String name = hyperlinkEvent.getDescription();
                     if (name.equalsIgnoreCase("filter")) {
-                        new EdgeFilterUi(cyServices.applicationManager.getCurrentNetwork(), cyServices);
+                        new EdgeFilterUi(CyPC.cyServices.applicationManager.getCurrentNetwork());
                     }
+					else if(name.equalsIgnoreCase("sif_relations")) {
+						CyPC.cyServices.openBrowser.openURL("http://www.pathwaycommons.org/pc2/formats#sif_relations");
+					} else {
+						CyPC.cyServices.openBrowser.openURL(hyperlinkEvent.getURL().toString());
+					}
                 }
             }
         });
@@ -79,9 +75,8 @@ public class LegendPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(textPane);
 		this.add(scrollPane, BorderLayout.CENTER);
 	}
-	
-	
-	private String retrieveDocument(String urlStr) throws MalformedURLException, IOException {
+
+	private String retrieveDocument(String urlStr) throws IOException {
 		URL url = new URL(urlStr);
 		BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
 		return readFile(in);

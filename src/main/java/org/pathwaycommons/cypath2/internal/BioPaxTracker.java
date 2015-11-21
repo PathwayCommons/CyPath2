@@ -19,7 +19,6 @@ import org.cytoscape.view.model.CyNetworkView;
 
 /**
  * Listens for Network Events, and takes appropriate Actions.
- * May be subclassed.
  *
  * @author Ethan Cerami, Gary Bader, Chris Sander, Benjamin Gross
  * @author Igor Rodchenkov (re-factoring, porting).
@@ -27,21 +26,15 @@ import org.cytoscape.view.model.CyNetworkView;
 public class BioPaxTracker implements SetCurrentNetworkViewListener, RowsSetListener {
 
 	private final BioPaxCytoPanelComponent cytoPanelComponent;
-	private final CyServices cyServices;
-
-	private static final int MAX_SELECTED_NODES_INFO = 5;
 	
 	/**
 	 * Constructor.
 	 *
-	 * @param cytoPanelComponent
-	 * @param cyServices
+	 * @param cytoPanelComponent the results panel (east)
 	 */
-	public BioPaxTracker(BioPaxCytoPanelComponent cytoPanelComponent,
-			CyServices cyServices) 
+	public BioPaxTracker(BioPaxCytoPanelComponent cytoPanelComponent)
 	{
 		this.cytoPanelComponent = cytoPanelComponent;
-		this.cyServices = cyServices;
 	}
 
 	/**
@@ -57,7 +50,7 @@ public class BioPaxTracker implements SetCurrentNetworkViewListener, RowsSetList
        			@Override
        			public void run() {
 					cytoPanelComponent.resetText();
-       	            CytoPanel cytoPanel = cyServices.cySwingApplication.getCytoPanel(CytoPanelName.EAST);
+       	            CytoPanel cytoPanel = CyPC.cyServices.cySwingApplication.getCytoPanel(CytoPanelName.EAST);
        	            cytoPanel.setState(CytoPanelState.DOCK);
        			}
        		});
@@ -67,7 +60,7 @@ public class BioPaxTracker implements SetCurrentNetworkViewListener, RowsSetList
 
 	@Override
 	public void handleEvent(RowsSetEvent e) {
-		CyNetworkView view = cyServices.applicationManager.getCurrentNetworkView();
+		CyNetworkView view = CyPC.cyServices.applicationManager.getCurrentNetworkView();
 		if(view == null) return;
 		
 		final CyNetwork network = view.getModel();
@@ -96,5 +89,4 @@ public class BioPaxTracker implements SetCurrentNetworkViewListener, RowsSetList
 			}
 		}
 	}
-
 }

@@ -16,20 +16,17 @@ final class ShowAboutDialogAction extends AbstractCyAction {
 	private final Icon icon;
 	private final String title;
 	private final String description;
-
 	
 	public ShowAboutDialogAction(
-			Map<String, String> configProps, CyServices cyServices,
-			String title, String description) 
+			Map<String, String> configProps, String title, String description)
 	{
-		super(configProps, cyServices.applicationManager, cyServices.networkViewManager);
+		super(configProps, CyPC.cyServices.applicationManager, CyPC.cyServices.networkViewManager);
 		
 		icon = new ImageIcon(getClass().getResource("pc2.png"), "PC2 icon");
 		this.title = title;
 		this.description = description;
-		dialog = new AboutDialog(cyServices.cySwingApplication.getJFrame(), cyServices.openBrowser);
+		dialog = new AboutDialog(CyPC.cyServices.cySwingApplication.getJFrame(), CyPC.cyServices.openBrowser);
 	}
-
 	
 	@Override
 	public void actionPerformed(ActionEvent arg0) {

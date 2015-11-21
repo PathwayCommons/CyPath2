@@ -37,17 +37,14 @@ public class EdgeFilterUi extends JDialog {
 	private static final long serialVersionUID = 1L;
 	private HashSet<JCheckBox> checkBoxSet;
     private final CyNetwork cyNetwork;
-    private final CyServices cyServices;
 
     /**
      * Constructor.
      * @param cyNetwork CyNetwork Object.
      */
-    public EdgeFilterUi(CyNetwork cyNetwork, CyServices cyServices) 
+    public EdgeFilterUi(CyNetwork cyNetwork)
     {
         this.cyNetwork = cyNetwork;
-        this.cyServices = cyServices;
-
         initGui();
     }
 
@@ -103,7 +100,7 @@ public class EdgeFilterUi extends JDialog {
         panel.add(closeButton);
         contentPane.add(panel, BorderLayout.SOUTH);
 
-        this.setLocationRelativeTo(cyServices.cySwingApplication.getJFrame());
+        this.setLocationRelativeTo(CyPC.cyServices.cySwingApplication.getJFrame());
         this.pack();
         this.setVisible(true);
     }
@@ -144,8 +141,8 @@ public class EdgeFilterUi extends JDialog {
                 }
             }
 
-            final CyNetworkView networkView = 
-            		cyServices.applicationManager.getCurrentNetworkView();
+            final CyNetworkView networkView =
+                    CyPC.cyServices.applicationManager.getCurrentNetworkView();
             //Un-hide all edges
             setVisibleEdges(cyNetwork.getEdgeList(), true, networkView);
             
@@ -153,7 +150,7 @@ public class EdgeFilterUi extends JDialog {
             setVisibleEdges(edgeList, false, networkView);
             
             //update view
-            cyServices.mappingManager.getVisualStyle(networkView).apply(networkView);
+            CyPC.cyServices.mappingManager.getVisualStyle(networkView).apply(networkView);
             networkView.updateView();
         }
                 

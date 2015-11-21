@@ -39,7 +39,7 @@ import static org.cytoscape.work.ServiceProperties.*;
 
 public final class CyActivator extends AbstractCyActivator {
 	private static final Logger LOGGER = LoggerFactory.getLogger(CyActivator.class);
-	
+
 	public CyActivator() {
 		super();
 		LOGGER.info("Creating CyPathwayCommons bundle activator...");
@@ -48,17 +48,20 @@ public final class CyActivator extends AbstractCyActivator {
 
 	public void start(BundleContext bc) {
 		LOGGER.info("Starting CyPathwayCommons app...");
-		
+
 		//set a system property for Paxtools to use memory-efficient collections
 		try {
 			Class.forName("org.biopax.paxtools.trove.TProvider");
 			System.setProperty("paxtools.CollectionProvider", "org.biopax.paxtools.trove.TProvider");
 			BPCollections.I.setProvider(new TProvider());
+			LOGGER.info("Set: paxtools.CollectionProvider=org.biopax.paxtools.trove.TProvider");
 		} catch (ClassNotFoundException e1) {
-			LOGGER.error("org.biopax.paxtools.trove.TProvider is not found on the app's classpath; " +
-				"Paxtools will use default biopax collections (HashSet, HashMap based).");
-		}		
-		
+			LOGGER.error("org.biopax.paxtools.trove.TProvider is not found on the classpath; so " +
+					"Paxtools will use default biopax collections (HashSet, HashMap).");
+		} catch (Throwable t) {
+			LOGGER.error("static{} initializer failed; " + t);
+		}
+
 		CySwingApplication cySwingApplication = getService(bc,CySwingApplication.class);
 		DialogTaskManager taskManager = getService(bc,DialogTaskManager.class);
 		OpenBrowser openBrowser = getService(bc,OpenBrowser.class);
@@ -76,7 +79,7 @@ public final class CyActivator extends AbstractCyActivator {
 		UnHideAllEdgesTaskFactory unHideAllEdgesTaskFactory = getService(bc, UnHideAllEdgesTaskFactory.class);
 		
 		// keep all the service references in one place -
-		final CyServices cyServices = new CyServices(cySwingApplication, taskManager, openBrowser, 
+		CyPC.cyServices =  new CyServices(cySwingApplication, taskManager, openBrowser,
 				cyNetworkManager, cyApplicationManager, cyNetworkViewManager, cyNetworkReaderManager, 
 				cyNetworkNaming, cyNetworkFactory, cyLayoutAlgorithmManager, undoSupport, visualMappingManager, 
 				cyProperties, cyRootNetworkManager, unHideAllEdgesTaskFactory);
@@ -89,10 +92,7 @@ public final class CyActivator extends AbstractCyActivator {
 			//the default cpath2 URL unless -DcPath2Url=<someURL> jvm option used
 			CyPC.client = CPathClient.newInstance(); 
 		}
-		cyProperties.getProperties().setProperty(CyPC.PROP_CPATH2_SERVER_URL, CyPC.client.getActualEndPointURL());	  	
-		
-		// set the other static field - cy3 services
-		CyPC.cyServices = cyServices;
+		cyProperties.getProperties().setProperty(CyPC.PROP_CPATH2_SERVER_URL, CyPC.client.getActualEndPointURL());
 		
 	    // new user-set global options (e.g., filters, query type)
 		CyPC.options = new Options();
@@ -107,6 +107,8 @@ public final class CyActivator extends AbstractCyActivator {
 	    // Create and initialize (build the GUI) new CyPC instance
 		CyPC app = new CyPC("Pathway Commons 2 (BioPAX L3)", description);
 		app.init();
+
+		final BioPaxCytoPanelComponent cytoPanelComponent = new BioPaxCytoPanelComponent();
 		
 		// Create a new menu/toolbar item (CyAction) that opens the CyPathwayCommons GUI
 		Map<String,String> showTheDialogActionProps = new HashMap<String, String>();
@@ -118,8 +120,8 @@ public final class CyActivator extends AbstractCyActivator {
 		showTheDialogActionProps.put(IN_TOOL_BAR,"false");
 		showTheDialogActionProps.put(IN_MENU_BAR,"true");
 		showTheDialogActionProps.put(TOOLTIP,"Networks From PC2");	
-		ShowTheDialogAction showTheDialogAction = new ShowTheDialogAction(
-				showTheDialogActionProps, cyServices, app.getQueryBuilderGUI());
+		ShowTheDialogAction showTheDialogAction =
+				new ShowTheDialogAction(showTheDialogActionProps, app.getQueryBuilderGUI());
 		// register the service
 		registerService(bc, showTheDialogAction, CyAction.class, new Properties());	
 		
@@ -132,15 +134,13 @@ public final class CyActivator extends AbstractCyActivator {
 		showAboutDialogActionProps.put(SMALL_ICON_URL,getClass().getResource("pc2_small.png").toString());
 		showAboutDialogActionProps.put(IN_TOOL_BAR,"false");
 		showAboutDialogActionProps.put(IN_MENU_BAR,"true");
-		ShowAboutDialogAction showAboutDialogAction = new ShowAboutDialogAction(
-				showAboutDialogActionProps, cyServices,
-				"CyPathwayCommons", description
-			);
+		ShowAboutDialogAction showAboutDialogAction =
+				new ShowAboutDialogAction(showAboutDialogActionProps, "CyPathwayCommons", description);
 		// register the service
 		registerService(bc, showAboutDialogAction, CyAction.class, new Properties());
 		
 		// create a context menu (using a task factory, for this uses tunables and can be used by Cy3 scripts, headless too)
-		final NodeViewTaskFactory expandNodeContextMenuFactory = new ExpandNetworkContextMenuFactory(cyServices);
+		final NodeViewTaskFactory expandNodeContextMenuFactory = new ExpandNetworkContextMenuFactory();
 		final Properties nodeProp = new Properties();
 		nodeProp.setProperty("preferredTaskManager", "menu");
 		nodeProp.setProperty(PREFERRED_MENU, NODE_APPS_MENU);
@@ -148,16 +148,15 @@ public final class CyActivator extends AbstractCyActivator {
 		nodeProp.setProperty(TITLE, "CyPathwayCommons: Extend Network...");
 		registerService(bc, expandNodeContextMenuFactory, NodeViewTaskFactory.class, nodeProp);
 
-		// init the biopax node selection listener and eastern cytopanel component (results panel) features
-		final BioPaxCytoPanelComponent cytoPanelComponent = new BioPaxCytoPanelComponent(cyServices);
-		registerService(bc, cytoPanelComponent, CytoPanelComponent.class, new Properties());
-
 		//Registers: SetCurrentNetworkViewListener, RowsSetListener
-		final BioPaxTracker bioPaxTracker = new BioPaxTracker(cytoPanelComponent, cyServices);
+		final BioPaxTracker bioPaxTracker = new BioPaxTracker(cytoPanelComponent);
 		registerAllServices(bc, bioPaxTracker, new Properties());
 
 		// Register: WebServiceClient, WebServiceGUIClient, SearchWebServiceClient,..
 		registerAllServices(bc, app, new Properties());
+
+		// init the biopax node selection listener and eastern cytopanel component (results panel) features
+		registerService(bc, cytoPanelComponent, CytoPanelComponent.class, new Properties());
 	}
 }
 

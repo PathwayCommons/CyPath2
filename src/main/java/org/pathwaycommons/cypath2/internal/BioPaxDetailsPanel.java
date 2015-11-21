@@ -22,8 +22,6 @@ import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.ParagraphView;
 import javax.swing.text.html.StyleSheet;
 
-import org.cytoscape.application.CyApplicationManager;
-
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;
 import org.cytoscape.model.CyRow;
@@ -35,7 +33,8 @@ import org.slf4j.LoggerFactory;
 /**
  * BioPAX Details Panel.
  *
- * @author Ethan Cerami, rodche
+ * @author Ethan Cerami
+ * @author Igor Rodchenkov
  */
 public class BioPaxDetailsPanel extends JPanel {
 
@@ -47,13 +46,9 @@ public class BioPaxDetailsPanel extends JPanel {
     static final String BIOPAX_UNIFICATION_REFERENCES = "UNIFICATION_REFERENCES";
     static final String BIOPAX_RELATIONSHIP_REFERENCES = "RELATIONSHIP_REFERENCES";
     static final String BIOPAX_PUBLICATION_REFERENCES = "PUBLICATION_REFERENCES";
-    static final String BIOPAX_IHOP_LINKS = "IHOP_LINKS";	
-	
-	CyApplicationManager applicationManager;
-	
-	/**
-	 * Foreground Color.
-	 */
+    static final String BIOPAX_IHOP_LINKS = "IHOP_LINKS";
+
+	// Foreground Color.
 	static final Color FG_COLOR = new Color(75, 75, 75);
 	
 	private JScrollPane scrollPane;
@@ -109,9 +104,9 @@ public class BioPaxDetailsPanel extends JPanel {
 	 */
 	public void resetText() {
 		StringBuffer temp = new StringBuffer();
-		temp.append("<HTML><BODY>");
+		temp.append("<html><body>");
 		temp.append("Select a node to view details...");
-		temp.append("</BODY></HTML>");
+		temp.append("</body></html>");
 		textPane.setText(temp.toString());
 	}
 
@@ -197,13 +192,7 @@ public class BioPaxDetailsPanel extends JPanel {
 	}
 
     /*
-     * 
-     * @param network
-     * @param node
      * @param tableName attributes table name, e.g., CyNetwork.HIDDEN_ATTRS; if null - the default is used
-     * @param attribute
-     * @param label
-     * @param buf
      */
 	private void addAttributeList(CyNetwork network, CyNode node, String tableName, 
 			String attribute, String label, StringBuffer buf) 

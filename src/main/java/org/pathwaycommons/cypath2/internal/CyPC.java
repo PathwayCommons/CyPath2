@@ -173,6 +173,7 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 		
 		return new TaskIterator(new NetworkAndViewTask(cyServices, 
 				client.createGraphQuery().kind(GraphType.NEIGHBORHOOD).sources(ids), null));
+		//TODO can use filters by organism, datasource (like it's done in search and in advanced queries)
 	}
 	
 	/*

@@ -17,11 +17,11 @@ final class ShowTheDialogAction extends AbstractCyAction {
 	private final Window parent;
 	private final Container gui;
 	
-	public ShowTheDialogAction(Map<String, String> configProps, CyServices cyServices, Container gui) 
+	public ShowTheDialogAction(Map<String, String> configProps, Container gui)
 	{
-		super(configProps, cyServices.applicationManager, cyServices.networkViewManager);
+		super(configProps, CyPC.cyServices.applicationManager, CyPC.cyServices.networkViewManager);
 		
-		this.parent = cyServices.cySwingApplication.getJFrame();
+		this.parent = CyPC.cyServices.cySwingApplication.getJFrame();
 		this.gui = gui;
 		
 		dialog = new JDialog(parent);
