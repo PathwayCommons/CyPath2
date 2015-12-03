@@ -23,37 +23,28 @@ public class LegendPanel extends JPanel {
 
 	private static final long serialVersionUID = 1L;
 
-	static final int BIOPAX_LEGEND = 0;
-	static final int BINARY_LEGEND = 1;
-
-
-	public LegendPanel(int mode) {
-		this.setLayout(new BorderLayout());
-
+	public LegendPanel() {
+		setLayout(new BorderLayout());
 		JTextPane textPane = new JTextPane();
+		JScrollPane scrollPane = new JScrollPane(textPane);
+		add(scrollPane, BorderLayout.CENTER);
+
 		textPane.setEditable(false);
 		textPane.setContentType("text/html");
         textPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
 
-        URL legendUrl; //TODO update legend html templates to reflect new SIF rules/patterns
-        if (mode == BIOPAX_LEGEND) {
-            legendUrl = LegendPanel.class.getResource("legend.html");
-        } else {
-            legendUrl = LegendPanel.class.getResource("binary_legend.html");
-        }
+		BioPaxDetailsPanel.modifyStyleSheetForSingleDocument(textPane);
+
         StringBuffer temp = new StringBuffer();
 		temp.append("<html><body>");
-
 		try {
-			String legendHtml = retrieveDocument(legendUrl.toString());
+			String legendHtml = retrieveDocument(LegendPanel.class.getResource("visual_legend.html").toString());
 			temp.append(legendHtml);
 		} catch (Exception e) {
 			temp.append("Could not load legend... " + e.toString());
 		}
-
 		temp.append("</body></html>");
 		textPane.setText(temp.toString());
-
 		textPane.addHyperlinkListener(new HyperlinkListener() {
             public void hyperlinkUpdate(HyperlinkEvent hyperlinkEvent) {
                 if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
@@ -61,19 +52,12 @@ public class LegendPanel extends JPanel {
                     if (name.equalsIgnoreCase("filter")) {
                         new EdgeFilterUi(CyPC.cyServices.applicationManager.getCurrentNetwork());
                     }
-					else if(name.equalsIgnoreCase("sif_relations")) {
-						CyPC.cyServices.openBrowser.openURL("http://www.pathwaycommons.org/pc2/formats#sif_relations");
-					} else {
+					else {
 						CyPC.cyServices.openBrowser.openURL(hyperlinkEvent.getURL().toString());
 					}
                 }
             }
         });
-        
-        BioPaxDetailsPanel.modifyStyleSheetForSingleDocument(textPane);
-
-        JScrollPane scrollPane = new JScrollPane(textPane);
-		this.add(scrollPane, BorderLayout.CENTER);
 	}
 
 	private String retrieveDocument(String urlStr) throws IOException {

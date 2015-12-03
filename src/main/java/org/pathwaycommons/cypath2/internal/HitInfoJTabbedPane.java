@@ -16,6 +16,9 @@ import javax.swing.event.HyperlinkListener;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.StyleSheet;
 
+import org.biopax.paxtools.controller.SimpleEditorMap;
+import org.biopax.paxtools.model.BioPAXElement;
+import org.biopax.paxtools.model.level3.Interaction;
 import org.cytoscape.work.TaskIterator;
 
 import cpath.query.CPathGetQuery;
@@ -157,8 +160,19 @@ final class HitInfoJTabbedPane extends JTabbedPane {
                 	//import/create a network if the link is clicked
                		SearchHit currentItem = current;
                		String uri = hyperlinkEvent.getURL().toString();
-               		if(!currentItem.getBiopaxClass().equalsIgnoreCase("Pathway")) {
-        	        	//create new 'neighborhood' query; use global organism and datasource filters	
+
+					boolean isProccess = "Pathway".equalsIgnoreCase(currentItem.getBiopaxClass());
+					if(!isProccess) {
+						for(Class<? extends BioPAXElement> t : SimpleEditorMap.L3.getKnownSubClassesOf(Interaction.class)) {
+							if(t.getSimpleName().equalsIgnoreCase(currentItem.getBiopaxClass())) {
+								isProccess = true;
+								break;
+							}
+						}
+					}
+               		if(!isProccess) {
+        	        	// create new 'neighborhood' query for a physical entity or entity reference type hit;
+						// use global organism and datasource filters
                			final CPathGraphQuery graphQuery = CyPC.client.createGraphQuery()
                				.datasourceFilter(CyPC.options.selectedDatasources())
                				.organismFilter(CyPC.options.selectedOrganisms())
@@ -166,7 +180,7 @@ final class HitInfoJTabbedPane extends JTabbedPane {
                				.kind(GraphType.NEIGHBORHOOD);
                			CyPC.cyServices.taskManager.execute(new TaskIterator(
                    			new NetworkAndViewTask(CyPC.cyServices, graphQuery, currentItem.toString())));
-               		} else { // use '/get' command
+               		} else { // for a biological process (pathway or interaction), use '/get' command
                			final CPathGetQuery getQuery = CyPC.client.createGetQuery()
                				.sources(Collections.singleton(uri));
                			CyPC.cyServices.taskManager.execute(new TaskIterator(

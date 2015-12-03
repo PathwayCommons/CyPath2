@@ -137,8 +137,7 @@ final class HitsModel extends Observable {
 		StringBuilder html = new StringBuilder();
 		html.append("<html>")
 			//a link to be intercepted and replaced with a well-formed cpath2 query later
-			.append("<h2><a href='").append(uri).append("'>Click to import ")
-			.append((hit.getBiopaxClass().equalsIgnoreCase("Pathway")) ? "this network" : "the neighborhood network of")
+			.append("<h2><a href='").append(uri).append("'>Click to extract and import this network")
 			.append("</a></h2>")
 			.append("<h3>BioPAX Object:</h3>")
 			.append("<strong>Type:</strong> <em>").append(hit.getBiopaxClass()).append("</em><br/>")

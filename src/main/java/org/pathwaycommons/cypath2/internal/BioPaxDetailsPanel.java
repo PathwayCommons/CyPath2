@@ -1,7 +1,6 @@
 package org.pathwaycommons.cypath2.internal;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.util.Collection;
 import java.util.List;
@@ -47,22 +46,16 @@ public class BioPaxDetailsPanel extends JPanel {
     static final String BIOPAX_RELATIONSHIP_REFERENCES = "RELATIONSHIP_REFERENCES";
     static final String BIOPAX_PUBLICATION_REFERENCES = "PUBLICATION_REFERENCES";
     static final String BIOPAX_IHOP_LINKS = "IHOP_LINKS";
-
-	// Foreground Color.
-	static final Color FG_COLOR = new Color(75, 75, 75);
 	
 	private JScrollPane scrollPane;
 	private JTextPane textPane;
 
-	
-	/**
-	 * Constructor.
-	 */
+
 	public BioPaxDetailsPanel(OpenBrowser browser) {
 		textPane = new JTextPane();
-
 		//  Set Editor Kit that is capable of handling long words
 		MyEditorKit kit = new MyEditorKit();
+
 		textPane.setEditorKit(kit);
         modifyStyleSheetForSingleDocument(textPane);
 
@@ -77,10 +70,10 @@ public class BioPaxDetailsPanel extends JPanel {
 		scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 		scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		scrollPane.setBorder(new EmptyBorder(0, 0, 0, 0));
-		this.setLayout(new BorderLayout());
-		this.add(scrollPane, BorderLayout.CENTER);
-		this.setPreferredSize(new Dimension(300, 300));
-		this.setMaximumSize(new Dimension(300, 300));
+		setLayout(new BorderLayout());
+		add(scrollPane, BorderLayout.CENTER);
+		setPreferredSize(new Dimension(300, 300));
+		setMaximumSize(new Dimension(300, 300));
 	}
 
     public static void modifyStyleSheetForSingleDocument(JTextPane textPane) {
@@ -131,6 +124,7 @@ public class BioPaxDetailsPanel extends JPanel {
 	 * @param nodes
 	 */
 	public void updateNodeDetails(CyNetwork network, Collection<CyNode> nodes) {
+		textPane.setText(""); //clear
 		StringBuffer buf = new StringBuffer("<html><body>");
 		buf.append("<dl>");
 		for (CyNode selected : nodes) {			
@@ -145,7 +139,6 @@ public class BioPaxDetailsPanel extends JPanel {
 			}
 			buf.append("</dt>").append("<dd>").append("<dl>");
 			// organism
-			s = null;
 			s = row.get("entityReference/organism/displayName", String.class);
 			if(s == null)
 				s = row.get("organism/displayName", String.class);
@@ -154,16 +147,14 @@ public class BioPaxDetailsPanel extends JPanel {
 				.append("<dd>").append(s).append("</dd>");
 			}        
 			// cellular location
-			s = null;
-			s = row.get("cellularLocation", String.class);
-			if (s != null) {
+			List<?> clTerms = row.getList("cellularLocation/term", String.class); //list
+			if (clTerms != null && !clTerms.isEmpty()) {
 				buf.append("<dt>").append("Cellular Location").append("</dt>")
-				.append("<dd>").append(s).append("</dd>");
+				.append("<dd>").append(clTerms.toString().replaceAll("\\[|\\]", "")).append("</dd>");
 			}
 			
 			// chemical modification
-			addAttributeList(network, selected, null,
-					BIOPAX_CHEMICAL_MODIFICATIONS_LIST, "Chemical Modifications:", buf);
+			addAttributeList(network, selected, null, BIOPAX_CHEMICAL_MODIFICATIONS_LIST, "Chemical Modifications:", buf);
 			// data source
 			addAttributeList(network, selected, null, "dataSource", "Data sources:", buf);        		
 			// links
@@ -287,7 +278,6 @@ class MyEditorKit extends HTMLEditorKit {
 		protected SizeRequirements calculateMinorAxisRequirements(int axis, SizeRequirements r) {
 			SizeRequirements sup = super.calculateMinorAxisRequirements(axis, r);
 			sup.minimum = 1;
-
 			return sup;
 		}
 	}

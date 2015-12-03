@@ -13,7 +13,6 @@ import org.cytoscape.work.swing.DialogTaskManager;
 import org.cytoscape.work.undo.UndoSupport;
 import org.cytoscape.application.swing.CyAction;
 import org.cytoscape.application.swing.CySwingApplication;
-import org.cytoscape.application.swing.CytoPanelComponent;
 import org.cytoscape.application.CyApplicationManager;
 import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.subnetwork.CyRootNetworkManager;
@@ -94,9 +93,6 @@ public final class CyActivator extends AbstractCyActivator {
 		}
 		cyProperties.getProperties().setProperty(CyPC.PROP_CPATH2_SERVER_URL, CyPC.client.getActualEndPointURL());
 		
-	    // new user-set global options (e.g., filters, query type)
-		CyPC.options = new Options();
-		
 	    // get the app description from the resource file
 	    final Properties props = new Properties();
 	    try {
@@ -107,8 +103,6 @@ public final class CyActivator extends AbstractCyActivator {
 	    // Create and initialize (build the GUI) new CyPC instance
 		CyPC app = new CyPC("Pathway Commons 2 (BioPAX L3)", description);
 		app.init();
-
-		final BioPaxCytoPanelComponent cytoPanelComponent = new BioPaxCytoPanelComponent();
 		
 		// Create a new menu/toolbar item (CyAction) that opens the CyPathwayCommons GUI
 		Map<String,String> showTheDialogActionProps = new HashMap<String, String>();
@@ -148,15 +142,14 @@ public final class CyActivator extends AbstractCyActivator {
 		nodeProp.setProperty(TITLE, "CyPathwayCommons: Extend Network...");
 		registerService(bc, expandNodeContextMenuFactory, NodeViewTaskFactory.class, nodeProp);
 
-		//Registers: SetCurrentNetworkViewListener, RowsSetListener
-		final BioPaxTracker bioPaxTracker = new BioPaxTracker(cytoPanelComponent);
-		registerAllServices(bc, bioPaxTracker, new Properties());
+		// Node selection listener (only for networks imported from BioPAX) and eastern cytopanel (results panel).
+		//TODO move BioPaxCytoPanelComponent to the biopax core app.
+		final BioPaxCytoPanelComponent cytoPanelComponent = new BioPaxCytoPanelComponent();
+		registerAllServices(bc, cytoPanelComponent, new Properties());
 
 		// Register: WebServiceClient, WebServiceGUIClient, SearchWebServiceClient,..
 		registerAllServices(bc, app, new Properties());
-
-		// init the biopax node selection listener and eastern cytopanel component (results panel) features
-		registerService(bc, cytoPanelComponent, CytoPanelComponent.class, new Properties());
 	}
+
 }
 

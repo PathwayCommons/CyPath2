@@ -74,7 +74,7 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
     
 	static CPathClient client; // shared stateless cPath2 client
 	static CyServices cyServices; //Cy3 services
-	static Options options; //global query options/filters
+	static Options options = new Options(); //global query options/filters
     
     static final Map<String,String> uriToOrganismNameMap = new HashMap<String, String>();
     static final Map<String,String> uriToDatasourceNameMap = new HashMap<String, String>();
@@ -171,9 +171,14 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 		
 		final String[] ids = ((String)query).split("\\s+");
 		
-		return new TaskIterator(new NetworkAndViewTask(cyServices, 
-				client.createGraphQuery().kind(GraphType.NEIGHBORHOOD).sources(ids), null));
-		//TODO can use filters by organism, datasource (like it's done in search and in advanced queries)
+		return new TaskIterator(new NetworkAndViewTask(
+				cyServices,
+				client.createGraphQuery()
+					.kind(GraphType.NEIGHBORHOOD)
+					.sources(ids)
+					.organismFilter(options.selectedOrganisms())
+					.datasourceFilter(options.selectedDatasources())
+				, null));
 	}
 	
 	/*

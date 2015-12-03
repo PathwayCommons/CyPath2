@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * Utility Class for Creating Links to External Databases.
  * 
- * TODO re-write this uring Miriam (MiriamLink) or identifiers.org API to lookup URLs from Xrefs!
+ * TODO re-write using Miriam/identifiers.org (Paxtools' normalizer module) api to lookup URLs from Xrefs!
  */
 final class ExternalLinks {
 	
@@ -24,7 +24,6 @@ final class ExternalLinks {
 
 	/**
 	 * Model Object for Encapsulating an External Link.
-	 *
 	 */
 	static final class ExternalLink {
 		private String dbName;
@@ -194,9 +193,11 @@ final class ExternalLinks {
 		temp = new HashMap<String,String>();
         temp.put("ENTREZGENE", url);
         temp.put("ENTREZ_GENE", url);
+		temp.put("ENTREZ GENE", url);
 		temp.put("LOCUS_LINK", url);
 		temp.put("LOCUSLINK", url);
 		temp.put("LOCUS-LINK", url);
+		temp.put("NCBI GENE", url);
 		dbMap.putAll(temp);
 		addIHOPEntries(temp, "NCBI_GENE__ID");
 
@@ -263,7 +264,7 @@ final class ExternalLinks {
 		StringBuilder buf = new StringBuilder();
 
         if (url != null) {
-			buf.append("<A class=\"link\" href=\"" + url + "\">" + dbName + ":  " + id + "</A>");
+			buf.append("<a class=\"link\" href=\"" + url + "\">" + dbName + ":  " + id + "</a>");
 		} else {
 			buf.append(dbName + ":  " + id);
 		}
@@ -271,21 +272,20 @@ final class ExternalLinks {
 		return buf.toString();
 	}
 
-	
 	/**
 	 * Gets a Link for Searching IHOP.
-	 * <p/>
+	 *
 	 * The following rules apply for creating links to IHOP:
-	 * <UL>
-	 * <LI>Only create links for elements of type:  protein, DNA and RNA.
+	 *
+	 * Only create links for elements of type:  protein, DNA and RNA.
 	 * IHOP does not capture information INFO_ABOUT other BioPAX types.
-	 * <LI>If synonyms exist, use them.
-	 * <LI>If XRefs for UniProt, Entrez Gene or RefSeq exist, use them.
-	 * <LI>If we have at least one synonym or xref, append a taxonomy ID.
-	 * <LI>In the special case where we have just one UNIPROT ID, and
+	 * If synonyms exist, use them.
+	 * If XRefs for UniProt, Entrez Gene or RefSeq exist, use them.
+	 * If we have at least one synonym or xref, append a taxonomy ID.
+	 * In the special case where we have just one UNIPROT ID, and
 	 * no synonyms, we don't have enough information in IHOP to create a
 	 * meaningful search result page.  In this case, no link is created.
-	 * </UL>
+	 *
 	 * For details on how to construct IHOP links, see:
 	 * http://www.pdg.cnb.uam.es/UniPub/iHOP/info/dev/in.html
 	 *
@@ -420,7 +420,7 @@ final class ExternalLinks {
 
         if (url != null) {
 			StringBuilder buf = new StringBuilder();
-			buf.append("<A class=\"link\" HREF=\"" + url + "\">" + "Search iHOP</A>");
+			buf.append("<a class=\"link\" href=\"" + url + "\">" + "Search iHOP</a>");
 			return buf.toString();
 		} else {
 			return null;
