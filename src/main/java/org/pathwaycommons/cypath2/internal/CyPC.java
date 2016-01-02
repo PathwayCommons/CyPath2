@@ -22,23 +22,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.DefaultListModel;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JEditorPane;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
-import javax.swing.JTabbedPane;
-import javax.swing.JTextField;
-import javax.swing.ListSelectionModel;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
@@ -119,38 +103,14 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
      */
     public void init()  {
     	// init datasources and organisms maps (in a separate thread)
-//    	ClassLoaderHack.runWithHack(new Runnable() {...
-// 		}, com.sun.xml.bind.v2.ContextFactory.class);
 		cachedThreadPool.execute(new Runnable() {
 			@Override
 			public void run() {
-				SearchResponse res;
-				try {
-					res = client.createSearchQuery()
-							.typeFilter("Provenance")
-							.allPages() //sets .queryString("*") automatically
-							.result();
-					for (SearchHit bs : res.getSearchHit()) {
-						uriToDatasourceNameMap.put(bs.getUri(), bs.getName());
-					}
-					res = client.createSearchQuery()
-							.typeFilter("BioSource")
-							.allPages() //sets .queryString("*") automatically
-							.result();
-					for (SearchHit bs : res.getSearchHit()) {
-						uriToOrganismNameMap.put(bs.getUri(), bs.getName());
-					}
-				} catch (CPathException e) {
-					throw new RuntimeException(e);
-				}
-
 				// create the UI
 				final JTabbedPane tabbedPane = new JTabbedPane();
 				tabbedPane.add("Search", createSearchQueryPanel());
 				tabbedPane.add("Top Pathways", createTopPathwaysPanel());
 				tabbedPane.add("Advanced Query", new AdvancedQueryPanel(advQueryPanelItemsList));
-				tabbedPane.add("Options", createOptionsPane());
-
 				gui.setPreferredSize(new Dimension(900, 600));
 				gui.setLayout(new BorderLayout());
 				gui.add(tabbedPane, BorderLayout.CENTER);
@@ -198,16 +158,12 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	}
 	
     /*
-	 * Creates the app's options panel.
+	 * Global options panel (search/graph query filters).
 	 */
-	Component createOptionsPane() {
-	   	JPanel panel = new JPanel();
-	   	panel.setLayout(new GridLayout(2, 1));    
-	    
+	private Component createOptionsPane() {
 		// Initialize the organisms filter-list:
 	    // manually add choice(s): only human is currently supported
-	    // (other are disease/experimental organisms data)
-	    //TODO add more org. as they become suppored/available (from web service, uriToOrganismNameMap) 
+	    //TODO add more org. as they become suppored/available (from web service)
 	    SortedSet<NvpListItem> items = new TreeSet<NvpListItem>(); //sorted by name
 	    items.add(new NvpListItem("Human", "9606"));   
 	    DefaultListModel model = new DefaultListModel();
@@ -242,10 +198,8 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	    filtersPane.setAlignmentX(Component.LEFT_ALIGNMENT);
 	    filtersPane.setPreferredSize(new Dimension(500, 250));
 	    filtersPane.setMinimumSize(new Dimension(250, 200));
-	    
-	    panel.add(filtersPane);
-	    
-	    return panel;
+
+		return filtersPane;
 	}
 
 	private Component createSearchQueryPanel() {
@@ -257,9 +211,6 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	    currentHitInfoPane.setPreferredSize(new Dimension(300, 250));
 	    currentHitInfoPane.setMinimumSize(new Dimension(200, 150));
 	        
-	    final JPanel searchQueryPanel = new JPanel();
-	    searchQueryPanel.setMinimumSize(new Dimension(400, 100));
-	        
 	  	// create the query field and examples label
 	    final String ENTER_TEXT = "Enter a keyword (e.g., gene/protein name or ID)";
 	  	final JTextField searchField = new JTextField(ENTER_TEXT.length());
@@ -267,12 +218,11 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	    searchField.setToolTipText(ENTER_TEXT);
 	    searchField.addFocusListener(new FocusAdapter() {
 	        public void focusGained(FocusEvent focusEvent) {
-	            if (searchField.getText() != null
-	                    && searchField.getText().startsWith("Enter")) {
+	            if (searchField.getText() != null && searchField.getText().startsWith("Enter")) {
 	                searchField.setText("");
 	            }
 	        }
-	    });   	
+	    });
 	    	
 	    searchField.setBorder (BorderFactory.createCompoundBorder(searchField.getBorder(),
 	    		new PulsatingBorder(searchField)));
@@ -282,7 +232,8 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	    JEditorPane label = new JEditorPane ("text/html", 
 	    	"Examples:  <a href='TP53'>TP53</a>, <a href='BRCA1'>BRCA1</a>, <a href='SRY'>SRY</a>, " +
 	        "<a href='name:kinase AND pathway:signal*'>name:kinase AND pathway:signal*</a> <br/>" +
-	        "search fields: <em>comment, ecnumber, keyword, name, pathway, term, xrefdb, xrefid, dataSource, organism </em>");
+	        "search fields: <em>comment, ecnumber, keyword, name, pathway, term, xrefdb, xrefid, " +
+			"dataSource, organism </em>");
 	    label.setEditable(false);
 	    label.setOpaque(false);
 	    label.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
@@ -312,13 +263,15 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	    	new NvpListItem[] {
 	    		new NvpListItem("Pathways","Pathway"),
 	    		new NvpListItem("Interactions (all types)", "Interaction"),
-	    		new NvpListItem("Entity states (form, location)", "PhysicalEntity"),
-	    		new NvpListItem("Entity references (mol. classes)", "EntityReference")
+	    		new NvpListItem("Participants", "EntityReference")
 	    	}
 	    );
 	    bpTypeComboBox.setSelectedIndex(0); //default value: Pathway
 	    bpTypeComboBox.setEditable(false);
-	        
+
+		final Box searchQueryPanel = Box.createVerticalBox();
+		searchQueryPanel.setMinimumSize(new Dimension(400, 100));
+
 	    // create the search button and action
 	    final JButton searchButton = new JButton("Search");
 	    searchButton.setToolTipText("Full-Text Search");
@@ -394,8 +347,9 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
         keywordPane.add(searchButton);
         keywordPane.setPreferredSize(new Dimension(400, 100));
         keywordPane.setMinimumSize(new Dimension(400, 100));
-    
-		searchQueryPanel.setLayout(new BoxLayout(searchQueryPanel, BoxLayout.X_AXIS));
+
+		searchQueryPanel.add(createOptionsPane());
+		searchQueryPanel.add(Box.createVerticalGlue());
         searchQueryPanel.add(keywordPane);
         
         // Assembly the results panel

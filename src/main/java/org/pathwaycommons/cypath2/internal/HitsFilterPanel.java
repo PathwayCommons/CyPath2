@@ -193,8 +193,7 @@ final class HitsFilterPanel extends JPanel implements Observer {
         	organismFilterNode.removeAllChildren();
         	for (String key : hitsFilterModel.numHitsByOrganismMap.keySet()) {       	
         		String name = CyPC.uriToOrganismNameMap.get(key);
-        		if(name == null) 
-        			name = key;        	
+        		if(name == null) {name = key;}
         		CategoryCount categoryCount = new CategoryCount(name, hitsFilterModel.numHitsByOrganismMap.get(key));
         		CheckNode organismNode = new CheckNode(categoryCount, false, true);
         		organismFilterNode.add(organismNode);
@@ -396,8 +395,8 @@ final class HitsFilterPanel extends JPanel implements Observer {
 				if (!record.getOrganism().isEmpty()) 
 				{
 					for(String ds: record.getOrganism()) {
-						if (organismsSet.contains(CyPC.uriToOrganismNameMap.get(ds)) 
-							|| organismsSet.contains(ds)) 
+						String name = CyPC.uriToOrganismNameMap.get(ds);
+						if (organismsSet.contains(ds) || (name!=null && organismsSet.contains(name)))
 						{
 							passedList.add(record);
 							break;
