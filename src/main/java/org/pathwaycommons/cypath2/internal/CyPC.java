@@ -106,6 +106,19 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 		cachedThreadPool.execute(new Runnable() {
 			@Override
 			public void run() {
+				try {
+					SearchResponse res = client.createSearchQuery()
+							.typeFilter("Provenance")
+							.allPages() //sets .queryString("*") automatically
+							.result();
+					for (SearchHit bs : res.getSearchHit()) {
+						uriToDatasourceNameMap.put(bs.getUri(), bs.getName());
+					}
+					uriToOrganismNameMap.put("http://identifiers.org/taxonomy/9606", "Homo sapiens");
+				} catch (CPathException e) {
+					throw new RuntimeException(e);
+				}
+
 				// create the UI
 				final JTabbedPane tabbedPane = new JTabbedPane();
 				tabbedPane.add("Search", createSearchQueryPanel());
