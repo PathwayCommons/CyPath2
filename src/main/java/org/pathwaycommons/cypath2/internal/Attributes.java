@@ -1,5 +1,6 @@
 package org.pathwaycommons.cypath2.internal;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.cytoscape.model.CyColumn;
@@ -22,7 +23,12 @@ final class Attributes {
 			if (column == null) {
 				if (value instanceof List) {
 					table.createListColumn(name, type, false);
-				} else {
+				}
+				else if (value instanceof Collection) {
+					throw new IllegalArgumentException("Attribute value is a Collection and not List: "
+							+ value.getClass().getSimpleName());
+				}
+				else {
 					table.createColumn(name, type, false);
 				}
 			}

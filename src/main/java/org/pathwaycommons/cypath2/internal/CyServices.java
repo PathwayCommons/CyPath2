@@ -13,6 +13,7 @@ import org.cytoscape.session.CyNetworkNaming;
 import org.cytoscape.task.hide.UnHideAllEdgesTaskFactory;
 import org.cytoscape.util.swing.OpenBrowser;
 import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
+import org.cytoscape.view.model.CyNetworkViewFactory;
 import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.view.vizmap.VisualMappingManager;
 import org.cytoscape.work.TaskManager;
@@ -33,6 +34,7 @@ final class CyServices {
 	final UndoSupport undoSupport;
 	final VisualMappingManager mappingManager;
 	final CyProperty<Properties> cyProperty;
+	final CyNetworkViewFactory networkViewFactory;
 	final CyRootNetworkManager rootNetworkManager;
 	final UnHideAllEdgesTaskFactory unHideAllEdgesTaskFactory;
 	public CyServices(CySwingApplication cySwingApplication,
@@ -46,7 +48,8 @@ final class CyServices {
 			VisualMappingManager mappingManager,
 			CyProperty<Properties> cyProperty,
 			CyRootNetworkManager rootNetworkManager, 
-			UnHideAllEdgesTaskFactory unHideAllEdgesTaskFactory) 
+			UnHideAllEdgesTaskFactory unHideAllEdgesTaskFactory,
+			CyNetworkViewFactory networkViewFactory)
 	{
 		this.cySwingApplication = cySwingApplication;
 		this.taskManager = taskManager;
@@ -61,6 +64,7 @@ final class CyServices {
 		this.undoSupport = undoSupport;
 		this.mappingManager = mappingManager;
 		this.cyProperty = cyProperty;
+		this.networkViewFactory = networkViewFactory;
 		this.rootNetworkManager = rootNetworkManager;
 		this.unHideAllEdgesTaskFactory = unHideAllEdgesTaskFactory;
 	}

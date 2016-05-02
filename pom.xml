@@ -9,17 +9,18 @@
 		<bundle.Name>CyPath2</bundle.Name>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<cytoscape.version>3.3.0</cytoscape.version>
+		<cytoscape.api.version>3.3.0</cytoscape.api.version>
 		<osgi.api.version>4.2.0</osgi.api.version>
 		<paxtools.version>5.0.0-SNAPSHOT</paxtools.version>
 		<cpath2.version>6.1.0-SNAPSHOT</cpath2.version>
 		<spring.version>3.2.8.RELEASE</spring.version>
 		<maven-enforcer-plugin>1.2</maven-enforcer-plugin>
 		<slf4j.version>1.7.5</slf4j.version>
-		<java.version>1.7</java.version>
+		<java.version>1.8</java.version>
 		<maven.version.range>[3.0.0,4.0.0)</maven.version.range>
 		<maven-bundle-plugin.version>2.5.4</maven-bundle-plugin.version>
 		<maven-compiler-plugin.version>3.3</maven-compiler-plugin.version>
+		<junit.version>4.12</junit.version>
 	</properties>
 	
 	<groupId>org.pathwaycommons</groupId>
@@ -174,36 +175,6 @@
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
-				<groupId>org.cytoscape</groupId>
-				<artifactId>layout-api</artifactId>
-				<version>${cytoscape.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.cytoscape</groupId>
-				<artifactId>swing-util-api</artifactId>
-				<version>${cytoscape.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.cytoscape</groupId>
-				<artifactId>swing-application-api</artifactId>
-				<version>${cytoscape.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.cytoscape</groupId>
-				<artifactId>vizmap-api</artifactId>
-				<version>${cytoscape.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.cytoscape</groupId>
-				<artifactId>webservice-swing-api</artifactId>
-				<version>${cytoscape.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.cytoscape</groupId>
-				<artifactId>service-api</artifactId>
-				<version>${cytoscape.version}</version>
-			</dependency>
-			<dependency>
 				<groupId>org.ops4j.pax.logging</groupId>
 				<artifactId>pax-logging-api</artifactId>
 				<version>[1.5.2,2.0.0)</version>
@@ -217,6 +188,78 @@
 				<groupId>org.osgi</groupId>
 				<artifactId>org.osgi.core</artifactId>
 				<version>${osgi.api.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>${junit.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>layout-api</artifactId>
+				<version>${cytoscape.api.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>swing-util-api</artifactId>
+				<version>${cytoscape.api.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>swing-application-api</artifactId>
+				<version>${cytoscape.api.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>vizmap-api</artifactId>
+				<version>${cytoscape.api.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>webservice-swing-api</artifactId>
+				<version>${cytoscape.api.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>service-api</artifactId>
+				<version>${cytoscape.api.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>io-api</artifactId>
+				<version>${cytoscape.api.version}</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>model-api</artifactId>
+				<version>${cytoscape.api.version}</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>work-api</artifactId>
+				<version>${cytoscape.api.version}</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>core-task-api</artifactId>
+				<version>${cytoscape.api.version}</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>viewmodel-api</artifactId>
+				<version>${cytoscape.api.version}</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>group-api</artifactId>
+				<version>${cytoscape.api.version}</version>
+				<scope>provided</scope>
 			</dependency>
 			<dependency>
 				<groupId>pathwaycommons.cpath</groupId>
@@ -233,6 +276,16 @@
 				<groupId>org.biopax.paxtools</groupId>
 				<artifactId>paxtools-core</artifactId>
 				<version>${paxtools.version}</version>
+				<exclusions>
+					<exclusion>
+						<artifactId>log4j</artifactId>
+						<groupId>log4j</groupId>
+					</exclusion>
+					<exclusion>
+						<artifactId>commons-logging</artifactId>
+						<groupId>commons-logging</groupId>
+					</exclusion>
+				</exclusions>
 			</dependency>
 			<dependency>
 				<groupId>org.biopax.paxtools</groupId>
@@ -243,6 +296,40 @@
 				<groupId>org.biopax.paxtools</groupId>
 				<artifactId>paxtools-trove</artifactId>
 				<version>${paxtools.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.biopax.paxtools</groupId>
+				<artifactId>pattern</artifactId>
+				<version>${paxtools.version}</version>
+				<exclusions>
+					<exclusion>
+						<artifactId>log4j</artifactId>
+						<groupId>log4j</groupId>
+					</exclusion>
+					<exclusion>
+						<artifactId>commons-logging</artifactId>
+						<groupId>commons-logging</groupId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+			<dependency>
+				<groupId>org.biopax.paxtools</groupId>
+				<artifactId>sbgn-converter</artifactId>
+				<version>${paxtools.version}</version>
+				<exclusions>
+					<exclusion>
+						<artifactId>jsr173_api</artifactId>
+						<groupId>javax.xml.bind</groupId>
+					</exclusion>
+					<exclusion>
+						<artifactId>log4j</artifactId>
+						<groupId>log4j</groupId>
+					</exclusion>
+					<exclusion>
+						<artifactId>commons-logging</artifactId>
+						<groupId>commons-logging</groupId>
+					</exclusion>
+				</exclusions>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -279,6 +366,36 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
+			<groupId>org.cytoscape</groupId>
+			<artifactId>io-api</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.cytoscape</groupId>
+			<artifactId>model-api</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.cytoscape</groupId>
+			<artifactId>work-api</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.cytoscape</groupId>
+			<artifactId>core-task-api</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.cytoscape</groupId>
+			<artifactId>viewmodel-api</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.cytoscape</groupId>
+			<artifactId>group-api</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.ops4j.pax.logging</groupId>
 			<artifactId>pax-logging-api</artifactId>
 			<scope>provided</scope>
@@ -299,6 +416,23 @@
 		<dependency>
 			<groupId>org.biopax.paxtools</groupId>
 			<artifactId>paxtools-trove</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.biopax.paxtools</groupId>
+			<artifactId>pattern</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.biopax.paxtools</groupId>
+			<artifactId>sbgn-converter</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.biopax.paxtools</groupId>
+			<artifactId>paxtools-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 

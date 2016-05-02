@@ -2,13 +2,17 @@ package org.pathwaycommons.cypath2.internal;
 
 import org.biopax.paxtools.trove.TProvider;
 import org.biopax.paxtools.util.BPCollections;
+import org.cytoscape.io.util.StreamUtil;
 import org.cytoscape.task.NodeViewTaskFactory;
 import org.cytoscape.task.hide.UnHideAllEdgesTaskFactory;
 import org.cytoscape.util.swing.OpenBrowser;
 import org.cytoscape.model.CyNetworkManager;
+import org.cytoscape.view.model.CyNetworkViewFactory;
+import org.cytoscape.view.vizmap.VisualMappingFunctionFactory;
 import org.cytoscape.view.vizmap.VisualMappingManager;
 import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.session.CyNetworkNaming;
+import org.cytoscape.view.vizmap.VisualStyleFactory;
 import org.cytoscape.work.swing.DialogTaskManager;
 import org.cytoscape.work.undo.UndoSupport;
 import org.cytoscape.application.swing.CyAction;
@@ -73,16 +77,41 @@ public final class CyActivator extends AbstractCyActivator {
 		CyLayoutAlgorithmManager cyLayoutAlgorithmManager = getService(bc,CyLayoutAlgorithmManager.class);
 		UndoSupport undoSupport = getService(bc,UndoSupport.class);
 		VisualMappingManager visualMappingManager = getService(bc,VisualMappingManager.class);
+		VisualStyleFactory visualStyleFactory = getService(bc,VisualStyleFactory.class);
+		VisualMappingFunctionFactory discreteMappingFunctionFactory =
+				getService(bc,VisualMappingFunctionFactory.class,"(mapping.type=discrete)");
+		VisualMappingFunctionFactory passthroughMappingFunctionFactory =
+				getService(bc,VisualMappingFunctionFactory.class,"(mapping.type=passthrough)");
 		CyProperty<Properties> cyProperties = getService(bc, CyProperty.class, "(cyPropertyName=cytoscape3.props)");
 		CyRootNetworkManager cyRootNetworkManager = getService(bc, CyRootNetworkManager.class);
 		UnHideAllEdgesTaskFactory unHideAllEdgesTaskFactory = getService(bc, UnHideAllEdgesTaskFactory.class);
-		
+		CyNetworkViewFactory cyNetworkViewFactory = getService(bc, CyNetworkViewFactory.class);
+		StreamUtil streamUtil = getService(bc,StreamUtil.class);
+
 		// keep all the service references in one place -
 		CyPC.cyServices =  new CyServices(cySwingApplication, taskManager, openBrowser,
-				cyNetworkManager, cyApplicationManager, cyNetworkViewManager, cyNetworkReaderManager, 
-				cyNetworkNaming, cyNetworkFactory, cyLayoutAlgorithmManager, undoSupport, visualMappingManager, 
-				cyProperties, cyRootNetworkManager, unHideAllEdgesTaskFactory);
-			    
+				cyNetworkManager, cyApplicationManager, cyNetworkViewManager, cyNetworkReaderManager,
+				cyNetworkNaming, cyNetworkFactory, cyLayoutAlgorithmManager, undoSupport, visualMappingManager,
+				cyProperties, cyRootNetworkManager, unHideAllEdgesTaskFactory, cyNetworkViewFactory);
+
+
+		final BioPaxFilter bioPaxFilter = new BioPaxFilter(streamUtil);
+
+		BiopaxVisualStyleUtil visualStyleUtil = new BiopaxVisualStyleUtil(visualStyleFactory,
+				visualMappingManager, discreteMappingFunctionFactory, passthroughMappingFunctionFactory);
+		visualStyleUtil.init(); //important
+
+		// create the biopax reader object
+		final BioPaxReader biopaxReader = new BioPaxReader(bioPaxFilter, CyPC.cyServices, visualStyleUtil);
+
+// will use this biopax reader internally (i.e., not via CyAPI, not the core biopax-app reader)
+//		// register/export osgi services
+//		Properties readerProps = new Properties();
+//		readerProps.setProperty("readerDescription","BioPAX reader");
+//		readerProps.setProperty("readerId","biopaxNetworkReader");
+//		registerAllServices(bc, biopaxReader, readerProps);
+
+
 	    // Create/init a cpath2 client instance
 		String cPath2Url = cyProperties.getProperties().getProperty(CyPC.PROP_CPATH2_SERVER_URL);
 		if(cPath2Url != null && !cPath2Url.isEmpty())
