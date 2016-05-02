@@ -91,7 +91,7 @@ public final class CyActivator extends AbstractCyActivator {
 			//the default cpath2 URL unless -DcPath2Url=<someURL> jvm option used
 			CyPC.client = CPathClient.newInstance(); 
 		}
-		cyProperties.getProperties().setProperty(CyPC.PROP_CPATH2_SERVER_URL, CyPC.client.getActualEndPointURL());
+		cyProperties.getProperties().setProperty(CyPC.PROP_CPATH2_SERVER_URL, CyPC.client.getEndPointURL());
 		
 	    // get the app description from the resource file
 	    final Properties props = new Properties();
