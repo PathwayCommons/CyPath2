@@ -6,7 +6,6 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.GridLayout;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -41,7 +40,6 @@ import org.slf4j.LoggerFactory;
 
 import cpath.client.CPathClient;
 import cpath.client.util.CPathException;
-import cpath.query.CPathGetQuery;
 import cpath.service.GraphType;
 import cpath.service.jaxb.SearchHit;
 import cpath.service.jaxb.SearchResponse;
@@ -122,7 +120,6 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 				// create the UI
 				final JTabbedPane tabbedPane = new JTabbedPane();
 				tabbedPane.add("Search", createSearchQueryPanel());
-				tabbedPane.add("Top Pathways", createTopPathwaysPanel());
 				tabbedPane.add("Advanced Query", new AdvancedQueryPanel(advQueryPanelItemsList));
 				gui.setPreferredSize(new Dimension(900, 600));
 				gui.setLayout(new BorderLayout());
@@ -274,12 +271,13 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	    //BioPAX sub-class combo-box ('type' filter values)
 	    final JComboBox bpTypeComboBox = new JComboBox(
 	    	new NvpListItem[] {
+				new NvpListItem("Top Pathways (have no parents)","Pathway"), //this one is treated specially
 	    		new NvpListItem("Pathways","Pathway"),
 	    		new NvpListItem("Interactions (all types)", "Interaction"),
 	    		new NvpListItem("Participants", "EntityReference")
 	    	}
 	    );
-	    bpTypeComboBox.setSelectedIndex(0); //default value: Pathway
+	    bpTypeComboBox.setSelectedIndex(0); //default value: Top Pathways
 	    bpTypeComboBox.setEditable(false);
 
 		final Box searchQueryPanel = Box.createVerticalBox();
@@ -291,7 +289,9 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	    searchButton.addActionListener(new ActionListener() {
 	        public void actionPerformed(ActionEvent actionEvent) {
 	        	searchButton.setEnabled(false);
-	        	hitsModel.searchFor = ((NvpListItem)bpTypeComboBox.getSelectedItem()).getValue();
+				final int selIndex = bpTypeComboBox.getSelectedIndex();
+				final NvpListItem selItem = (NvpListItem) bpTypeComboBox.getItemAt(selIndex);
+	        	hitsModel.searchFor = selItem.getValue();
 	           	final String keyword = searchField.getText();           	
 	            if (keyword == null || keyword.trim().length() == 0 || keyword.startsWith(ENTER_TEXT)) {
 	            	JOptionPane.showMessageDialog(searchQueryPanel, "Please enter something into the search box.");
@@ -303,13 +303,19 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	        			public void run() {
 	        				try {
 	        					LOGGER.info("Executing search for " + keyword);
-	        					final SearchResponse searchResponse = client.createSearchQuery()
+	        					final SearchResponse searchResponse = (selIndex == 0)
+									? client.createTopPathwaysQuery() //search query for top pathways, with filters
+										.datasourceFilter(options.selectedDatasources())
+										.organismFilter(options.selectedOrganisms())
+										.queryString(keyword)
+										.result()
+									: client.createSearchQuery() //other search query with filters
 	        							.typeFilter(hitsModel.searchFor)
 	        							.datasourceFilter(options.selectedDatasources())
 	        							.organismFilter(options.selectedOrganisms())
 	        							.queryString(keyword)
 	        							.result();
-	        					if(searchResponse != null) {
+								if(searchResponse != null) {
 	        						// update hits model (make summaries, notify observers!)
 	        						hitsModel.update(searchResponse);
 	        						info.setText("Matches:  " + searchResponse.getNumHits() 
@@ -444,134 +450,6 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 
         return queryAndResults; //panel;
     }
-	
-	private JPanel createTopPathwaysPanel() {
-			
-		final JPanel panel = new JPanel(); // to return       
-		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-
-    	// hits model is used both by the filters panel pathways jlist
-    	final HitsModel topPathwaysModel = new HitsModel("Top Pathways", cyServices.taskManager);        
-        // make (south) tabs
-        final HitInfoJTabbedPane southPane = new HitInfoJTabbedPane(topPathwaysModel);
-        
-    	// create top pathways list
-    	final TopPathwaysJList tpwJList = new TopPathwaysJList();
-    	// as for current version, enable only the filter by data source (type is always Pathway, organisms - human + unspecified)
-    	final HitsFilterPanel filterPanel = new HitsFilterPanel(tpwJList, topPathwaysModel, false, false, true);
-        tpwJList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        tpwJList.setPrototypeCellValue("12345678901234567890");
-        // define a list item selection listener which updates the details panel, etc..
-        tpwJList.addListSelectionListener(new ListSelectionListener() {
-            public void valueChanged(ListSelectionEvent listSelectionEvent) {
-            	TopPathwaysJList l = (TopPathwaysJList) listSelectionEvent.getSource();
-                int selectedIndex = l.getSelectedIndex();
-                //  ignore the "unselect" event.
-//                if (!listSelectionEvent.getValueIsAdjusting()) {
-                    if (selectedIndex >=0) {
-                    	SearchHit item = (SearchHit) l.getModel().getElementAt(selectedIndex);
-                		// update hit's summary/details pane
-                		southPane.setCurrentItem(item);
-                    }
-//                }
-            }
-        });
-		tpwJList.addMouseListener(new MouseAdapter() {
-			public void mouseClicked(MouseEvent e) {
-				if (e.getClickCount() == 2) {
-					int selectedIndex = tpwJList.getSelectedIndex();
-					// ignore the "unselect" event.
-					if (selectedIndex >= 0) {
-						SearchHit item = (SearchHit) tpwJList.getModel().getElementAt(selectedIndex);
-						String uri = item.getUri();
-						final CPathGetQuery getQuery = client.createGetQuery().sources(new String[]{uri});
-						cyServices.taskManager.execute(new TaskIterator(
-				        	new NetworkAndViewTask(cyServices, getQuery, item.toString())));	
-					}
-				}
-			}
-		});
-		// add the list to model's observers
-        topPathwaysModel.addObserver(tpwJList);
-        
-        JPanel tpwFilterListPanel = new JPanel();
-        tpwFilterListPanel.setBorder(createTitledBorder("Type to quickly find a pathway. " +
-       		"Double-click to download (create a network)."));
-        tpwFilterListPanel.setLayout(new BorderLayout());
-        JScrollPane tpwListScrollPane = new JScrollPane(tpwJList);
-        tpwListScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        //add the filter text field and scroll pane
-        tpwFilterListPanel.add(tpwJList.getFilterField(), BorderLayout.NORTH);
-        tpwFilterListPanel.add(tpwListScrollPane, BorderLayout.CENTER);
-	        
-        JSplitPane vSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tpwFilterListPanel, southPane);
-        vSplit.setDividerLocation(300);
-        vSplit.setResizeWeight(0.5f);
-	        
-        //  Create the Split Pane
-        JSplitPane hSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, filterPanel, vSplit);
-        hSplit.setDividerLocation(300);
-        hSplit.setAlignmentX(Component.LEFT_ALIGNMENT);
-        hSplit.setResizeWeight(0.33f);
-        
-	    // create the update button and action
-	    final JButton updateButton = new JButton("Update Top Pathways");
-	    updateButton.setToolTipText("Get/Update Top Pathways (From the Server)");
-	    updateButton.addActionListener(new ActionListener() {
-	        public void actionPerformed(ActionEvent actionEvent) {
-	        	updateButton.setEnabled(false);	        			
-	            // load pathways from server
-//	    		TaskIterator taskIterator = new TaskIterator(new AbstractTask() {
-				cachedThreadPool.execute(new Runnable() {
-	    			@Override
-//	    			public void run(TaskMonitor taskMonitor) throws Exception {
-					public void run() {
-	    				try {
-//	    					taskMonitor.setTitle("CyPathwayCommons Top Pathways");
-//	    					taskMonitor.setProgress(0.1);
-//	    					taskMonitor.setStatusMessage("Getting top pathways from the server...");
-							LOGGER.info("Getting top pathways from the PC2 server...");
-	    					final SearchResponse resp = client.createTopPathwaysQuery()
-	    						.organismFilter(options.selectedOrganisms())
-	    							.datasourceFilter(options.selectedDatasources())
-	    								.result();
-	    					// reset the model and kick off observers (list and filter panel)
-	    					if(resp != null)
-	    						topPathwaysModel.update(resp);	
-	    					else {
-//	    						taskMonitor.setStatusMessage("Not Found");
-	    						SwingUtilities.invokeLater(new Runnable() {
-									@Override
-									public void run() {
-										JOptionPane.showMessageDialog(panel, "No Matches Found");
-									}
-								});
-	    					}
-	    				} catch (Throwable e) { 
-	    					//fail on both when there is no data (server error) and runtime/osgi errors
-	    					throw new RuntimeException(e);
-	    				} finally {
-//	    					taskMonitor.setStatusMessage("Done");
-//	    					taskMonitor.setProgress(1.0);
-	    					Window parentWindow = ((Window) panel.getRootPane().getParent());
-	    					panel.repaint();
-	    					parentWindow.toFront();
-	    					updateButton.setEnabled(true);
-	    				}
-	    			}
-	    		});			
-	    		// kick off the task execution
-//	    		cyServices.taskManager.execute(taskIterator);
-	        }
-	    });
-	    updateButton.setAlignmentX(Component.LEFT_ALIGNMENT); 
-               
-        panel.add(updateButton);
-        panel.add(hSplit);	        
-        panel.repaint();
-        
-        return panel;
-	}
 
 	@Override
 	protected void finalize() throws Throwable {
