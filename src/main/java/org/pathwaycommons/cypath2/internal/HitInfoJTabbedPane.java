@@ -130,7 +130,7 @@ final class HitInfoJTabbedPane extends JTabbedPane {
 				@Override
 				public void run() {
 					try {
-						LOG.debug("CyPathwayCommons, getting current hit's (" + item + ") info from the server...");
+						LOG.debug("PathwayCommons: getting current hit's (" + item + ") info from the server...");
 						final String html = hitsModel.fetchDetails(item); //runs several web queries
 						detailsTextPane.setText(html);
 						current = item;

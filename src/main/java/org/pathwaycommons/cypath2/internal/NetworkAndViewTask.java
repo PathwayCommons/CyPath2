@@ -94,7 +94,7 @@ class NetworkAndViewTask extends AbstractTask {
 			insertTasksAfterCurrentTask(reader, new AbstractTask() {			
 				@Override
 				public void run(TaskMonitor taskMonitor) throws Exception {
-					taskMonitor.setTitle("CyPathwayCommons after BioPAX read");
+					taskMonitor.setTitle("PathwayCommons, after BioPAX read");
 					final CyNetwork cyNetwork = reader.getNetworks()[0];
 					
 					//check / set the network name attr. (otherwise, it won't be shown in the panel - a bug?..)
@@ -102,7 +102,7 @@ class NetworkAndViewTask extends AbstractTask {
 					if (name == null || name.trim().length() == 0) {
 						name = networkName;
 						if (name == null)
-							name = "Network by CyPathwayCommons (name is missing)";
+							name = "Network from PathwayCommons (name is missing)";
 						Attributes.set(cyNetwork, cyNetwork, CyNetwork.NAME, name, String.class);
 					}				
 					cyServices.networkManager.addNetwork(cyNetwork);

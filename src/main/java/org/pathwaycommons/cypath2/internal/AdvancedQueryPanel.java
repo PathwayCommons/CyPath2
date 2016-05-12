@@ -35,7 +35,7 @@ final class AdvancedQueryPanel extends JPanel {
 	public AdvancedQueryPanel(JList list) {
 		this.list = list;
 		graphType = GraphType.NEIGHBORHOOD;
-		direction = Direction.DOWNSTREAM;
+		direction = Direction.UNDIRECTED;
 		create();
 	}
 	
@@ -58,9 +58,10 @@ final class AdvancedQueryPanel extends JPanel {
         //create direction buttons in advance (to disable/enable)
         final JRadioButton both = new JRadioButton("Both directions");
         final JRadioButton down = new JRadioButton("Downstream"); 
-        final JRadioButton up = new JRadioButton("Upstream"); 
-        
-	    ButtonGroup bg = new ButtonGroup();
+        final JRadioButton up = new JRadioButton("Upstream");
+		final JRadioButton undir = new JRadioButton("Undirected");
+
+		ButtonGroup bg = new ButtonGroup();
 	    JRadioButton b = new JRadioButton("Get (interactions/pathways by URIs)");    
         //default option (1)
 	    b.setSelected(true);
@@ -71,6 +72,7 @@ final class AdvancedQueryPanel extends JPanel {
 	        	both.setEnabled(false);
 	        	up.setEnabled(false);
 	        	down.setEnabled(false);
+				undir.setEnabled(false);
 	        }
 	    });
 	    bg.add(b);
@@ -89,8 +91,9 @@ final class AdvancedQueryPanel extends JPanel {
 	        	both.setEnabled(true);
 	        	up.setEnabled(true);
 	        	down.setEnabled(true);
-	        	both.setSelected(true);
-	        	direction = Direction.BOTHSTREAM;
+	        	undir.setSelected(true);
+				undir.setEnabled(true);
+	        	direction = Direction.UNDIRECTED;
 	        }
 	    });
 	    bg.add(b);
@@ -106,6 +109,7 @@ final class AdvancedQueryPanel extends JPanel {
 	        	up.setEnabled(true);
 	        	down.setEnabled(true);
 	        	down.setSelected(true);
+				undir.setEnabled(false);
 	        	direction = Direction.DOWNSTREAM;
 	        }
 	    });
@@ -121,6 +125,7 @@ final class AdvancedQueryPanel extends JPanel {
 	        	both.setEnabled(false);
 	        	up.setEnabled(false);
 	        	down.setEnabled(false);
+				undir.setEnabled(false);
 	        	direction = null;
 	        }
 	    });
@@ -134,6 +139,7 @@ final class AdvancedQueryPanel extends JPanel {
 	        public void actionPerformed(ActionEvent actionEvent) {
 	        	graphType = GraphType.PATHSFROMTO;
 	        	both.setEnabled(false);
+				undir.setEnabled(false);
 	        	up.setEnabled(false);
 	        	down.setEnabled(false);
 	        	direction = null;
@@ -151,7 +157,8 @@ final class AdvancedQueryPanel extends JPanel {
     	JPanel directionPanel = new JPanel();
     	directionPanel.setBorder(CyPC.createTitledBorder("Direction"));
     	directionPanel.setLayout(new GridBagLayout());
-    	bg = new ButtonGroup();	    
+    	bg = new ButtonGroup();
+
     	down.addActionListener(new ActionListener() {
 	        public void actionPerformed(ActionEvent actionEvent) {
 	        	direction = Direction.DOWNSTREAM;
@@ -184,7 +191,17 @@ final class AdvancedQueryPanel extends JPanel {
         c.gridx = 0;
         c.gridy = 2;
         directionPanel.add(both, c);
-    		
+
+		undir.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent actionEvent) {
+				direction = Direction.UNDIRECTED;
+			}
+		});
+		bg.add(undir);
+		c.gridx = 0;
+		c.gridy = 3;
+		directionPanel.add(undir, c);
+
         directionPanel.setMaximumSize(new Dimension(400, 200));
         controlPanel.add(directionPanel);
                

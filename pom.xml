@@ -27,10 +27,10 @@
 	<artifactId>cypath2</artifactId>
 	<version>1.2.0-SNAPSHOT</version>
 	
-	<name>CyPathwayCommons</name>
+	<name>CyPath2</name>
 	<description>
-	CyPathwayCommons provides access from within Cytoscape 3 to the 
-	Pathway Commons (PC) library of biological pathways and 
+	CyPath2 app provides access from within Cytoscape 3 to the
+	Pathway Commons (PC) database of biological pathways and
 	interactions, collected from several major pathway data providers 
 	based on their BioPAX and PSI-MI formatted export files. 
 	The PC team selects, validates, normalizes, merges, indexes 
@@ -152,14 +152,6 @@
 			<url>http://code.cytoscape.org/nexus/content/repositories/releases/</url>
 		</repository>
 		<repository>
-			<id>ossrh-public</id>
-			<name>OSSRH Maven Repository</name>
-			<url>https://oss.sonatype.org/content/groups/public</url>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
-		<repository>
 			<id>cytoscape_thirdparty</id>
 			<snapshots>
 				<enabled>false</enabled>
@@ -170,6 +162,30 @@
 			<name>Cytoscape Third Party</name>
 			<url>http://code.cytoscape.org/nexus/content/repositories/thirdparty/</url>
 		</repository>
+		<repository>
+			<id>ossrh-public</id>
+			<name>OSSRH Maven Repository</name>
+			<url>https://oss.sonatype.org/content/groups/public</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+		<repository><!-- currently, it's only to get org.sbgn:libsbgn:0.2 -->
+			<id>biopax.releases</id>
+			<name>BioPAX.org Repository</name>
+			<url>http://www.biopax.org/m2repo/releases/</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository><!-- currently, it's only to get org.ivis:chilay-sbgn:2.0.1-SNAPSHOT -->
+			<id>biopax.snapshots</id>
+			<name>BioPAX.org Repository</name>
+			<url>http://www.biopax.org/m2repo/snapshots/</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+		</repository>
 	</repositories>
 
 	<dependencyManagement>
@@ -177,12 +193,12 @@
 			<dependency>
 				<groupId>org.ops4j.pax.logging</groupId>
 				<artifactId>pax-logging-api</artifactId>
-				<version>[1.5.2,2.0.0)</version>
+				<version>[1.5.2,2)</version>
 			</dependency>
 			<dependency>
 				<groupId>cytoscape-temp</groupId>
 				<artifactId>woodstox-core-lgpl</artifactId>
-				<version>[4.0.5, 5.0.0)</version>
+				<version>[4.0.5, 5)</version>
 			</dependency>
 			<dependency>
 				<groupId>org.osgi</groupId>

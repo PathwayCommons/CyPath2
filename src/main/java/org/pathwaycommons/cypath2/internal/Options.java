@@ -7,7 +7,7 @@ import java.util.Set;
 import org.cytoscape.util.swing.CheckBoxJList;
 
 /**
- * CyPathwayCommons global filters and options.
+ * Global filters and options.
  * 
  * @author rodche
  *

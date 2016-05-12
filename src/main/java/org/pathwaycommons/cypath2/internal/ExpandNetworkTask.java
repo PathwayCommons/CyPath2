@@ -27,18 +27,18 @@ public class ExpandNetworkTask extends AbstractTask implements Task {
 
 	@ProvidesTitle
 	public String tunablesDlgTitle() {
-		return "CyPathwayCommons: Expand Network (into a new network)";
+		return "PathwayCommons: Expand Network (into a new network)";
 	}
 	
 	@Tunable(description = "Use (an identifier) column:", gravity=701, groups = " ", 
 			tooltip="Select a column (string type node attribute) where standard bio identifiers<br/> " +
-				"or URIs are stored (e.g., HUGO symbols, UniProt, RefSeq, Entrez Gene, <br/>" +
-				"ChEBI, PubChem Substance IDs, <br/>Pathway Commons or Identifiers.org URIs, " +
+				"or URIs are stored (e.g., HGNC symbols, UniProt, RefSeq, NCBI Gene, <br/>" +
+				"ChEBI IDs, <br/>Pathway Commons or Identifiers.org URIs, " +
 				"<br/>or all these kinds mixed, should be fine for the query)")
 	public ListSingleSelection<String> columnSelection;
 	
 	@Tunable(description = "Graph query type:", gravity=705, groups = " ", 
-			tooltip = "NOTE: filter values set in CyPathwayCommons 'Options' panel apply for this query as well.")
+			tooltip = "NOTE: filter settings in 'Find and Get' tab are in effect here as well.")
 	public ListSingleSelection<String> querySelection;
 	
 	private final CyNetwork network;
@@ -53,7 +53,7 @@ public class ExpandNetworkTask extends AbstractTask implements Task {
 
 	@Override
 	public void run(TaskMonitor taskMonitor) throws Exception {
-		taskMonitor.setTitle("CyPathwayCommons: Expanding Selected Nodes to a New Network");
+		taskMonitor.setTitle("PathwayCommons: Expanding Selected Nodes to a New Network");
 		if(cancelled) return;
 		
 		final String column = columnSelection.getSelectedValue();

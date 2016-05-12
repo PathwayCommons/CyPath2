@@ -45,12 +45,12 @@ public final class CyActivator extends AbstractCyActivator {
 
 	public CyActivator() {
 		super();
-		LOGGER.info("Creating CyPathwayCommons bundle activator...");
+		LOGGER.info("Creating PathwayCommons bundle activator...");
 	}
 
 
 	public void start(BundleContext bc) {
-		LOGGER.info("Starting CyPathwayCommons app...");
+		LOGGER.info("Starting PathwayCommons app...");
 
 		//set a system property for Paxtools to use memory-efficient collections
 		try {
@@ -133,11 +133,11 @@ public final class CyActivator extends AbstractCyActivator {
 		CyPC app = new CyPC("Pathway Commons 2 (BioPAX L3)", description);
 		app.init();
 		
-		// Create a new menu/toolbar item (CyAction) that opens the CyPathwayCommons GUI
+		// Create a new menu/toolbar item (CyAction) that opens the PathwayCommons GUI
 		Map<String,String> showTheDialogActionProps = new HashMap<String, String>();
 		showTheDialogActionProps.put(ID,"showCyPathwayCommonsDialogAction");
 		showTheDialogActionProps.put(TITLE,"Search/Import Network...");		
-		showTheDialogActionProps.put(PREFERRED_MENU, APPS_MENU + ".CyPathwayCommons");
+		showTheDialogActionProps.put(PREFERRED_MENU, APPS_MENU + ".PathwayCommons");
 		showTheDialogActionProps.put(MENU_GRAVITY,"2.0");
 		showTheDialogActionProps.put(SMALL_ICON_URL,getClass().getResource("pc2_small.png").toString());
 		showTheDialogActionProps.put(IN_TOOL_BAR,"false");
@@ -152,13 +152,13 @@ public final class CyActivator extends AbstractCyActivator {
 		Map<String,String> showAboutDialogActionProps = new HashMap<String, String>();
 		showAboutDialogActionProps.put(ID,"showCyPathwayCommonsAboutDialogAction");
 		showAboutDialogActionProps.put(TITLE,"About...");		
-		showAboutDialogActionProps.put(PREFERRED_MENU, APPS_MENU + ".CyPathwayCommons");
+		showAboutDialogActionProps.put(PREFERRED_MENU, APPS_MENU + ".PathwayCommons");
 		showAboutDialogActionProps.put(MENU_GRAVITY,"1.0");
 		showAboutDialogActionProps.put(SMALL_ICON_URL,getClass().getResource("pc2_small.png").toString());
 		showAboutDialogActionProps.put(IN_TOOL_BAR,"false");
 		showAboutDialogActionProps.put(IN_MENU_BAR,"true");
 		ShowAboutDialogAction showAboutDialogAction =
-				new ShowAboutDialogAction(showAboutDialogActionProps, "CyPathwayCommons", description);
+				new ShowAboutDialogAction(showAboutDialogActionProps, "PathwayCommons app", description);
 		// register the service
 		registerService(bc, showAboutDialogAction, CyAction.class, new Properties());
 		
@@ -168,7 +168,7 @@ public final class CyActivator extends AbstractCyActivator {
 		nodeProp.setProperty("preferredTaskManager", "menu");
 		nodeProp.setProperty(PREFERRED_MENU, NODE_APPS_MENU);
 		nodeProp.setProperty(MENU_GRAVITY, "13.0");
-		nodeProp.setProperty(TITLE, "CyPathwayCommons: Extend Network...");
+		nodeProp.setProperty(TITLE, "PathwayCommons: Extend Network...");
 		registerService(bc, expandNodeContextMenuFactory, NodeViewTaskFactory.class, nodeProp);
 
 		// Node selection listener (only for networks imported from BioPAX) and eastern cytopanel (results panel).

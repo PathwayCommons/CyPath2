@@ -119,9 +119,9 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 
 				// create the UI
 				final JTabbedPane tabbedPane = new JTabbedPane();
-				tabbedPane.add("Search", createSearchQueryPanel());
-				tabbedPane.add("Advanced Query", new AdvancedQueryPanel(advQueryPanelItemsList));
-				gui.setPreferredSize(new Dimension(900, 600));
+				tabbedPane.add("Find and Get", createSearchQueryPanel());
+				tabbedPane.add("Graph Queries", new AdvancedQueryPanel(advQueryPanelItemsList));
+				gui.setPreferredSize(new Dimension(800, 600));
 				gui.setLayout(new BorderLayout());
 				gui.add(tabbedPane, BorderLayout.CENTER);
 			}
@@ -145,6 +145,7 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 				cyServices,
 				client.createGraphQuery()
 					.kind(GraphType.NEIGHBORHOOD)
+					.direction(CPathClient.Direction.UNDIRECTED)
 					.sources(ids)
 					.organismFilter(options.selectedOrganisms())
 					.datasourceFilter(options.selectedDatasources())
@@ -170,24 +171,8 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
     /*
 	 * Global options panel (search/graph query filters).
 	 */
-	private Component createOptionsPane() {
-		// Initialize the organisms filter-list:
-	    // manually add choice(s): only human is currently supported
-	    //TODO add more org. as they become suppored/available (from web service)
-	    SortedSet<NvpListItem> items = new TreeSet<NvpListItem>(); //sorted by name
-	    items.add(new NvpListItem("Human", "9606"));   
-	    DefaultListModel model = new DefaultListModel();
-	    for(NvpListItem nvp : items) {
-	    	model.addElement(nvp);
-	    }
-	    options.organismList.setModel(model);	        
-	    JScrollPane organismFilterBox = new JScrollPane(options.organismList, 
-	    	JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-	    organismFilterBox.setBorder(new TitledBorder("Organism(s):"));
-	    organismFilterBox.setPreferredSize(new Dimension(300, 200));
-	    organismFilterBox.setMinimumSize(new Dimension(200, 100));
-	        
-	    // create the filter-list of datasources available on the server  
+	private JComponent createOptionsPane() {
+	    // create the filter-list of the data sources available on the PC server
 	    DefaultListModel dataSourceBoxModel = new DefaultListModel(); 
 	    for(String uri : uriToDatasourceNameMap.keySet()) {
 	    	String name = uriToDatasourceNameMap.get(uri);
@@ -195,34 +180,42 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	    }		        
 	    options.dataSourceList.setModel(dataSourceBoxModel);	        
 	    JScrollPane dataSourceFilterBox = new JScrollPane(options.dataSourceList, 
-	       	JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-	    dataSourceFilterBox.setBorder(new TitledBorder("Datasource(s):"));
-	    dataSourceFilterBox.setPreferredSize(new Dimension(300, 200));
-	    dataSourceFilterBox.setMinimumSize(new Dimension(200, 100));
+	       	JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+	    dataSourceFilterBox.setBorder(new TitledBorder("Datasources:"));
+		dataSourceFilterBox.setMaximumSize(new Dimension(300,300));
 
-	    JSplitPane filtersPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, dataSourceFilterBox, organismFilterBox);
-	    filtersPane.setBorder(new TitledBorder("Global Filters - for all queries, including Top Pathways and " +
-	    		"Apps->Extend Network... node view context menu."));
-	    filtersPane.setDividerLocation(400);
-	    filtersPane.setResizeWeight(0.5f);
-	    filtersPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-	    filtersPane.setPreferredSize(new Dimension(500, 250));
-	    filtersPane.setMinimumSize(new Dimension(250, 200));
+		// Init the organisms filter-list:
+		// manually add items: only Homo sapiens, 9606 is currently supported
+		//TODO add species as they become suppored by the PC web service
+		SortedSet<NvpListItem> items = new TreeSet<NvpListItem>(); //sorted by name
+		items.add(new NvpListItem("Homo sapiens", "9606"));
+		DefaultListModel model = new DefaultListModel();
+		for(NvpListItem nvp : items) {
+			model.addElement(nvp);
+		}
+		options.organismList.setModel(model);
+		JScrollPane organismFilterBox = new JScrollPane(options.organismList,
+				JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		organismFilterBox.setBorder(new TitledBorder("Organisms:"));
+		organismFilterBox.setMaximumSize(new Dimension(150,300));
+		organismFilterBox.setMinimumSize(new Dimension(100,50));
+
+	    final JSplitPane filtersPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, dataSourceFilterBox, organismFilterBox);
+	    filtersPane.setBorder(new TitledBorder(
+			"Global filters for all queries, including node view context menu: Apps->Extend Network..."));
+	    filtersPane.setDividerLocation(-1);
+	    filtersPane.setResizeWeight(0.67f);
+		filtersPane.setMaximumSize(new Dimension(450, 300));
+		filtersPane.setMinimumSize(new Dimension(300, 200));
+		filtersPane.setPreferredSize(new Dimension(300, 200));
 
 		return filtersPane;
 	}
 
 	private Component createSearchQueryPanel() {
-		
-	   	final HitsModel hitsModel = new HitsModel("Current Search Hits", cyServices.taskManager);
 
-	    // create tabs pane for the hit details and parent pathways sun-panels
-	    final HitInfoJTabbedPane currentHitInfoPane = new HitInfoJTabbedPane(hitsModel);
-	    currentHitInfoPane.setPreferredSize(new Dimension(300, 250));
-	    currentHitInfoPane.setMinimumSize(new Dimension(200, 150));
-	        
 	  	// create the query field and examples label
-	    final String ENTER_TEXT = "Enter a keyword (e.g., gene/protein name or ID)";
+	    final String ENTER_TEXT = "a keyword (e.g., gene name or identifier)";
 	  	final JTextField searchField = new JTextField(ENTER_TEXT.length());
 	    searchField.setText(ENTER_TEXT);
 	    searchField.setToolTipText(ENTER_TEXT);
@@ -233,14 +226,12 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	            }
 	        }
 	    });
-	    	
-	    searchField.setBorder (BorderFactory.createCompoundBorder(searchField.getBorder(),
-	    		new PulsatingBorder(searchField)));
-	    searchField.setAlignmentX(Component.LEFT_ALIGNMENT);
-	    searchField.setMaximumSize(new Dimension(300, 100));
-	        
+	    searchField.setBorder (BorderFactory
+				.createCompoundBorder(searchField.getBorder(), new PulsatingBorder(searchField)));
+		searchField.setHorizontalAlignment(JTextField.LEFT);
+
 	    JEditorPane label = new JEditorPane ("text/html", 
-	    	"Examples:  <a href='TP53'>TP53</a>, <a href='BRCA1'>BRCA1</a>, <a href='SRY'>SRY</a>, " +
+	    	"Example queries:  <a href='TP53'>TP53</a>, <a href='BRCA1'>BRCA1</a>, <a href='SRY'>SRY</a>, " +
 	        "<a href='name:kinase AND pathway:signal*'>name:kinase AND pathway:signal*</a> <br/>" +
 	        "search fields: <em>comment, ecnumber, keyword, name, pathway, term, xrefdb, xrefid, " +
 			"dataSource, organism </em>");
@@ -255,23 +246,20 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	            }
 	        }
 	    });
-	    label.setAlignmentX(Component.LEFT_ALIGNMENT);
 	    Font font = label.getFont();
 	    Font newFont = new Font (font.getFamily(), font.getStyle(), font.getSize()-2);
 	    label.setFont(newFont);
 	    label.setBorder(new EmptyBorder(5,3,3,3));
-	    label.setAlignmentX(Component.LEFT_ALIGNMENT);
-	     
-	    final JLabel info = new JLabel("", SwingConstants.LEFT);
+
+		final JLabel info = new JLabel(""); //, SwingConstants.LEFT);
 	    info.setFocusable(false);
 	    info.setFont(new Font(info.getFont().getFamily(), info.getFont().getStyle(), info.getFont().getSize()+1));
 	    info.setForeground(Color.BLUE);
-	    info.setMaximumSize(new Dimension(400, 50));        
 
 	    //BioPAX sub-class combo-box ('type' filter values)
 	    final JComboBox bpTypeComboBox = new JComboBox(
 	    	new NvpListItem[] {
-				new NvpListItem("Top Pathways (have no parents)","Pathway"), //this one is treated specially
+				new NvpListItem("Top Pathways",""), //this one is treated specially
 	    		new NvpListItem("Pathways","Pathway"),
 	    		new NvpListItem("Interactions (all types)", "Interaction"),
 	    		new NvpListItem("Participants", "EntityReference")
@@ -279,12 +267,11 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	    );
 	    bpTypeComboBox.setSelectedIndex(0); //default value: Top Pathways
 	    bpTypeComboBox.setEditable(false);
-
-		final Box searchQueryPanel = Box.createVerticalBox();
-		searchQueryPanel.setMinimumSize(new Dimension(400, 100));
+		bpTypeComboBox.setPreferredSize(new Dimension(200,100));
 
 	    // create the search button and action
-	    final JButton searchButton = new JButton("Search");
+		final HitsModel hitsModel = new HitsModel("Search Hits", cyServices.taskManager);
+		final JButton searchButton = new JButton("Search");
 	    searchButton.setToolTipText("Full-Text Search");
 	    searchButton.addActionListener(new ActionListener() {
 	        public void actionPerformed(ActionEvent actionEvent) {
@@ -294,7 +281,7 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	        	hitsModel.searchFor = selItem.getValue();
 	           	final String keyword = searchField.getText();           	
 	            if (keyword == null || keyword.trim().length() == 0 || keyword.startsWith(ENTER_TEXT)) {
-	            	JOptionPane.showMessageDialog(searchQueryPanel, "Please enter something into the search box.");
+	            	JOptionPane.showMessageDialog(gui, "Type something in the search box.");
 	        		searchButton.setEnabled(true);
 	        	} else {
 	        		info.setText("");
@@ -326,27 +313,31 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 		    						SwingUtilities.invokeLater(new Runnable() {
 										@Override
 										public void run() {
-											JOptionPane.showMessageDialog(searchQueryPanel, "No Matches Found");
+											JOptionPane.showMessageDialog(gui, "No Matches Found");
 										}
 									});
 	        					}
 	        				} catch (final Throwable e) {
+								//TODO: failure can be due to a proxy returned wrong response (500 instead of PC's 460)
 	        					// using Throwable helps catch unresolved runtime dependency issues!
 								SwingUtilities.invokeLater(new Runnable() {
 									@Override
 									public void run() {
-										JOptionPane.showMessageDialog(searchQueryPanel, "Error: " + e);
+										JOptionPane.showMessageDialog(gui, "No results; try another query");
 									}
 								});
-								if(!(e instanceof CPathException)) throw new RuntimeException(e);
 								hitsModel.update(new SearchResponse()); //clear
+								if(!(e instanceof CPathException))
+									throw new RuntimeException("Bug", e);
+								else
+									throw new RuntimeException("No results / service unavailable; " + e.getMessage());
 	        				} finally {
 								SwingUtilities.invokeLater(new Runnable() {
 									@Override
 									public void run() {
 										searchButton.setEnabled(true);
-										searchQueryPanel.repaint();
-										((Window) searchQueryPanel.getRootPane().getParent()).toFront();
+										gui.repaint();
+										((Window) searchButton.getRootPane().getParent()).toFront();
 									}
 								});
 	        				}
@@ -356,27 +347,10 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	        }
 	    });
 
-	    searchButton.setAlignmentX(Component.LEFT_ALIGNMENT); 
-        
-	    final JPanel keywordPane = new JPanel();
-        keywordPane.setLayout(new FlowLayout(FlowLayout.LEFT));
-        keywordPane.add(label);
-        keywordPane.add(searchField);
-        keywordPane.add(bpTypeComboBox);
-        keywordPane.add(searchButton);
-        keywordPane.setPreferredSize(new Dimension(400, 100));
-        keywordPane.setMinimumSize(new Dimension(400, 100));
+		// create a tabs pane for the hit details
+		final HitInfoJTabbedPane currentHitInfoPane = new HitInfoJTabbedPane(hitsModel);
+		currentHitInfoPane.setPreferredSize(new Dimension(300, 200));
 
-		searchQueryPanel.add(createOptionsPane());
-		searchQueryPanel.add(Box.createVerticalGlue());
-        searchQueryPanel.add(keywordPane);
-        
-        // Assembly the results panel
-    	final JPanel searchResultsPanel = new JPanel();
-    	searchResultsPanel.setMinimumSize(new Dimension(400, 350));
-    	searchResultsPanel.setLayout(new BoxLayout(searchResultsPanel, BoxLayout.Y_AXIS));
-    	searchResultsPanel.add(info); 
-        
         // search hits list
         final JList resList = new ToolTipsSearchHitsJList();
         resList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -418,37 +392,51 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	        
         // register the JList as model's observer
         hitsModel.addObserver((Observer) resList);
-        
-        JPanel hitListPane = new JPanel();
-        hitListPane.setMinimumSize(new Dimension(300, 150));
-        hitListPane.setLayout(new BorderLayout());
-        JScrollPane hitListScrollPane = new JScrollPane(resList);
-        hitListScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        hitListScrollPane.setBorder(createTitledBorder("Double-click adds it to Advanced Query page."));
-        hitListScrollPane.setPreferredSize(new Dimension(300, 150));
-        // make (north) tabs       
-        JSplitPane vSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, hitListScrollPane, currentHitInfoPane);
-        vSplit.setDividerLocation(150);
+
+        final JScrollPane hitListScrollPane = new JScrollPane(resList);
+        hitListScrollPane.setBorder(createTitledBorder("Double-click to pick (URI) for Graph Queries"));
+        // make (north) tabs
+        final JSplitPane vSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, hitListScrollPane, currentHitInfoPane);
+        vSplit.setDividerLocation(-1);
         vSplit.setResizeWeight(0.5f);
-        hitListPane.add(vSplit, BorderLayout.CENTER);
-	        
+
         //  Create search results extra filtering panel
         HitsFilterPanel filterPanel = new HitsFilterPanel(resList, hitsModel, true, false, true);
-        filterPanel.setMinimumSize(new Dimension(250, 300));
-	    filterPanel.setPreferredSize(new Dimension(300, 400));
         //  Create the Split Pane
-        JSplitPane hSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, filterPanel, hitListPane);
-        hSplit.setDividerLocation(250);
+        JSplitPane hSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, filterPanel, vSplit);
+        hSplit.setDividerLocation(-1);
         hSplit.setResizeWeight(0.33f);
-        hSplit.setAlignmentX(Component.LEFT_ALIGNMENT);
-        searchResultsPanel.add(hSplit);
-    	        
-        // final top-bottom panels arrange -
-        JSplitPane queryAndResults = new JSplitPane(JSplitPane.VERTICAL_SPLIT, searchQueryPanel, searchResultsPanel);
-        queryAndResults.setResizeWeight(0.25f);
-        queryAndResults.setDividerLocation(150);
 
-        return queryAndResults; //panel;
+		// Assembly and align everything...
+		// query fields and examples
+		Box queryBox = Box.createVerticalBox();
+		bpTypeComboBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+		bpTypeComboBox.setMaximumSize(new Dimension(200,50));
+		queryBox.add(bpTypeComboBox);
+		searchField.setAlignmentX(Component.LEFT_ALIGNMENT);
+		searchField.setMaximumSize(new Dimension(400,50));
+		queryBox.add(searchField);
+		label.setAlignmentX(Component.LEFT_ALIGNMENT);
+		queryBox.add(label);
+		searchButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+		queryBox.add(searchButton);
+		queryBox.setPreferredSize(new Dimension(200,300));
+		//query fields and global filters:
+		JSplitPane queryAndFilters = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, queryBox, createOptionsPane());
+		queryAndFilters.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+		//info and results parts:
+		final Box results = Box.createVerticalBox();
+		info.setAlignmentX(Component.LEFT_ALIGNMENT);
+		results.add(info);
+		hSplit.setAlignmentX(Component.LEFT_ALIGNMENT);
+		results.add(hSplit);
+
+		//finally
+		JSplitPane searchPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT, queryAndFilters, results);
+		searchPanel.setPreferredSize(new Dimension(800, 600));
+		searchPanel.setMinimumSize(new Dimension(600,400));
+		return searchPanel;
     }
 
 	@Override
