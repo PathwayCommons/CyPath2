@@ -236,7 +236,7 @@ final class AdvancedQueryPanel extends JPanel {
 	        		final CPathGetQuery getQ = CyPC.client
 	        				.createGetQuery().sources(srcs);
 	        		CyPC.cyServices.taskManager.execute(new TaskIterator(
-	        			new NetworkAndViewTask(CyPC.cyServices, getQ, null)
+	        			new NetworkAndViewTask(getQ, null)
 	        			));
 	        	} else {
 	        		final CPathGraphQuery graphQ = CyPC.client
@@ -248,7 +248,7 @@ final class AdvancedQueryPanel extends JPanel {
 	        			//.limit(1) TODO set limit (optional; default is 1)
 	        			.organismFilter(CyPC.options.selectedOrganisms());
 	        		CyPC.cyServices.taskManager.execute(new TaskIterator(
-	        			new NetworkAndViewTask(CyPC.cyServices, graphQ, null)
+	        			new NetworkAndViewTask(graphQ, null)
 		        		));
 	        	}
 	        	

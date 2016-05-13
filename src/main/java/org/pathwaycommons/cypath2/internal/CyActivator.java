@@ -92,25 +92,8 @@ public final class CyActivator extends AbstractCyActivator {
 		CyPC.cyServices =  new CyServices(cySwingApplication, taskManager, openBrowser,
 				cyNetworkManager, cyApplicationManager, cyNetworkViewManager, cyNetworkReaderManager,
 				cyNetworkNaming, cyNetworkFactory, cyLayoutAlgorithmManager, undoSupport, visualMappingManager,
-				cyProperties, cyRootNetworkManager, unHideAllEdgesTaskFactory, cyNetworkViewFactory);
-
-
-		final BioPaxFilter bioPaxFilter = new BioPaxFilter(streamUtil);
-
-		BiopaxVisualStyleUtil visualStyleUtil = new BiopaxVisualStyleUtil(visualStyleFactory,
-				visualMappingManager, discreteMappingFunctionFactory, passthroughMappingFunctionFactory);
-		visualStyleUtil.init(); //important
-
-		// create the biopax reader object
-		final BioPaxReader biopaxReader = new BioPaxReader(bioPaxFilter, CyPC.cyServices, visualStyleUtil);
-
-// will use this biopax reader internally (i.e., not via CyAPI, not the core biopax-app reader)
-//		// register/export osgi services
-//		Properties readerProps = new Properties();
-//		readerProps.setProperty("readerDescription","BioPAX reader");
-//		readerProps.setProperty("readerId","biopaxNetworkReader");
-//		registerAllServices(bc, biopaxReader, readerProps);
-
+				cyProperties, cyRootNetworkManager, unHideAllEdgesTaskFactory, cyNetworkViewFactory,
+				visualStyleFactory, discreteMappingFunctionFactory, passthroughMappingFunctionFactory, streamUtil);
 
 	    // Create/init a cpath2 client instance
 		String cPath2Url = cyProperties.getProperties().getProperty(CyPC.PROP_CPATH2_SERVER_URL);
@@ -172,7 +155,6 @@ public final class CyActivator extends AbstractCyActivator {
 		registerService(bc, expandNodeContextMenuFactory, NodeViewTaskFactory.class, nodeProp);
 
 		// Node selection listener (only for networks imported from BioPAX) and eastern cytopanel (results panel).
-		//TODO move BioPaxCytoPanelComponent to the biopax core app.
 		final BioPaxCytoPanelComponent cytoPanelComponent = new BioPaxCytoPanelComponent();
 		registerAllServices(bc, cytoPanelComponent, new Properties());
 

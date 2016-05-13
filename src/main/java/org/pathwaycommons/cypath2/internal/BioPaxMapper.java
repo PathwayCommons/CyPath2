@@ -1,35 +1,10 @@
 package org.pathwaycommons.cypath2.internal;
 
-/*
- * #%L
- * Cytoscape BioPAX Core App.
- * $Id:$
- * $HeadURL:$
- * %%
- * Copyright (C) 2006 - 2013 The Cytoscape Consortium
- * %%
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/lgpl-2.1.html>.
- * #L%
- */
-
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.biopax.paxtools.controller.*;
 import org.biopax.paxtools.converter.LevelUpgrader;
 import org.biopax.paxtools.io.SimpleIOHandler;
-import org.biopax.paxtools.io.sbgn.L3ToSBGNPDConverter;
 import org.biopax.paxtools.model.BioPAXElement;
 import org.biopax.paxtools.model.BioPAXLevel;
 import org.biopax.paxtools.model.Model;
@@ -1082,32 +1057,6 @@ public class BioPaxMapper {
 			writer.close();
 		}
 	}
-
-    /**
-     * Converts a BioPAX Model to SBGN format.
-     *
-     * @param m
-     * @param out
-     */
-    public static void convertToSBGN(final Model m, final OutputStream out) {
-    	
-		ModelUtils.mergeEquivalentInteractions(m);
-    	
-		//fails when not using this hack (due to another jaxb library version at runtime...)
-//    	ClassLoaderHack.runWithHack(new Runnable() {
-//			@Override
-//			public void run() {
-				//create a sbgn converter: no blacklist; do auto-layout
-		try {
-			L3ToSBGNPDConverter converter = new L3ToSBGNPDConverter(null, null, true);
-			converter.writeSBGN(m, out);
-			log.debug("Converter BioPAX to SBGN ML (temporary saved in the java tmpdir)");
-		} catch (Throwable t) {
-			log.error("BioPAX to SBGN ML converter failed", t);
-		}
-//			}
-//    	}, com.sun.xml.bind.v2.ContextFactory.class);
-    }
 
 	private static class NodeAttributesWrapper {
 		// map of cellular location or chemical modifications

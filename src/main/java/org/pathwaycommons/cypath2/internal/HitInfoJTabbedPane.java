@@ -3,7 +3,6 @@ package org.pathwaycommons.cypath2.internal;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.util.Collections;
-import java.util.concurrent.ExecutorService;
 
 import javax.swing.JEditorPane;
 import javax.swing.JPanel;
@@ -78,7 +77,7 @@ final class HitInfoJTabbedPane extends JTabbedPane {
                		String uri = hyperlinkEvent.getURL().toString();
                		final CPathGetQuery query = CyPC.client.createGetQuery().sources(Collections.singleton(uri));
                		CyPC.cyServices.taskManager.execute(new TaskIterator(
-                   		new NetworkAndViewTask(CyPC.cyServices, query, current.toString())));
+                   		new NetworkAndViewTask(query, current.toString())));
                 }
             }
         });
@@ -179,12 +178,12 @@ final class HitInfoJTabbedPane extends JTabbedPane {
                				.sources(Collections.singleton(uri))
                				.kind(GraphType.NEIGHBORHOOD);
                			CyPC.cyServices.taskManager.execute(new TaskIterator(
-                   			new NetworkAndViewTask(CyPC.cyServices, graphQuery, currentItem.toString())));
+                   			new NetworkAndViewTask(graphQuery, currentItem.toString())));
                		} else { // for a biological process (pathway or interaction), use '/get' command
                			final CPathGetQuery getQuery = CyPC.client.createGetQuery()
                				.sources(Collections.singleton(uri));
                			CyPC.cyServices.taskManager.execute(new TaskIterator(
-                   			new NetworkAndViewTask(CyPC.cyServices, getQuery, currentItem.toString())));
+                   			new NetworkAndViewTask(getQuery, currentItem.toString())));
                		}
                 }
             }

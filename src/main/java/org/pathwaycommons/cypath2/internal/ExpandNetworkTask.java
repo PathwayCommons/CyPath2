@@ -87,7 +87,7 @@ public class ExpandNetworkTask extends AbstractTask implements Task {
     			//.limit(1) TODO set limit via tunables (default is 1)
     			.organismFilter(CyPC.options.selectedOrganisms());
     	CyPC.cyServices.taskManager.execute(new TaskIterator(
-    			new NetworkAndViewTask(CyPC.cyServices, graphQ, null)
+    			new NetworkAndViewTask(graphQ, null)
         		));	
 		
     	taskMonitor.setStatusMessage("Done");   	

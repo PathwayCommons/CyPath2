@@ -1,12 +1,14 @@
 package org.pathwaycommons.cypath2.internal;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 
 import org.biopax.paxtools.model.Model;
-import org.cytoscape.io.read.CyNetworkReader;
 import org.cytoscape.model.CyNetwork;
+import org.cytoscape.view.layout.CyLayoutAlgorithm;
 import org.cytoscape.view.model.CyNetworkView;
+import org.cytoscape.view.vizmap.VisualStyle;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.TaskMonitor;
 import org.slf4j.Logger;
@@ -14,6 +16,8 @@ import org.slf4j.LoggerFactory;
 
 import cpath.client.util.CPathException;
 import cpath.query.CPathQuery;
+
+import javax.swing.*;
 
 /**
  * A Task that gets data from the cPath2 server and 
@@ -26,20 +30,16 @@ class NetworkAndViewTask extends AbstractTask {
 	private static final Logger LOGGER = LoggerFactory.getLogger(NetworkAndViewTask.class);
 	
 	private final CPathQuery<Model> cPathQuery;
-	private final CyServices cyServices;
 	private final String networkName;
 
 	/**
 	 * Constructor 
 	 * (advanced, for all get and graph queries).
-	 * 
-	 * @param cyServices services
-	 * @param cPathQuery query
+	 *  @param cPathQuery query
 	 * @param networkName network name
 	 */
-	public NetworkAndViewTask(CyServices cyServices, CPathQuery<Model> cPathQuery, String networkName) 
+	public NetworkAndViewTask(CPathQuery<Model> cPathQuery, String networkName)
 	{
-		this.cyServices = cyServices;
 		this.cPathQuery = cPathQuery;
 		this.networkName = networkName;
 	}
@@ -86,16 +86,14 @@ class NetworkAndViewTask extends AbstractTask {
 			taskMonitor.setProgress(0.5);
 			if (cancelled) return;
 			
-			taskMonitor.setStatusMessage("Processing the BioPAX data: " +
-					"looking for the BioPAX reader service...");					
-			// Import data via Cy3 I/O API
-			final CyNetworkReader reader =  cyServices.networkViewReaderManager.getReader(tmpFile.toURI(), null);			
+			taskMonitor.setStatusMessage("Processing the BioPAX data...");
+			final BioPaxReaderTask reader =  new BioPaxReaderTask(new FileInputStream(tmpFile), null);
 			//the first task (the BioPAX reader) creates a network; the second one registers it and adds the view:
-			insertTasksAfterCurrentTask(reader, new AbstractTask() {			
+			insertTasksAfterCurrentTask(reader, new AbstractTask() {
 				@Override
 				public void run(TaskMonitor taskMonitor) throws Exception {
 					taskMonitor.setTitle("PathwayCommons, after BioPAX read");
-					final CyNetwork cyNetwork = reader.getNetworks()[0];
+					final CyNetwork cyNetwork =  reader.getNetworks()[0];
 					
 					//check / set the network name attr. (otherwise, it won't be shown in the panel - a bug?..)
 					String name = cyNetwork.getRow(cyNetwork).get(CyNetwork.NAME, String.class);
@@ -105,7 +103,8 @@ class NetworkAndViewTask extends AbstractTask {
 							name = "Network from PathwayCommons (name is missing)";
 						Attributes.set(cyNetwork, cyNetwork, CyNetwork.NAME, name, String.class);
 					}				
-					cyServices.networkManager.addNetwork(cyNetwork);
+					CyPC.cyServices.networkManager.addNetwork(cyNetwork);
+
 					//if a new root network was created, register that one as well
 //					CyRootNetwork cyRootNetwork = cyServices.rootNetworkManager.getRootNetwork(cyNetwork);
 //					if(cyRootNetwork != null) {
@@ -113,17 +112,53 @@ class NetworkAndViewTask extends AbstractTask {
 //						taskMonitor.setStatusMessage("Registered the root network");
 //					}
 					taskMonitor.setStatusMessage("Registered the network");
+
 					// create and register the view
-					final CyNetworkView view = reader.buildCyNetworkView(cyNetwork);
-					cyServices.networkViewManager.addNetworkView(view);
+					final CyNetworkView view =  reader.buildCyNetworkView(cyNetwork);
+					applyStyleAndLayout(view);
+
 					taskMonitor.setStatusMessage("Created and registered the view");
 				}
-			});	
-
+			});
 		} finally {
 			taskMonitor.setStatusMessage("Done");
 			taskMonitor.setProgress(1.0);
 		}
 	}
-	
+
+
+	//sets a custom style and layout for just created view
+	private void applyStyleAndLayout(final CyNetworkView view) {
+		// apply the PC style and layout to a BioPAX-origin view;
+		final CyNetwork cyNetwork = view.getModel();
+
+		VisualStyle style = null;
+		String kind = cyNetwork.getRow(cyNetwork).get(BioPaxMapper.BIOPAX_NETWORK, String.class);
+		if (BiopaxVisualStyleUtil.BIO_PAX_VISUAL_STYLE.equals(kind))
+			style = CyPC.visualStyleUtil.getBioPaxVisualStyle();
+		else if (BiopaxVisualStyleUtil.BINARY_SIF_VISUAL_STYLE.equals(kind))
+			style = CyPC.visualStyleUtil.getBinarySifVisualStyle();
+
+		//apply style and layout
+		if(style != null) {
+			final VisualStyle vs = style;
+			//apply style and layout
+			SwingUtilities.invokeLater(new Runnable() {
+				public void run() {
+					// do layout
+					CyLayoutAlgorithm layout = CyPC.cyServices.layoutManager.getLayout("force-directed");
+					if (layout == null) {
+						layout = CyPC.cyServices.layoutManager.getDefaultLayout();
+						LOGGER.warn("'force-directed' layout not found; will use the default one.");
+					}
+					CyPC.cyServices.taskManager.execute(layout.createTaskIterator(view,
+							layout.getDefaultLayoutContext(), CyLayoutAlgorithm.ALL_NODE_VIEWS,""));
+
+					CyPC.cyServices.mappingManager.setVisualStyle(vs, view);
+					vs.apply(view);
+					view.updateView();
+				}
+			});
+		}
+	}
 }

@@ -1,25 +1,16 @@
 package org.pathwaycommons.cypath2.internal;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.Window;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Observer;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import cpath.client.CPathClient;
+import cpath.client.util.CPathException;
+import cpath.service.GraphType;
+import cpath.service.jaxb.SearchHit;
+import cpath.service.jaxb.SearchResponse;
+import org.cytoscape.io.webservice.NetworkImportWebServiceClient;
+import org.cytoscape.io.webservice.SearchWebServiceClient;
+import org.cytoscape.io.webservice.swing.AbstractWebServiceGUIClient;
+import org.cytoscape.work.TaskIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -30,19 +21,11 @@ import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-
-import org.cytoscape.io.webservice.NetworkImportWebServiceClient;
-import org.cytoscape.io.webservice.SearchWebServiceClient;
-import org.cytoscape.io.webservice.swing.AbstractWebServiceGUIClient;
-import org.cytoscape.work.TaskIterator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import cpath.client.CPathClient;
-import cpath.client.util.CPathException;
-import cpath.service.GraphType;
-import cpath.service.jaxb.SearchHit;
-import cpath.service.jaxb.SearchResponse;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * CyPC: cPath2/PC Web Service client integrated 
@@ -57,6 +40,7 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 	static CPathClient client; // shared stateless cPath2 client
 	static CyServices cyServices; //Cy3 services
 	static Options options = new Options(); //global query options/filters
+	static BiopaxVisualStyleUtil visualStyleUtil;
     
     static final Map<String,String> uriToOrganismNameMap = new HashMap<String, String>();
     static final Map<String,String> uriToDatasourceNameMap = new HashMap<String, String>();
@@ -100,6 +84,12 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
      * some initial data from the server.
      */
     public void init()  {
+
+		visualStyleUtil = new BiopaxVisualStyleUtil(
+				cyServices.visualStyleFactory, cyServices.mappingManager,
+				cyServices.discreteMappingFunctionFactory, cyServices.passthroughMappingFunctionFactory);
+		visualStyleUtil.init(); //important
+
     	// init datasources and organisms maps (in a separate thread)
 		cachedThreadPool.execute(new Runnable() {
 			@Override
@@ -142,7 +132,6 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 		final String[] ids = ((String)query).split("\\s+");
 		
 		return new TaskIterator(new NetworkAndViewTask(
-				cyServices,
 				client.createGraphQuery()
 					.kind(GraphType.NEIGHBORHOOD)
 					.direction(CPathClient.Direction.UNDIRECTED)
