@@ -48,7 +48,6 @@ public final class CyActivator extends AbstractCyActivator {
 		LOGGER.info("Creating PathwayCommons bundle activator...");
 	}
 
-
 	public void start(BundleContext bc) {
 		LOGGER.info("Starting PathwayCommons app...");
 
@@ -71,7 +70,7 @@ public final class CyActivator extends AbstractCyActivator {
 		CyNetworkManager cyNetworkManager = getService(bc,CyNetworkManager.class);
 		CyApplicationManager cyApplicationManager = getService(bc,CyApplicationManager.class);
 		CyNetworkViewManager cyNetworkViewManager = getService(bc,CyNetworkViewManager.class);
-		CyNetworkReaderManager cyNetworkReaderManager = getService(bc,CyNetworkReaderManager.class);
+//		CyNetworkReaderManager cyNetworkReaderManager = getService(bc,CyNetworkReaderManager.class);
 		CyNetworkNaming cyNetworkNaming = getService(bc,CyNetworkNaming.class);
 		CyNetworkFactory cyNetworkFactory = getService(bc,CyNetworkFactory.class);
 		CyLayoutAlgorithmManager cyLayoutAlgorithmManager = getService(bc,CyLayoutAlgorithmManager.class);
@@ -89,11 +88,27 @@ public final class CyActivator extends AbstractCyActivator {
 		StreamUtil streamUtil = getService(bc,StreamUtil.class);
 
 		// keep all the service references in one place -
-		CyPC.cyServices =  new CyServices(cySwingApplication, taskManager, openBrowser,
-				cyNetworkManager, cyApplicationManager, cyNetworkViewManager, cyNetworkReaderManager,
-				cyNetworkNaming, cyNetworkFactory, cyLayoutAlgorithmManager, undoSupport, visualMappingManager,
-				cyProperties, cyRootNetworkManager, unHideAllEdgesTaskFactory, cyNetworkViewFactory,
-				visualStyleFactory, discreteMappingFunctionFactory, passthroughMappingFunctionFactory, streamUtil);
+		CyPC.cyServices =  new CyServices(
+				cySwingApplication,
+				taskManager,
+				openBrowser,
+				cyNetworkManager,
+				cyApplicationManager,
+				cyNetworkViewManager,
+//				cyNetworkReaderManager,
+				cyNetworkNaming,
+				cyNetworkFactory,
+				cyLayoutAlgorithmManager,
+				undoSupport,
+				visualMappingManager,
+				cyProperties,
+				cyRootNetworkManager,
+				unHideAllEdgesTaskFactory,
+				cyNetworkViewFactory,
+				visualStyleFactory,
+				discreteMappingFunctionFactory,
+				passthroughMappingFunctionFactory,
+				streamUtil);
 
 	    // Create/init a cpath2 client instance
 		String cPath2Url = cyProperties.getProperties().getProperty(CyPC.PROP_CPATH2_SERVER_URL);

@@ -30,7 +30,7 @@ final class CyServices {
 	final CyNetworkManager networkManager;
 	final CyApplicationManager applicationManager;
 	final CyNetworkViewManager networkViewManager;
-	final CyNetworkReaderManager networkViewReaderManager;
+//	final CyNetworkReaderManager networkViewReaderManager;
 	final CyNetworkNaming naming;
 	final CyNetworkFactory networkFactory;
 	final CyLayoutAlgorithmManager layoutManager;
@@ -49,7 +49,7 @@ final class CyServices {
 			CyNetworkManager networkManager,
 			CyApplicationManager applicationManager,
 			CyNetworkViewManager networkViewManager,
-			CyNetworkReaderManager networkViewReaderManager,
+//			CyNetworkReaderManager networkViewReaderManager,
 			CyNetworkNaming naming, CyNetworkFactory networkFactory,
 			CyLayoutAlgorithmManager layoutManager, UndoSupport undoSupport,
 			VisualMappingManager mappingManager,
@@ -68,7 +68,7 @@ final class CyServices {
 		this.networkManager = networkManager;
 		this.applicationManager = applicationManager;
 		this.networkViewManager = networkViewManager;
-		this.networkViewReaderManager = networkViewReaderManager;
+//		this.networkViewReaderManager = networkViewReaderManager;
 		this.naming = naming;
 		this.networkFactory = networkFactory;
 		this.layoutManager = layoutManager;

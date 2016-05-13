@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import cpath.client.CPathClient.Direction;
 import org.cytoscape.model.CyColumn;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;
@@ -84,6 +85,7 @@ public class ExpandNetworkTask extends AbstractTask implements Task {
     			.kind(("NEIGHBORHOOD".equals(graphType)) ? GraphType.NEIGHBORHOOD : GraphType.PATHSBETWEEN)
     			.sources(values)
     			.datasourceFilter(CyPC.options.selectedDatasources())
+				.direction(("NEIGHBORHOOD".equals(graphType)) ? Direction.UNDIRECTED : null)
     			//.limit(1) TODO set limit via tunables (default is 1)
     			.organismFilter(CyPC.options.selectedOrganisms());
     	CyPC.cyServices.taskManager.execute(new TaskIterator(
