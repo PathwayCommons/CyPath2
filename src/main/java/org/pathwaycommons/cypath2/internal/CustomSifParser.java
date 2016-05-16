@@ -27,7 +27,7 @@ public class CustomSifParser {
         String[] parts = row.split("\\t", -1); //allow empty tokens
 
         if(parts==null || parts.length<6)
-            throw new BioPaxReaderError("Bad SIF entry: " + row);
+            throw new RuntimeException("Bad SIF entry: " + row);
 
         final CyNode source = createNode(parts[0]);
         final String interactionType = parts[1];

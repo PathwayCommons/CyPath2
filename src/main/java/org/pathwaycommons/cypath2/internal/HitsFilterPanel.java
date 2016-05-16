@@ -192,7 +192,7 @@ final class HitsFilterPanel extends JPanel implements Observer {
         if(organismFilterEnabled) {
         	organismFilterNode.removeAllChildren();
         	for (String key : hitsFilterModel.numHitsByOrganismMap.keySet()) {       	
-        		String name = CyPC.uriToOrganismNameMap.get(key);
+        		String name = App.uriToOrganismNameMap.get(key);
         		if(name == null) {name = key;}
         		CategoryCount categoryCount = new CategoryCount(name, hitsFilterModel.numHitsByOrganismMap.get(key));
         		CheckNode organismNode = new CheckNode(categoryCount, false, true);
@@ -203,7 +203,7 @@ final class HitsFilterPanel extends JPanel implements Observer {
         if(datasourceFilterEnabled) {
         	dataSourceFilterNode.removeAllChildren();
         	for (String key : hitsFilterModel.numHitsByDatasourceMap.keySet()) {
-        		String name = CyPC.uriToDatasourceNameMap.get(key);
+        		String name = App.uriToDatasourceNameMap.get(key);
         		if(name == null) 
         			name = key; 
         		CategoryCount categoryCount = new CategoryCount(name, hitsFilterModel.numHitsByDatasourceMap.get(key));
@@ -366,7 +366,7 @@ final class HitsFilterPanel extends JPanel implements Observer {
 				if (!record.getDataSource().isEmpty()) 
 				{
 					for(String ds: record.getDataSource()) {
-						if (dataSourceSet.contains(CyPC.uriToDatasourceNameMap.get(ds)) 
+						if (dataSourceSet.contains(App.uriToDatasourceNameMap.get(ds))
 							|| dataSourceSet.contains(ds)) 
 						{
 							passedList.add(record);
@@ -395,7 +395,7 @@ final class HitsFilterPanel extends JPanel implements Observer {
 				if (!record.getOrganism().isEmpty()) 
 				{
 					for(String ds: record.getOrganism()) {
-						String name = CyPC.uriToOrganismNameMap.get(ds);
+						String name = App.uriToOrganismNameMap.get(ds);
 						if (organismsSet.contains(ds) || (name!=null && organismsSet.contains(name)))
 						{
 							passedList.add(record);

@@ -50,10 +50,10 @@ public class LegendPanel extends JPanel {
                 if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
                     String name = hyperlinkEvent.getDescription();
                     if (name.equalsIgnoreCase("filter")) {
-                        new EdgeFilterUi(CyPC.cyServices.applicationManager.getCurrentNetwork());
+                        new EdgeFilterUi(App.cyServices.applicationManager.getCurrentNetwork());
                     }
 					else {
-						CyPC.cyServices.openBrowser.openURL(hyperlinkEvent.getURL().toString());
+						App.cyServices.openBrowser.openURL(hyperlinkEvent.getURL().toString());
 					}
                 }
             }

@@ -81,14 +81,14 @@ public class ExpandNetworkTask extends AbstractTask implements Task {
 		
 		//execute, create a new network and view (if any data will be returned from the server)
 		taskMonitor.setStatusMessage("Executing " + graphType + " query (in Pathway Commons)");		
-		final CPathGraphQuery graphQ = CyPC.client.createGraphQuery()
+		final CPathGraphQuery graphQ = App.client.createGraphQuery()
     			.kind(("NEIGHBORHOOD".equals(graphType)) ? GraphType.NEIGHBORHOOD : GraphType.PATHSBETWEEN)
     			.sources(values)
-    			.datasourceFilter(CyPC.options.selectedDatasources())
+    			.datasourceFilter(App.options.selectedDatasources())
 				.direction(("NEIGHBORHOOD".equals(graphType)) ? Direction.UNDIRECTED : null)
     			//.limit(1) TODO set limit via tunables (default is 1)
-    			.organismFilter(CyPC.options.selectedOrganisms());
-    	CyPC.cyServices.taskManager.execute(new TaskIterator(
+    			.organismFilter(App.options.selectedOrganisms());
+    	App.cyServices.taskManager.execute(new TaskIterator(
     			new NetworkAndViewTask(graphQ, null)
         		));	
 		

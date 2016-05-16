@@ -24,7 +24,7 @@ import cpath.query.CPathGetQuery;
 import cpath.query.CPathGraphQuery;
 import cpath.service.GraphType;
 
-final class AdvancedQueryPanel extends JPanel {
+final class QueryPanel extends JPanel {
 	
 	GraphType graphType;
 	CPathClient.Direction direction;
@@ -32,7 +32,7 @@ final class AdvancedQueryPanel extends JPanel {
 	final JList list;
 	
 	
-	public AdvancedQueryPanel(JList list) {
+	public QueryPanel(JList list) {
 		this.list = list;
 		graphType = GraphType.NEIGHBORHOOD;
 		direction = Direction.UNDIRECTED;
@@ -52,7 +52,7 @@ final class AdvancedQueryPanel extends JPanel {
         
         //add radio buttons for different query types
     	final JPanel queryTypePanel = new JPanel();
-        queryTypePanel.setBorder(CyPC.createTitledBorder("Graph Query Type"));
+        queryTypePanel.setBorder(App.createTitledBorder("Graph Query Type"));
         queryTypePanel.setLayout(new GridBagLayout());   
         
         //create direction buttons in advance (to disable/enable)
@@ -155,7 +155,7 @@ final class AdvancedQueryPanel extends JPanel {
         
         // add direction, limit options and the 'go' button to the panel	        
     	JPanel directionPanel = new JPanel();
-    	directionPanel.setBorder(CyPC.createTitledBorder("Direction"));
+    	directionPanel.setBorder(App.createTitledBorder("Direction"));
     	directionPanel.setLayout(new GridBagLayout());
     	bg = new ButtonGroup();
 
@@ -233,21 +233,21 @@ final class AdvancedQueryPanel extends JPanel {
 	        	}
 	        	
 	        	if(graphType == null) {
-	        		final CPathGetQuery getQ = CyPC.client
+	        		final CPathGetQuery getQ = App.client
 	        				.createGetQuery().sources(srcs);
-	        		CyPC.cyServices.taskManager.execute(new TaskIterator(
+	        		App.cyServices.taskManager.execute(new TaskIterator(
 	        			new NetworkAndViewTask(getQ, null)
 	        			));
 	        	} else {
-	        		final CPathGraphQuery graphQ = CyPC.client
+	        		final CPathGraphQuery graphQ = App.client
 	        			.createGraphQuery()
 	        			.kind(graphType)
 	        			.sources(srcs).targets(tgts)
-	        			.datasourceFilter(CyPC.options.selectedDatasources())
+	        			.datasourceFilter(App.options.selectedDatasources())
 	        			.direction(direction)
 	        			//.limit(1) TODO set limit (optional; default is 1)
-	        			.organismFilter(CyPC.options.selectedOrganisms());
-	        		CyPC.cyServices.taskManager.execute(new TaskIterator(
+	        			.organismFilter(App.options.selectedOrganisms());
+	        		App.cyServices.taskManager.execute(new TaskIterator(
 	        			new NetworkAndViewTask(graphQ, null)
 		        		));
 	        	}
@@ -283,14 +283,14 @@ final class AdvancedQueryPanel extends JPanel {
 		listPane.setToolTipText("The list of URIs (of BioPAX elements) from search results " +
 	    	"or standard identifiers from the input field below to be used with a BioPAX graph query.");
         listPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        listPane.setBorder(CyPC.createTitledBorder("Select sources/targets from:"));
+        listPane.setBorder(App.createTitledBorder("Select sources/targets from:"));
         listPane.setPreferredSize(new Dimension(400, 400));
         listPane.setMinimumSize(new Dimension(400, 200));
         
 		// create the custom query field and examples label
 	  	final JTextField inputField = new JTextField(0);
 	    inputField.setBorder(BorderFactory.createCompoundBorder(
-	    		CyPC.createTitledBorder("Add more items by ID:"),//inputField.getBorder(),
+	    		App.createTitledBorder("Add more items by ID:"),//inputField.getBorder(),
 	    		new PulsatingBorder(inputField)));
 	    inputField.setAlignmentX(Component.LEFT_ALIGNMENT);
 	    inputField.setPreferredSize(new Dimension(400, 50));

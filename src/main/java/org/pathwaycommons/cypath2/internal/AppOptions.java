@@ -12,11 +12,11 @@ import org.cytoscape.util.swing.CheckBoxJList;
  * @author rodche
  *
  */
-final class Options {
+final class AppOptions {
 	final CheckBoxJList organismList;
 	final CheckBoxJList dataSourceList;
 	
-	public Options() {
+	public AppOptions() {
 		organismList = new CheckBoxJList();
 	    organismList.setToolTipText("Check to exclude entities not associated with at least one of selected organisms");
 	    organismList.setAlignmentX(Component.LEFT_ALIGNMENT);

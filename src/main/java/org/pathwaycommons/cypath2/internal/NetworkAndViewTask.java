@@ -103,7 +103,7 @@ class NetworkAndViewTask extends AbstractTask {
 							name = "Network from PathwayCommons (name is missing)";
 						Attributes.set(cyNetwork, cyNetwork, CyNetwork.NAME, name, String.class);
 					}				
-					CyPC.cyServices.networkManager.addNetwork(cyNetwork);
+					App.cyServices.networkManager.addNetwork(cyNetwork);
 
 					//if a new root network was created, register that one as well
 //					CyRootNetwork cyRootNetwork = cyServices.rootNetworkManager.getRootNetwork(cyNetwork);
@@ -135,9 +135,9 @@ class NetworkAndViewTask extends AbstractTask {
 		VisualStyle style = null;
 		String kind = cyNetwork.getRow(cyNetwork).get(BioPaxMapper.BIOPAX_NETWORK, String.class);
 		if (BiopaxVisualStyleUtil.BIO_PAX_VISUAL_STYLE.equals(kind))
-			style = CyPC.visualStyleUtil.getBioPaxVisualStyle();
+			style = App.visualStyleUtil.getBioPaxVisualStyle();
 		else if (BiopaxVisualStyleUtil.BINARY_SIF_VISUAL_STYLE.equals(kind))
-			style = CyPC.visualStyleUtil.getBinarySifVisualStyle();
+			style = App.visualStyleUtil.getBinarySifVisualStyle();
 
 		//apply style and layout
 		if(style != null) {
@@ -146,15 +146,15 @@ class NetworkAndViewTask extends AbstractTask {
 			SwingUtilities.invokeLater(new Runnable() {
 				public void run() {
 					// do layout
-					CyLayoutAlgorithm layout = CyPC.cyServices.layoutManager.getLayout("force-directed");
+					CyLayoutAlgorithm layout = App.cyServices.layoutManager.getLayout("force-directed");
 					if (layout == null) {
-						layout = CyPC.cyServices.layoutManager.getDefaultLayout();
+						layout = App.cyServices.layoutManager.getDefaultLayout();
 						LOGGER.warn("'force-directed' layout not found; will use the default one.");
 					}
-					CyPC.cyServices.taskManager.execute(layout.createTaskIterator(view,
+					App.cyServices.taskManager.execute(layout.createTaskIterator(view,
 							layout.getDefaultLayoutContext(), CyLayoutAlgorithm.ALL_NODE_VIEWS,""));
 
-					CyPC.cyServices.mappingManager.setVisualStyle(vs, view);
+					App.cyServices.mappingManager.setVisualStyle(vs, view);
 					vs.apply(view);
 					view.updateView();
 				}

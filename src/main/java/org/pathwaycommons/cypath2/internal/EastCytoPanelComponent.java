@@ -30,7 +30,7 @@ import org.cytoscape.view.model.CyNetworkView;
  * @author Ethan Cerami
  * @author Igor Rodchenkov
  */
-public class BioPaxCytoPanelComponent implements CytoPanelComponent, RowsSetListener {
+public class EastCytoPanelComponent implements CytoPanelComponent, RowsSetListener {
 
 	private final static String DETAILS_CARD = "DETAILS";
 	private final static String LEGEND_CARD = "LEGEND";
@@ -42,8 +42,8 @@ public class BioPaxCytoPanelComponent implements CytoPanelComponent, RowsSetList
 	private final JPanel component;
 
 
-	public BioPaxCytoPanelComponent() {
-		this.bpDetailsPanel = new BioPaxDetailsPanel(CyPC.cyServices.openBrowser);
+	public EastCytoPanelComponent() {
+		this.bpDetailsPanel = new BioPaxDetailsPanel(App.cyServices.openBrowser);
 		this.icon = new ImageIcon(getClass().getResource("read_obj.gif"));
 		this.component = new JPanel(new BorderLayout());
 		this.cards = new JPanel(new CardLayout());
@@ -96,7 +96,7 @@ public class BioPaxCytoPanelComponent implements CytoPanelComponent, RowsSetList
 	}
 
 	public void showDetails() {
-		if (BioPaxUtil.isFromBiopax(CyPC.cyServices.applicationManager.getCurrentNetwork())) {
+		if (BioPaxUtil.isFromBiopax(App.cyServices.applicationManager.getCurrentNetwork())) {
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
 				public void run() {
@@ -109,7 +109,7 @@ public class BioPaxCytoPanelComponent implements CytoPanelComponent, RowsSetList
 	}
 
 	public void showLegend() {
-		final CyNetwork network = CyPC.cyServices.applicationManager.getCurrentNetwork();
+		final CyNetwork network = App.cyServices.applicationManager.getCurrentNetwork();
 		if (network != null) {
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
@@ -139,7 +139,7 @@ public class BioPaxCytoPanelComponent implements CytoPanelComponent, RowsSetList
 	// RowsSetListener interface impl.
 	@Override
 	public void handleEvent(RowsSetEvent e) {
-		CyNetworkView view = CyPC.cyServices.applicationManager.getCurrentNetworkView();
+		CyNetworkView view = App.cyServices.applicationManager.getCurrentNetworkView();
 		if(view == null) return;
 
 		final CyNetwork network = view.getModel();
@@ -148,9 +148,9 @@ public class BioPaxCytoPanelComponent implements CytoPanelComponent, RowsSetList
 			if (!network.getDefaultNodeTable().equals(e.getSource()))
 				return;
 
-			CytoPanel eastCytoPanel = CyPC.cyServices.cySwingApplication.getCytoPanel(CytoPanelName.EAST);
+			CytoPanel eastCytoPanel = App.cyServices.cySwingApplication.getCytoPanel(CytoPanelName.EAST);
 			if(eastCytoPanel.getState() != CytoPanelState.DOCK)
-				CyPC.cyServices.cySwingApplication.getCytoPanel(CytoPanelName.EAST).setState(CytoPanelState.DOCK);
+				App.cyServices.cySwingApplication.getCytoPanel(CytoPanelName.EAST).setState(CytoPanelState.DOCK);
 
 			//east panel will display info about several nodes selected (not all)
 			final Collection<CyNode> selected = new ArrayList<CyNode>();

@@ -158,7 +158,7 @@ final class HitsModel extends Observable {
 		if (items != null && !items.isEmpty()) {
 			html.append("<h3>Data sources:</h3>");
 			for(String it : items) {
-				String name = CyPC.uriToDatasourceNameMap.get(it);
+				String name = App.uriToDatasourceNameMap.get(it);
 				name = (name == null || name.isEmpty()) ? it : name;
 				html.append(name).append("<br/>");
 			}
@@ -169,7 +169,7 @@ final class HitsModel extends Observable {
 		if (items != null && !items.isEmpty()) {
 			html.append("<h3>Organisms:</h3>");
 			for(String it : items) {
-				String name = CyPC.uriToOrganismNameMap.get(it);
+				String name = App.uriToOrganismNameMap.get(it);
 				name = (name == null || name.isEmpty()) ? it : name;
 				html.append(name).append("<br/>");
 			}
@@ -281,7 +281,7 @@ final class HitsModel extends Observable {
 	   		
         TraverseResponse res = null;
 		try {
-			res = CyPC.client.createTraverseQuery()
+			res = App.client.createTraverseQuery()
 				.propertyPath(path)
 				.sources(uris)
 				.result();

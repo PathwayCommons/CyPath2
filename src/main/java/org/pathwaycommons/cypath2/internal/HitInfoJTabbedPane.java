@@ -75,8 +75,8 @@ final class HitInfoJTabbedPane extends JTabbedPane {
                 if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
                 	//import/create a network (parent pathways) if the link is clicked
                		String uri = hyperlinkEvent.getURL().toString();
-               		final CPathGetQuery query = CyPC.client.createGetQuery().sources(Collections.singleton(uri));
-               		CyPC.cyServices.taskManager.execute(new TaskIterator(
+               		final CPathGetQuery query = App.client.createGetQuery().sources(Collections.singleton(uri));
+               		App.cyServices.taskManager.execute(new TaskIterator(
                    		new NetworkAndViewTask(query, current.toString())));
                 }
             }
@@ -125,7 +125,7 @@ final class HitInfoJTabbedPane extends JTabbedPane {
 		} else {
 			detailsTextPane.setText("");
 			//get/update info in another thread...
-			CyPC.cachedThreadPool.execute(new Runnable() {
+			App.cachedThreadPool.execute(new Runnable() {
 				@Override
 				public void run() {
 					try {
@@ -172,17 +172,17 @@ final class HitInfoJTabbedPane extends JTabbedPane {
                		if(!isProccess) {
         	        	// create new 'neighborhood' query for a physical entity or entity reference type hit;
 						// use global organism and datasource filters
-               			final CPathGraphQuery graphQuery = CyPC.client.createGraphQuery()
-               				.datasourceFilter(CyPC.options.selectedDatasources())
-               				.organismFilter(CyPC.options.selectedOrganisms())
+               			final CPathGraphQuery graphQuery = App.client.createGraphQuery()
+               				.datasourceFilter(App.options.selectedDatasources())
+               				.organismFilter(App.options.selectedOrganisms())
                				.sources(Collections.singleton(uri))
                				.kind(GraphType.NEIGHBORHOOD);
-               			CyPC.cyServices.taskManager.execute(new TaskIterator(
+               			App.cyServices.taskManager.execute(new TaskIterator(
                    			new NetworkAndViewTask(graphQuery, currentItem.toString())));
                		} else { // for a biological process (pathway or interaction), use '/get' command
-               			final CPathGetQuery getQuery = CyPC.client.createGetQuery()
+               			final CPathGetQuery getQuery = App.client.createGetQuery()
                				.sources(Collections.singleton(uri));
-               			CyPC.cyServices.taskManager.execute(new TaskIterator(
+               			App.cyServices.taskManager.execute(new TaskIterator(
                    			new NetworkAndViewTask(getQuery, currentItem.toString())));
                		}
                 }

@@ -21,7 +21,6 @@ import org.cytoscape.application.CyApplicationManager;
 import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.subnetwork.CyRootNetworkManager;
 import org.cytoscape.property.CyProperty;
-import org.cytoscape.io.read.CyNetworkReaderManager;
 import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
 
 import org.osgi.framework.BundleContext;
@@ -88,7 +87,7 @@ public final class CyActivator extends AbstractCyActivator {
 		StreamUtil streamUtil = getService(bc,StreamUtil.class);
 
 		// keep all the service references in one place -
-		CyPC.cyServices =  new CyServices(
+		App.cyServices =  new CyServices(
 				cySwingApplication,
 				taskManager,
 				openBrowser,
@@ -111,14 +110,14 @@ public final class CyActivator extends AbstractCyActivator {
 				streamUtil);
 
 	    // Create/init a cpath2 client instance
-		String cPath2Url = cyProperties.getProperties().getProperty(CyPC.PROP_CPATH2_SERVER_URL);
+		String cPath2Url = cyProperties.getProperties().getProperty(App.PROP_CPATH2_SERVER_URL);
 		if(cPath2Url != null && !cPath2Url.isEmpty())
-			CyPC.client = CPathClient.newInstance(cPath2Url); 
+			App.client = CPathClient.newInstance(cPath2Url);
 		else {
 			//the default cpath2 URL unless -DcPath2Url=<someURL> jvm option used
-			CyPC.client = CPathClient.newInstance(); 
+			App.client = CPathClient.newInstance();
 		}
-		cyProperties.getProperties().setProperty(CyPC.PROP_CPATH2_SERVER_URL, CyPC.client.getEndPointURL());
+		cyProperties.getProperties().setProperty(App.PROP_CPATH2_SERVER_URL, App.client.getEndPointURL());
 		
 	    // get the app description from the resource file
 	    final Properties props = new Properties();
@@ -127,8 +126,8 @@ public final class CyActivator extends AbstractCyActivator {
 	    } catch (IOException e) { throw new RuntimeException(e);}
 	    final String description = props.getProperty("cypath2.description");
 	    		
-	    // Create and initialize (build the GUI) new CyPC instance
-		CyPC app = new CyPC("Pathway Commons 2 (BioPAX L3)", description);
+	    // Create and initialize (build the GUI) new App instance
+		App app = new App("Pathway Commons 2 (BioPAX L3)", description);
 		app.init();
 		
 		// Create a new menu/toolbar item (CyAction) that opens the PathwayCommons GUI
@@ -170,7 +169,7 @@ public final class CyActivator extends AbstractCyActivator {
 		registerService(bc, expandNodeContextMenuFactory, NodeViewTaskFactory.class, nodeProp);
 
 		// Node selection listener (only for networks imported from BioPAX) and eastern cytopanel (results panel).
-		final BioPaxCytoPanelComponent cytoPanelComponent = new BioPaxCytoPanelComponent();
+		final EastCytoPanelComponent cytoPanelComponent = new EastCytoPanelComponent();
 		registerAllServices(bc, cytoPanelComponent, new Properties());
 
 		// Register: WebServiceClient, WebServiceGUIClient, SearchWebServiceClient,..

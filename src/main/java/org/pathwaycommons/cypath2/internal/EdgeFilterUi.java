@@ -100,7 +100,7 @@ public class EdgeFilterUi extends JDialog {
         panel.add(closeButton);
         contentPane.add(panel, BorderLayout.SOUTH);
 
-        this.setLocationRelativeTo(CyPC.cyServices.cySwingApplication.getJFrame());
+        this.setLocationRelativeTo(App.cyServices.cySwingApplication.getJFrame());
         this.pack();
         this.setVisible(true);
     }
@@ -142,7 +142,7 @@ public class EdgeFilterUi extends JDialog {
             }
 
             final CyNetworkView networkView =
-                    CyPC.cyServices.applicationManager.getCurrentNetworkView();
+                    App.cyServices.applicationManager.getCurrentNetworkView();
             //Un-hide all edges
             setVisibleEdges(cyNetwork.getEdgeList(), true, networkView);
             
@@ -150,7 +150,7 @@ public class EdgeFilterUi extends JDialog {
             setVisibleEdges(edgeList, false, networkView);
             
             //update view
-            CyPC.cyServices.mappingManager.getVisualStyle(networkView).apply(networkView);
+            App.cyServices.mappingManager.getVisualStyle(networkView).apply(networkView);
             networkView.updateView();
         }
                 

@@ -28,18 +28,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * CyPC: cPath2/PC Web Service client integrated 
+ * App: cPath2/PC Web Service client integrated
  * into the Cytoscape Web Services GUI Framework.
  */
-final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWebServiceClient, SearchWebServiceClient
+final class App extends AbstractWebServiceGUIClient implements NetworkImportWebServiceClient, SearchWebServiceClient
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CyPC.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
     
 	static final String PROP_CPATH2_SERVER_URL = "cypath2.server.url";
     
 	static CPathClient client; // shared stateless cPath2 client
 	static CyServices cyServices; //Cy3 services
-	static Options options = new Options(); //global query options/filters
+	static AppOptions options = new AppOptions(); //global query options/filters
 	static BiopaxVisualStyleUtil visualStyleUtil;
     
     static final Map<String,String> uriToOrganismNameMap = new HashMap<String, String>();
@@ -56,7 +56,7 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
      * @param displayName app display name
      * @param description app description
      */
-    public CyPC(String displayName, String description) 
+    public App(String displayName, String description)
     {    	   	
     	super(client.getEndPointURL(), displayName, description);
 		
@@ -110,7 +110,7 @@ final class CyPC extends AbstractWebServiceGUIClient implements NetworkImportWeb
 				// create the UI
 				final JTabbedPane tabbedPane = new JTabbedPane();
 				tabbedPane.add("Find and Get", createSearchQueryPanel());
-				tabbedPane.add("Graph Queries", new AdvancedQueryPanel(advQueryPanelItemsList));
+				tabbedPane.add("Graph Queries", new QueryPanel(advQueryPanelItemsList));
 				gui.setPreferredSize(new Dimension(800, 600));
 				gui.setLayout(new BorderLayout());
 				gui.add(tabbedPane, BorderLayout.CENTER);
