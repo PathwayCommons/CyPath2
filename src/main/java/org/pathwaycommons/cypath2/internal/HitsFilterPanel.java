@@ -151,13 +151,11 @@ final class HitsFilterPanel extends JPanel implements Observer {
 			DataSourceFilter dataSourceFilter = new DataSourceFilter(entityDataSourceSet);
 			chainedFilter.addFilter(dataSourceFilter);
 		}
-		
-		List<SearchHit> passedRecordList = chainedFilter
-        	.filter(hitsFilterModel.getSearchResponse().getSearchHit());
-			
+
    		DefaultListModel listModel = (DefaultListModel) hitsJList.getModel();
    		listModel.clear();
-		if (passedRecordList.size() > 0) {
+		List<SearchHit> passedRecordList = chainedFilter.filter(hitsFilterModel.getHits());
+		if (!passedRecordList.isEmpty()) {
 			for (SearchHit searchHit : passedRecordList) {
 				listModel.addElement(searchHit);
 			}

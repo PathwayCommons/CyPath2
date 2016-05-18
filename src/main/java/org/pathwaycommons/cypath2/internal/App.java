@@ -295,9 +295,9 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 	        						// update hits model (make summaries, notify observers!)
 	        						hitsModel.update(searchResponse);
 	        						info.setText("Matches:  " + searchResponse.getNumHits() 
-	        							+ "; retrieved: " + searchResponse.getSearchHit().size()
-	        							+ " (page #" + searchResponse.getPageNo() + ")");
+	        							+ "; retrieved top " + searchResponse.getSearchHit().size());
 	        					} else {
+									hitsModel.update(new SearchResponse()); //clear
 	        						info.setText("No Matches Found");
 		    						SwingUtilities.invokeLater(new Runnable() {
 										@Override

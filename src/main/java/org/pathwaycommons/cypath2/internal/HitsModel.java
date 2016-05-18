@@ -1,11 +1,6 @@
 package org.pathwaycommons.cypath2.internal;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
 import org.cytoscape.work.TaskManager;
@@ -22,20 +17,18 @@ import cpath.service.jaxb.TraverseResponse;
 
 /**
  * Contains information regarding the currently selected set of interaction bundles.
- *
  */
 final class HitsModel extends Observable {
 
     private SearchResponse response;
     
     final String title;
-    
-    final Map<String, Integer> numHitsByTypeMap =  new ConcurrentSkipListMap<String, Integer>();
-    final Map<String, Integer> numHitsByOrganismMap = new ConcurrentSkipListMap<String, Integer>();
-    final Map<String, Integer> numHitsByDatasourceMap = new ConcurrentSkipListMap<String, Integer>();       
-    final Map<String, String> hitsSummaryMap = new ConcurrentHashMap<String, String>();
-    final Map<String, Collection<NvpListItem>> hitsPathwaysMap = new ConcurrentHashMap<String, Collection<NvpListItem>>();
-    final Map<String, String> hitsDetailsMap = new ConcurrentHashMap<String, String>();
+    final Map<String, Integer> numHitsByTypeMap =  new HashMap<String, Integer>();
+	final Map<String, Integer> numHitsByOrganismMap = new HashMap<String, Integer>();
+	final Map<String, Integer> numHitsByDatasourceMap = new HashMap<String, Integer>();
+	final Map<String, String> hitsSummaryMap = new HashMap<String, String>();
+	final Map<String, Collection<NvpListItem>> hitsPathwaysMap = new HashMap<String, Collection<NvpListItem>>();
+	final Map<String, String> hitsDetailsMap = new HashMap<String, String>();
 
     // full-text search query parameter
     volatile String searchFor = "Interaction"; 
@@ -49,15 +42,15 @@ final class HitsModel extends Observable {
     {
 		this.title = title;
 	}
-    
-    public int getNumRecords() {
-        if (response != null && !response.isEmpty()) {
+
+	//no. hits, if any
+    int getNumRecords() {
+        if (response != null) {
             return response.getSearchHit().size();
         } else {
-            return -1;
+            return 0;
         }
     }
-
     
     /**
      * Refresh the model and notify all observers INFO_ABOUT it's changed.
@@ -65,45 +58,28 @@ final class HitsModel extends Observable {
      * @param response
      */
 	public synchronized void update(final SearchResponse response) {
+		//clear current counts
+		this.numHitsByTypeMap.clear();
+		this.numHitsByOrganismMap.clear();
+		this.numHitsByDatasourceMap.clear();
+		this.hitsSummaryMap.clear();
+		this.hitsPathwaysMap.clear();
+		this.hitsDetailsMap.clear();
+
+		// reset to use the new search results
 		this.response = response;
-		
-		numHitsByTypeMap.clear();
-		numHitsByOrganismMap.clear();
-		numHitsByDatasourceMap.clear();
-		hitsSummaryMap.clear();
-		hitsPathwaysMap.clear();
-		hitsDetailsMap.clear();
-		
-		// get and save the summary info for all hits at once
-		ExecutorService exec = Executors.newFixedThreadPool(10);
-		for (final SearchHit record : response.getSearchHit())
+
+		// get and save the summary info for each hit
+		for (final SearchHit hit : getHits())
 		{
-			exec.submit(new Runnable() {		
-				@Override
-				public void run() {
-					summarize(record);
-				}
-			});
+			summarize(hit);
 		}
 
-		exec.shutdown(); //prevents new jobs
-		try {
-			exec.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
-		} catch (InterruptedException e) {
-			throw new RuntimeException("Interrupted unexpectedly!");
-		}
-		
 		// notify observers (panels and jlists)
 		HitsModel.this.setChanged();
 		HitsModel.this.notifyObservers(response);
 	}
 
-    
-    public SearchResponse getSearchResponse() {
-        return response;
-    }
-
-    
 	private void summarize(final SearchHit hit) {       
 		// do catalog (by type, organism, source) -
 		String type = hit.getBiopaxClass();
@@ -140,8 +116,7 @@ final class HitsModel extends Observable {
 			.append("<h2><a href='").append(uri).append("'>Click to extract and import this network")
 			.append("</a></h2>")
 			.append("<h3>BioPAX Object:</h3>")
-			.append("<strong>Type:</strong> <em>").append(hit.getBiopaxClass()).append("</em><br/>")
-			.append("<strong>URI :</strong> ").append(uri).append("<br/>");		
+			.append("<strong>Type:</strong> <em>").append(hit.getBiopaxClass()).append("</em><br/>");
 		
 		if (hit.getName() != null)
 			html.append("<strong>Name:</strong> ").append(hit.getName()).append("<br/>");
@@ -174,21 +149,20 @@ final class HitsModel extends Observable {
 				html.append(name).append("<br/>");
 			}
 		}
-		
-		html.append("</html>");		
+
+		html.append("<strong>URI :</strong> ").append(uri);
+		html.append("</html>");
+
 		hitsSummaryMap.put(uri, html.toString());		
 	}
 
 
-	/**
+	/*
 	 * Gets additional parent pathways' and members'
 	 * names and counts from the server, etc., and store/cache 
 	 * in a temporary map to re-use in the future.
-	 * 
-	 * @param hit
-	 * @return content - details about the search hit
 	 */
-	public String fetchDetails(final SearchHit hit) {
+	String fetchDetails(final SearchHit hit) {
         	
 		// get/create and show hit's summary
 		final String uri = hit.getUri();
@@ -293,4 +267,8 @@ final class HitsModel extends Observable {
        	return res;
 	}
 
+	//Gets current search hits list
+	List<SearchHit> getHits() {
+		return (response != null) ? response.getSearchHit() : Collections.emptyList();
+	}
 }
