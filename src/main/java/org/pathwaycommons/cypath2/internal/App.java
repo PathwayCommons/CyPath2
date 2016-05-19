@@ -249,21 +249,29 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 	    info.setFont(new Font(info.getFont().getFamily(), info.getFont().getStyle(), info.getFont().getSize()+1));
 	    info.setForeground(Color.BLUE);
 
-	    //BioPAX sub-class combo-box ('type' filter values)
-	    final JComboBox bpTypeComboBox = new JComboBox(
-	    	new NvpListItem[] {
-				new NvpListItem("Top Pathways",""), //this one is treated specially
-	    		new NvpListItem("Pathways","Pathway"),
-	    		new NvpListItem("Interactions (all types)", "Interaction"),
-	    		new NvpListItem("Participants", "EntityReference")
-	    	}
-	    );
-	    bpTypeComboBox.setSelectedIndex(0); //default value: Top Pathways
-	    bpTypeComboBox.setEditable(false);
-		bpTypeComboBox.setPreferredSize(new Dimension(200,100));
-
-	    // create the search button and action
+	    // create the search hits model
 		final HitsModel hitsModel = new HitsModel("Search Hits", cyServices.taskManager);
+		// search hits list
+		final JList resList = new ToolTipsSearchHitsJList();
+		// register the JList as model's observer
+		hitsModel.addObserver((Observer) resList);
+
+		final JScrollPane hitListScrollPane = new JScrollPane(resList);
+		hitListScrollPane.setBorder(createTitledBorder("Result"));
+
+		//BioPAX sub-class combo-box ('type' filter values)
+		final JComboBox bpTypeComboBox = new JComboBox(
+				new NvpListItem[] {
+						new NvpListItem("Top Pathways",""), //this one is treated specially
+						new NvpListItem("Pathways","Pathway"),
+						new NvpListItem("Interactions (all types)", "Interaction"),
+						new NvpListItem("Participants", "EntityReference")
+				}
+		);
+		bpTypeComboBox.setSelectedIndex(0); //default value: Top Pathways
+		bpTypeComboBox.setEditable(false);
+
+		// Create the search button and action
 		final JButton searchButton = new JButton("Search");
 	    searchButton.setToolTipText("Full-Text Search");
 	    searchButton.addActionListener(new ActionListener() {
@@ -299,9 +307,29 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 
 								// update hits model (make summaries, notify observers!)
 								hitsModel.update(searchResponse);
-								info.setText("Matches:  " + searchResponse.getNumHits()
-										+ "; retrieved top " + searchResponse.getSearchHit().size());
+								String numHitsMsg = "Total hits:  " + searchResponse.getNumHits();
+								int n = searchResponse.getSearchHit().size();
+								if(searchResponse.getNumHits() > n) {
+									//TODO: pagination - 'prev','next' buttons; store current pageNo in hitsModel)
+									int p = searchResponse.getPageNo();
+									int npp = searchResponse.getMaxHitsPerPage();
+									numHitsMsg += String.format(" (top %d..%d are shown)", p*npp, p*npp+n);
+								}
+								info.setText(numHitsMsg);
 
+								//set the title for the results list pane
+								if(hitsModel.searchFor.equalsIgnoreCase("EntityReference")) {
+									hitListScrollPane.setBorder(createTitledBorder(
+										"Matching participants (double-click to add to Graph Queries)"));
+								}
+								else if (hitsModel.searchFor.isEmpty()){
+									hitListScrollPane.setBorder(createTitledBorder(
+										"Matching top (root) pathways"));
+								}
+								else {
+									hitListScrollPane.setBorder(createTitledBorder(
+										"Matching " + hitsModel.searchFor.toLowerCase() + "s"));
+								}
 							} catch (Throwable e) {
 								// can fail due to a proxy returned wrong response (500 instead of PC's 460)
 								// (using Throwable helps catch unresolved transitive dependency, etc., exceptions)
@@ -336,8 +364,7 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 		final HitInfoJTabbedPane currentHitInfoPane = new HitInfoJTabbedPane(hitsModel);
 		currentHitInfoPane.setPreferredSize(new Dimension(300, 200));
 
-        // search hits list
-        final JList resList = new ToolTipsSearchHitsJList();
+		//complete the results (hits) list initialization
         resList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         resList.setPrototypeCellValue("12345678901234567890");
         // define a list item selection listener which updates the details panel, etc..
@@ -370,13 +397,8 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 					}
 				}
 			}
-		});  
-	        
-        // register the JList as model's observer
-        hitsModel.addObserver((Observer) resList);
+		});
 
-        final JScrollPane hitListScrollPane = new JScrollPane(resList);
-        hitListScrollPane.setBorder(createTitledBorder("Double-click to pick (URI) for Graph Queries"));
         // make (north) tabs
         final JSplitPane vSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, hitListScrollPane, currentHitInfoPane);
         vSplit.setDividerLocation(-1);
@@ -387,7 +409,7 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 		// and add it as an Observer for the hits model (the Observable)
 		hitsModel.addObserver(filterPanel);
 
-        //  Create the Split Pane
+        //  Create the search hits view split Pane
         JSplitPane hSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, filterPanel, vSplit);
         hSplit.setDividerLocation(-1);
         hSplit.setResizeWeight(0.33f);
@@ -396,7 +418,8 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 		// query fields and examples
 		Box queryBox = Box.createVerticalBox();
 		bpTypeComboBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-		bpTypeComboBox.setMaximumSize(new Dimension(200,50));
+		bpTypeComboBox.setPreferredSize(new Dimension(250,30));
+		bpTypeComboBox.setMaximumSize(new Dimension(400,30));
 		queryBox.add(bpTypeComboBox);
 		searchField.setAlignmentX(Component.LEFT_ALIGNMENT);
 		searchField.setMaximumSize(new Dimension(400,50));
@@ -405,10 +428,12 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 		queryBox.add(label);
 		searchButton.setAlignmentX(Component.LEFT_ALIGNMENT);
 		queryBox.add(searchButton);
-		queryBox.setPreferredSize(new Dimension(200,300));
+		queryBox.setPreferredSize(new Dimension(300,300));
 		//query fields and global filters:
 		JSplitPane queryAndFilters = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, queryBox, createOptionsPane());
 		queryAndFilters.setAlignmentX(Component.LEFT_ALIGNMENT);
+		queryAndFilters.setDividerLocation(-1);
+		queryAndFilters.setResizeWeight(0.33f);
 
 		//info and results parts:
 		final Box results = Box.createVerticalBox();

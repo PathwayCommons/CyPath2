@@ -60,6 +60,12 @@ class NetworkAndViewTask extends AbstractTask {
 	    			data = cPathQuery.stringResult(null); //default format is BioPAX
 	    		} catch (CPathException e) {
 	    			LOGGER.warn("cPath2 query failed", e);
+					SwingUtilities.invokeLater(new Runnable() {
+						@Override
+						public void run() {
+							JOptionPane.showMessageDialog(null, "No results");
+						}
+					});
 	    		}
 	    	}
 	    	
