@@ -52,7 +52,7 @@ final class HitsFilterPanel extends JPanel implements Observer {
         rootNode = new CheckNode("All");
         tree = new JTreeWithCheckNodes(rootNode);
         tree.setOpaque(false);
-        filterTreePanel = new CollapsablePanel("Filter the hits");
+        filterTreePanel = new CollapsablePanel("Show/hide hits (filter)");
         filterTreePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         filterTreePanel.getContentPane().add(tree);
 
@@ -145,7 +145,7 @@ final class HitsFilterPanel extends JPanel implements Observer {
 			}
 		}
 
-//		filterTreePanel.repaint();
+		filterTreePanel.repaint();
 	}
 
 	
@@ -165,9 +165,9 @@ final class HitsFilterPanel extends JPanel implements Observer {
 		filterTreePanel.setVisible(false);
 		tree.setModel(null);
 		rootNode.removeAllChildren();
-		organismFilterNode.removeAllChildren();
-		dataSourceFilterNode.removeAllChildren();
-		typeFilterNode.removeAllChildren();
+		organismFilterNode = null;
+		dataSourceFilterNode = null;
+		typeFilterNode = null;
 		tree.setModel(new DefaultTreeModel(rootNode));
 
 		if (model.getNumRecords() == 0) {
