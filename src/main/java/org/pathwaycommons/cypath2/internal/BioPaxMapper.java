@@ -11,6 +11,7 @@ import org.biopax.paxtools.model.Model;
 import org.biopax.paxtools.model.level3.*;
 import org.biopax.paxtools.model.level3.Process;
 import org.biopax.paxtools.pattern.miner.*;
+import org.biopax.paxtools.pattern.util.Blacklist;
 import org.biopax.paxtools.util.ClassFilterSet;
 import org.biopax.paxtools.util.Filter;
 import org.cytoscape.model.*;
@@ -1039,6 +1040,8 @@ public class BioPaxMapper {
 
 		//convert to binary interactions
 		SIFSearcher sifSearcher = new SIFSearcher(new SimpleIDFetcher(), sifTypes);
+		//use the PC2 blacklist of ubiquitous small molecules
+		sifSearcher.setBlacklist(App.blacklist);
 		Set<SIFInteraction> binaryInts = sifSearcher.searchSIF(m);
 		// write interactions and some of their attributes (publications, datasources, pathways)
 		SIFToText stt = new CustomFormat(

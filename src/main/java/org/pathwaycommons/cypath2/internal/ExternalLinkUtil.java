@@ -234,7 +234,7 @@ public class ExternalLinkUtil {
 
 		//  Pub Med
 		String url = "http://www.ncbi.nlm.nih.gov/entrez/"
-		             + "query.fcgi?cmd=Retrieve&db=pubmed&dopt=Abstract" + "&list_uids=";
+				+ "query.fcgi?cmd=Retrieve&db=pubmed&dopt=Abstract" + "&list_uids=";
 		dbMap.put("PUBMED", url);
 		dbMap.put("PMID", url);
 
@@ -243,13 +243,13 @@ public class ExternalLinkUtil {
         dbMap.put ("HPRD", url);
 
         //  UniProt
-		url = "http://www.pir.uniprot.org/cgi-bin/upEntry?id=";
-
+		url = "http://www.uniprot.org/uniprot/"; //"http://www.pir.uniprot.org/cgi-bin/upEntry?id=";
 		HashMap temp = new HashMap();
 		temp.put("UNIPROT", url);
 		temp.put("SWISSPROT", url);
 		temp.put("SWP", url);
 		temp.put("SWISS-PROT", url);
+		temp.put("UNIPROT KNOWLEDGEBASE", url);
 		dbMap.putAll(temp);
 		addIHOPEntries(temp, UNIPROT_AC);
 
@@ -258,8 +258,7 @@ public class ExternalLinkUtil {
 		dbMap.put("GO", url);
 
 		//  Reactome
-		url = "http://reactome.org/cgi-bin/eventbrowser?DB=gk_current&ID=";
-//		dbMap.put("REACTOME", url);
+		url = "http://www.reactome.org/PathwayBrowser/#";//"http://reactome.org/cgi-bin/eventbrowser?DB=gk_current&ID=";
 		dbMap.put("REACTOME DATABASE ID", url);
 		url = "http://www.reactome.org/cgi-bin/eventbrowser_st_id?FROM_REACTOME=1&amp;ST_ID=";
 		dbMap.put("REACTOME", url);
@@ -286,10 +285,12 @@ public class ExternalLinkUtil {
 		url = "http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=gene&" + "cmd=search&term=";
 		temp = new HashMap();
         temp.put("ENTREZGENE", url);
+		temp.put("ENTREZ GENE", url);
         temp.put("ENTREZ_GENE", url);
 		temp.put("LOCUS_LINK", url);
 		temp.put("LOCUSLINK", url);
 		temp.put("LOCUS-LINK", url);
+		temp.put("NCBI GENE", url);
 		dbMap.putAll(temp);
 		addIHOPEntries(temp, "NCBI_GENE__ID");
 
@@ -302,6 +303,29 @@ public class ExternalLinkUtil {
 		dbMap.put("GENBANK", url);
 		dbMap.put("ENTREZ_GI", url);
 		dbMap.put("GI", url);
+
+		//HGNC Symbol
+		url = "http://www.genenames.org/cgi-bin/gene_symbol_report?match=";
+		dbMap.put("HGNC SYMBOL", url);
+		//HGNC ID
+		url = "http://www.genenames.org/cgi-bin/gene_symbol_report?hgnc_id=";
+		dbMap.put("HGNC", url);
+
+		//Ensembl
+		url = "http://www.ensembl.org/id/";
+		dbMap.put("ENSEMBL", url);
+
+		//ChEBI
+		url = "http://www.ebi.ac.uk/chebi/searchId.do?chebiId=";
+		dbMap.put("CHEBI", url);
+
+		//INCHIKEY
+		url = "http://www.chemspider.com/inchikey=";
+		dbMap.put("INCHIKEY", url);
+
+		//ChEMBL
+		url = "https://www.ebi.ac.uk/chembl/compound/inspect/";
+		dbMap.put("CHEMBL", url);
 	}
 
 	private static void addIHOPEntries(HashMap map, String iHopCode) {

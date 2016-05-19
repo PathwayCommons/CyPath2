@@ -144,7 +144,17 @@ public class BioPaxReaderTask extends AbstractTask implements CyNetworkReader {
 		
 		// init the SIF rules/patterns list
 		sifSelection = new ListMultipleSelection<SIFType>(SIFEnum.values());
-		sifSelection.setSelectedValues(sifSelection.getPossibleValues());
+		List<SIFType> values = sifSelection.getPossibleValues();
+		//remove sif rules/types/patterns that we don't want to apply by default
+		for(SIFType item : sifSelection.getPossibleValues()) {
+			if(item == SIFEnum.NEIGHBOR_OF
+				|| item == SIFEnum.INTERACTS_WITH
+					|| item == SIFEnum.REACTS_WITH)
+			{
+				values.remove(item);
+			}
+		}
+		sifSelection.setSelectedValues(values);
 
 		// initialize renderer list
 		final List<NetworkViewRenderer> renderers = new ArrayList<>();

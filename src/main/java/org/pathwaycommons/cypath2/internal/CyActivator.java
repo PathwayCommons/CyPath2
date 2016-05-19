@@ -155,7 +155,7 @@ public final class CyActivator extends AbstractCyActivator {
 		showAboutDialogActionProps.put(IN_TOOL_BAR,"false");
 		showAboutDialogActionProps.put(IN_MENU_BAR,"true");
 		ShowAboutDialogAction showAboutDialogAction =
-				new ShowAboutDialogAction(showAboutDialogActionProps, "PathwayCommons app", description);
+				new ShowAboutDialogAction(showAboutDialogActionProps, "Pathway Commons App (CyPath2)", description);
 		// register the service
 		registerService(bc, showAboutDialogAction, CyAction.class, new Properties());
 		

@@ -1,7 +1,6 @@
 package org.pathwaycommons.cypath2.internal;
 
 import java.awt.Component;
-import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -24,23 +23,24 @@ import cpath.service.jaxb.SearchHit;
 
 final class HitsFilterPanel extends JPanel implements Observer {
 	private static final long serialVersionUID = 1L;
-    private final HitsModel hitsFilterModel;
     private final JList hitsJList;
     private final CheckNode rootNode;
-    private final CheckNode typeFilterNode;
-    private final CheckNode dataSourceFilterNode;
-    private final CheckNode organismFilterNode;
     private final JTreeWithCheckNodes tree;
     private final CollapsablePanel filterTreePanel;
-    private final boolean typeFilterEnabled;
-    private final boolean organismFilterEnabled;
-    private final boolean datasourceFilterEnabled;
 
+	private CheckNode typeFilterNode;
+	private CheckNode dataSourceFilterNode;
+	private CheckNode organismFilterNode;
 
-    public HitsFilterPanel(final JList hitsJList, final HitsModel hitsModel, 
-		boolean typeFilterEnabled, boolean organismFilterEnabled, boolean datasourceFilterEnabled) 
+    boolean typeFilterEnabled;
+    boolean organismFilterEnabled;
+    boolean datasourceFilterEnabled;
+
+    public HitsFilterPanel(final JList hitsJList,
+						   boolean typeFilterEnabled,
+						   boolean organismFilterEnabled,
+						   boolean datasourceFilterEnabled)
 	{
-        this.hitsFilterModel = hitsModel;
         this.hitsJList = hitsJList;
         this.typeFilterEnabled = typeFilterEnabled;
         this.organismFilterEnabled = organismFilterEnabled;
@@ -50,35 +50,17 @@ final class HitsFilterPanel extends JPanel implements Observer {
         
         // create an empty filter tree (barebone)
         rootNode = new CheckNode("All");
-        
-        if(typeFilterEnabled) {
-        	typeFilterNode = new CheckNode("BioPAX Type");
-        	rootNode.add(typeFilterNode);
-		} else typeFilterNode = null;
-        
-        if(organismFilterEnabled) {
-        	organismFilterNode = new CheckNode("Organism");
-        	rootNode.add(organismFilterNode);
-        } else organismFilterNode = null;
-        
-        if(datasourceFilterEnabled) {
-        	dataSourceFilterNode = new CheckNode("Datasource");
-        	rootNode.add(dataSourceFilterNode);
-        } else dataSourceFilterNode = null;
-        
         tree = new JTreeWithCheckNodes(rootNode);
         tree.setOpaque(false);
-        filterTreePanel = new CollapsablePanel("Filter results");
+        filterTreePanel = new CollapsablePanel("Filter the hits");
         filterTreePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         filterTreePanel.getContentPane().add(tree);
 
         JScrollPane scrollPane = new JScrollPane(filterTreePanel);
         add(scrollPane);
-        
-        hitsFilterModel.addObserver(this);
     }
 
-	
+
     /**
      * Expands all Nodes.
      */
@@ -106,7 +88,7 @@ final class HitsFilterPanel extends JPanel implements Observer {
     }
 
     
-	private void applyFilter() {
+	private void applyFilter(final HitsModel model) {
 		
         ChainedFilter chainedFilter = new ChainedFilter();
         
@@ -116,7 +98,7 @@ final class HitsFilterPanel extends JPanel implements Observer {
         		CheckNode checkNode = (CheckNode) typeFilterNode.getChildAt(i);
         		CategoryCount categoryCount = (CategoryCount) checkNode.getUserObject();
         		String name = categoryCount.getCategoryName();
-        		if (checkNode.isSelected()) {
+        		if (checkNode.isSelected()) { // - checked
         			entityTypeSet.add(name);
         		}
 			}
@@ -154,122 +136,99 @@ final class HitsFilterPanel extends JPanel implements Observer {
 
    		DefaultListModel listModel = (DefaultListModel) hitsJList.getModel();
    		listModel.clear();
-		List<SearchHit> passedRecordList = chainedFilter.filter(hitsFilterModel.getHits());
+
+		List<SearchHit> passedRecordList = chainedFilter.filter(model.getHits());
+		//TODO update/fix counts
 		if (!passedRecordList.isEmpty()) {
 			for (SearchHit searchHit : passedRecordList) {
 				listModel.addElement(searchHit);
 			}
 		}
+
+//		filterTreePanel.repaint();
 	}
 
 	
 	/**
-	 * Updates the filters tree from a new search results.
+	 * Updates the filter tree view once the search result (hits) get updated.
 	 */
 	@Override
 	public void update(Observable o, Object arg) {
-				
-        if (hitsFilterModel.getNumRecords() == 0) {
-            filterTreePanel.setVisible(false);
-        } else {
-            filterTreePanel.setVisible(true);
-        }
-        
-        //  Remove all children
-        
+
+		if (!(o instanceof HitsModel)) {
+			return; //not applicable (or not implemented yet...)
+		}
+
+		final HitsModel model = (HitsModel) o;
+
+		//cleanup, reset
+		filterTreePanel.setVisible(false);
+		tree.setModel(null);
+		rootNode.removeAllChildren();
+		organismFilterNode.removeAllChildren();
+		dataSourceFilterNode.removeAllChildren();
+		typeFilterNode.removeAllChildren();
+		tree.setModel(new DefaultTreeModel(rootNode));
+
+		if (model.getNumRecords() == 0) {
+			return;
+		}
+
+		typeFilterEnabled = (
+			model.searchFor == null || model.searchFor.isEmpty()
+				|| model.searchFor.equalsIgnoreCase("Pathway")) ? false : true;
+
         if(typeFilterEnabled) {
-        	typeFilterNode.removeAllChildren();
-        	// Create HitsFilter Nodes
-        	for (String key : hitsFilterModel.numHitsByTypeMap.keySet()) {
-        		CategoryCount categoryCount = new CategoryCount(key, hitsFilterModel.numHitsByTypeMap.get(key));
+			typeFilterNode = new CheckNode("BioPAX Type");
+        	// Create BioPAX type filter nodes (leafs)
+        	for (String key : model.numHitsByTypeMap.keySet()) {
+        		CategoryCount categoryCount = new CategoryCount(key, model.numHitsByTypeMap.get(key));
         		CheckNode typeNode = new CheckNode(categoryCount, false, true);
         		typeFilterNode.add(typeNode);
         	}
-        }
+			rootNode.add(typeFilterNode);
+        } else typeFilterNode = null;
         
         if(organismFilterEnabled) {
-        	organismFilterNode.removeAllChildren();
-        	for (String key : hitsFilterModel.numHitsByOrganismMap.keySet()) {       	
+			organismFilterNode = new CheckNode("Organism");
+        	for (String key : model.numHitsByOrganismMap.keySet()) {
         		String name = App.uriToOrganismNameMap.get(key);
         		if(name == null) {name = key;}
-        		CategoryCount categoryCount = new CategoryCount(name, hitsFilterModel.numHitsByOrganismMap.get(key));
+        		CategoryCount categoryCount = new CategoryCount(name, model.numHitsByOrganismMap.get(key));
         		CheckNode organismNode = new CheckNode(categoryCount, false, true);
         		organismFilterNode.add(organismNode);
         	}
-        }
+			rootNode.add(organismFilterNode);
+        } else organismFilterNode = null;
         
         if(datasourceFilterEnabled) {
-        	dataSourceFilterNode.removeAllChildren();
-        	for (String key : hitsFilterModel.numHitsByDatasourceMap.keySet()) {
+			dataSourceFilterNode = new CheckNode("Datasource");
+			for (String key : model.numHitsByDatasourceMap.keySet()) {
         		String name = App.uriToDatasourceNameMap.get(key);
         		if(name == null) 
         			name = key; 
-        		CategoryCount categoryCount = new CategoryCount(name, hitsFilterModel.numHitsByDatasourceMap.get(key));
+        		CategoryCount categoryCount = new CategoryCount(name, model.numHitsByDatasourceMap.get(key));
         		CheckNode dataSourceNode = new CheckNode(categoryCount, false, true);
         		dataSourceFilterNode.add(dataSourceNode);
         	}
-        }
-            
-        DefaultTreeModel treeModel = new DefaultTreeModel(rootNode);
-        tree.setModel(treeModel);
-        treeModel.addTreeModelListener(new TreeModelListener() {
-            /**
-             * Respond to user check node selections.
-             *
-             * @param treeModelEvent Tree Model Event Object.
-             */
-            public void treeNodesChanged(TreeModelEvent treeModelEvent) {
-            	applyFilter();
-            	filterTreePanel.repaint();
-            }
+			rootNode.add(dataSourceFilterNode);
+        } else dataSourceFilterNode = null;
 
-            public void treeNodesInserted(TreeModelEvent treeModelEvent) {
-                //  no-op
-            }
-
-            public void treeNodesRemoved(TreeModelEvent treeModelEvent) {
-                //  no-op
-            }
-
-            public void treeStructureChanged(TreeModelEvent treeModelEvent) {
-                //  no-op
-            }
-        });
-        
         expandAllNodes();
-	}
-    
-    
-	class ToolTipsSearchHitsJList extends JList {
 
-		public ToolTipsSearchHitsJList() {
-			super(new DefaultListModel());
-		}
-
-		@Override
-		public String getToolTipText(MouseEvent mouseEvent) {
-			int index = locationToIndex(mouseEvent.getPoint());
-			if (-1 < index) {
-				SearchHit record = (SearchHit) getModel().getElementAt(index);
-				StringBuilder html = new StringBuilder();
-				html.append("<html><table cellpadding=10><tr><td>");
-				html.append("<B>").append(record.getBiopaxClass());
-				if (!record.getDataSource().isEmpty())
-					html.append("&nbsp;").append(
-							record.getDataSource().toString());
-				if (!record.getOrganism().isEmpty())
-					html.append("&nbsp;").append(
-							record.getOrganism().toString());
-				html.append("</B>&nbsp;");
-				html.append("</td></tr></table></html>");
-				return html.toString();
-			} else {
-				return null;
+		tree.getModel().addTreeModelListener(new TreeModelListener() {
+			// Respond to user check/unckeck nodes.
+			public void treeNodesChanged(TreeModelEvent treeModelEvent) {
+				applyFilter(model);
 			}
-		}
-	}
+			public void treeNodesInserted(TreeModelEvent treeModelEvent) {}
+			public void treeNodesRemoved(TreeModelEvent treeModelEvent) {}
+			public void treeStructureChanged(TreeModelEvent treeModelEvent) {}
+		});
 
-	
+		filterTreePanel.repaint();
+		filterTreePanel.setVisible(true);
+	}
 
 	/**
 	 * HitsFilter interface.

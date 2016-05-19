@@ -150,7 +150,7 @@ final class HitsModel extends Observable {
 			}
 		}
 
-		html.append("<strong>URI :</strong> ").append(uri);
+		html.append("<br/><strong>URI :</strong> ").append(uri);
 		html.append("</html>");
 
 		hitsSummaryMap.put(uri, html.toString());		

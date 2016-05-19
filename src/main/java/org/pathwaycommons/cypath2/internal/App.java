@@ -5,6 +5,7 @@ import cpath.client.util.CPathException;
 import cpath.service.GraphType;
 import cpath.service.jaxb.SearchHit;
 import cpath.service.jaxb.SearchResponse;
+import org.biopax.paxtools.pattern.util.Blacklist;
 import org.cytoscape.io.webservice.NetworkImportWebServiceClient;
 import org.cytoscape.io.webservice.SearchWebServiceClient;
 import org.cytoscape.io.webservice.swing.AbstractWebServiceGUIClient;
@@ -38,6 +39,7 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 	static final String PROP_CPATH2_SERVER_URL = "cypath2.server.url";
     
 	static CPathClient client; // shared stateless cPath2 client
+	static Blacklist blacklist; // for the SIF converter, to avoid ubiquitous small molecules
 	static CyServices cyServices; //Cy3 services
 	static AppOptions options = new AppOptions(); //global query options/filters
 	static BiopaxVisualStyleUtil visualStyleUtil;
@@ -89,6 +91,8 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 				cyServices.visualStyleFactory, cyServices.mappingManager,
 				cyServices.discreteMappingFunctionFactory, cyServices.passthroughMappingFunctionFactory);
 		visualStyleUtil.init(); //important
+
+		blacklist = new Blacklist(getClass().getResourceAsStream("/blacklist.txt"));
 
     	// init datasources and organisms maps (in a separate thread)
 		cachedThreadPool.execute(new Runnable() {
@@ -277,9 +281,10 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 					cachedThreadPool.execute(new Runnable() {
 	        			@Override
 	        			public void run() {
+							SearchResponse searchResponse = null;
 	        				try {
 	        					LOGGER.info("Executing search for " + keyword);
-	        					final SearchResponse searchResponse = (selIndex == 0)
+	        					searchResponse = (selIndex == 0)
 									? client.createTopPathwaysQuery() //search query for top pathways, with filters
 										.datasourceFilter(options.selectedDatasources())
 										.organismFilter(options.selectedOrganisms())
@@ -291,36 +296,27 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 	        							.organismFilter(options.selectedOrganisms())
 	        							.queryString(keyword)
 	        							.result();
-								if(searchResponse != null) {
-	        						// update hits model (make summaries, notify observers!)
-	        						hitsModel.update(searchResponse);
-	        						info.setText("Matches:  " + searchResponse.getNumHits() 
-	        							+ "; retrieved top " + searchResponse.getSearchHit().size());
-	        					} else {
-									hitsModel.update(new SearchResponse()); //clear
-	        						info.setText("No Matches Found");
-		    						SwingUtilities.invokeLater(new Runnable() {
+
+								// update hits model (make summaries, notify observers!)
+								hitsModel.update(searchResponse);
+								info.setText("Matches:  " + searchResponse.getNumHits()
+										+ "; retrieved top " + searchResponse.getSearchHit().size());
+
+							} catch (Throwable e) {
+								// can fail due to a proxy returned wrong response (500 instead of PC's 460)
+								// (using Throwable helps catch unresolved transitive dependency, etc., exceptions)
+								if(e instanceof CPathException) {
+									SwingUtilities.invokeLater(new Runnable() {
 										@Override
 										public void run() {
-											JOptionPane.showMessageDialog(gui, "No Matches Found");
+											JOptionPane.showMessageDialog(gui, "No results (try again)");
 										}
 									});
-	        					}
-	        				} catch (final Throwable e) {
-								//TODO: failure can be due to a proxy returned wrong response (500 instead of PC's 460)
-	        					// using Throwable helps catch unresolved runtime dependency issues!
-								SwingUtilities.invokeLater(new Runnable() {
-									@Override
-									public void run() {
-										JOptionPane.showMessageDialog(gui, "No results; try another query");
-									}
-								});
-								hitsModel.update(new SearchResponse()); //clear
-								if(!(e instanceof CPathException))
-									throw new RuntimeException("Bug", e);
-								else
-									throw new RuntimeException("No results / service unavailable; " + e.getMessage());
-	        				} finally {
+								} else {
+//									LOGGER.error("Search action failed; ", e);
+									throw new RuntimeException("Search action failed; ", e);
+								}
+							} finally {
 								SwingUtilities.invokeLater(new Runnable() {
 									@Override
 									public void run() {
@@ -329,8 +325,8 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 										((Window) searchButton.getRootPane().getParent()).toFront();
 									}
 								});
-	        				}
-	        			}
+							}
+						}
 	        		});
 	        	}
 	        }
@@ -345,19 +341,16 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
         resList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         resList.setPrototypeCellValue("12345678901234567890");
         // define a list item selection listener which updates the details panel, etc..
-        resList.addListSelectionListener(new ListSelectionListener() {
-            public void valueChanged(ListSelectionEvent listSelectionEvent) {
-                int selectedIndex = resList.getSelectedIndex();
-                //  ignore the "unselect" event.
-//                if (!listSelectionEvent.getValueIsAdjusting()) {
-                    if (selectedIndex >=0) {
-                    	SearchHit item = (SearchHit)resList.getModel().getElementAt(selectedIndex);
-                		// show current hit's summary
-                    	currentHitInfoPane.setCurrentItem(item);
-                    }
-//                }
-            }
-        });
+		resList.addListSelectionListener(new ListSelectionListener() {
+			public void valueChanged(ListSelectionEvent listSelectionEvent) {
+				int selectedIndex = resList.getSelectedIndex();
+				if (selectedIndex >=0) {
+					SearchHit item = (SearchHit)resList.getModel().getElementAt(selectedIndex);
+					// show current hit's summary
+					currentHitInfoPane.setCurrentItem(item);
+				}
+			}
+		});
         //double-click adds the item to the list for a adv. query
         resList.addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent e) {
@@ -389,8 +382,11 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
         vSplit.setDividerLocation(-1);
         vSplit.setResizeWeight(0.5f);
 
-        //  Create search results extra filtering panel
-        HitsFilterPanel filterPanel = new HitsFilterPanel(resList, hitsModel, true, false, true);
+        // Create search results extra filtering panel
+        HitsFilterPanel filterPanel = new HitsFilterPanel(resList, true, false, true);
+		// and add it as an Observer for the hits model (the Observable)
+		hitsModel.addObserver(filterPanel);
+
         //  Create the Split Pane
         JSplitPane hSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, filterPanel, vSplit);
         hSplit.setDividerLocation(-1);
