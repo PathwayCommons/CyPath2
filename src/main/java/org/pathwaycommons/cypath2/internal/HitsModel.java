@@ -23,9 +23,6 @@ final class HitsModel extends Observable {
     private SearchResponse response;
     
     final String title;
-    final Map<String, Integer> numHitsByTypeMap =  new HashMap<String, Integer>();
-	final Map<String, Integer> numHitsByOrganismMap = new HashMap<String, Integer>();
-	final Map<String, Integer> numHitsByDatasourceMap = new HashMap<String, Integer>();
 	final Map<String, String> hitsSummaryMap = new HashMap<String, String>();
 	final Map<String, Collection<NvpListItem>> hitsPathwaysMap = new HashMap<String, Collection<NvpListItem>>();
 	final Map<String, String> hitsDetailsMap = new HashMap<String, String>();
@@ -58,10 +55,6 @@ final class HitsModel extends Observable {
      * @param response
      */
 	public synchronized void update(final SearchResponse response) {
-		//clear current counts
-		this.numHitsByTypeMap.clear();
-		this.numHitsByOrganismMap.clear();
-		this.numHitsByDatasourceMap.clear();
 		this.hitsSummaryMap.clear();
 		this.hitsPathwaysMap.clear();
 		this.hitsDetailsMap.clear();
@@ -81,33 +74,6 @@ final class HitsModel extends Observable {
 	}
 
 	private void summarize(final SearchHit hit) {       
-		// do catalog (by type, organism, source) -
-		String type = hit.getBiopaxClass();
-        Integer count = numHitsByTypeMap.get(type);
-        if (count != null) {
-        	numHitsByTypeMap.put(type, count + 1);
-        } else {
-        	numHitsByTypeMap.put(type, 1);
-        }
-        
-        for(String org : hit.getOrganism()) {
-        	Integer i = numHitsByOrganismMap.get(org);
-            if (i != null) {
-                numHitsByOrganismMap.put(org, i + 1);
-            } else {
-            	numHitsByOrganismMap.put(org, 1);
-            }
-        }
-        
-        for(String ds : hit.getDataSource()) {
-        	Integer i = numHitsByDatasourceMap.get(ds);
-            if (i != null) {
-                numHitsByDatasourceMap.put(ds, i + 1);
-            } else {
-            	numHitsByDatasourceMap.put(ds, 1);
-            }
-        }
-				
 		// get/create and show hit's summary
 		final String uri = hit.getUri();
 		StringBuilder html = new StringBuilder();

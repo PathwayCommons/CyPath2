@@ -1,12 +1,7 @@
 package org.pathwaycommons.cypath2.internal;
 
 import java.awt.Component;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Observable;
-import java.util.Observer;
-import java.util.Set;
+import java.util.*;
 
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
@@ -32,19 +27,17 @@ final class HitsFilterPanel extends JPanel implements Observer {
 	private CheckNode dataSourceFilterNode;
 	private CheckNode organismFilterNode;
 
+	private final Map<String, Integer> numHitsByTypeMap =  new HashMap<String, Integer>();
+	private final Map<String, Integer> numHitsByOrganismMap = new HashMap<String, Integer>();
+	private final Map<String, Integer> numHitsByDatasourceMap = new HashMap<String, Integer>();
+
     boolean typeFilterEnabled;
     boolean organismFilterEnabled;
     boolean datasourceFilterEnabled;
 
-    public HitsFilterPanel(final JList hitsJList,
-						   boolean typeFilterEnabled,
-						   boolean organismFilterEnabled,
-						   boolean datasourceFilterEnabled)
+    public HitsFilterPanel(final JList hitsJList)
 	{
         this.hitsJList = hitsJList;
-        this.typeFilterEnabled = typeFilterEnabled;
-        this.organismFilterEnabled = organismFilterEnabled;
-        this.datasourceFilterEnabled = datasourceFilterEnabled;
         
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         
@@ -61,10 +54,7 @@ final class HitsFilterPanel extends JPanel implements Observer {
     }
 
 
-    /**
-     * Expands all Nodes.
-     */
-    public void expandAllNodes() {
+    private void expandAllNodes() {
     	TreePath path;
     	filterTreePanel.setCollapsed(false);
         
@@ -97,9 +87,8 @@ final class HitsFilterPanel extends JPanel implements Observer {
         	for (int i = 0; i < typeFilterNode.getChildCount(); i++) {
         		CheckNode checkNode = (CheckNode) typeFilterNode.getChildAt(i);
         		CategoryCount categoryCount = (CategoryCount) checkNode.getUserObject();
-        		String name = categoryCount.getCategoryName();
         		if (checkNode.isSelected()) { // - checked
-        			entityTypeSet.add(name);
+        			entityTypeSet.add(categoryCount.id);
         		}
 			}
         	EntityTypeFilter entityTypeFilter = new EntityTypeFilter(entityTypeSet);
@@ -111,9 +100,8 @@ final class HitsFilterPanel extends JPanel implements Observer {
 			for (int i = 0; i < organismFilterNode.getChildCount(); i++) {
 				CheckNode checkNode = (CheckNode) organismFilterNode.getChildAt(i);
 				CategoryCount categoryCount = (CategoryCount) checkNode.getUserObject();
-				String name = categoryCount.getCategoryName();
 				if (checkNode.isSelected()) {
-					entityOrganismSet.add(name);
+					entityOrganismSet.add(categoryCount.id);
 				}
 			}
 			OrganismFilter organismFilter = new OrganismFilter(entityOrganismSet);
@@ -125,32 +113,69 @@ final class HitsFilterPanel extends JPanel implements Observer {
 			for (int i = 0; i < dataSourceFilterNode.getChildCount(); i++) {
 				CheckNode checkNode = (CheckNode) dataSourceFilterNode.getChildAt(i);
 				CategoryCount categoryCount = (CategoryCount) checkNode.getUserObject();
-				String name = categoryCount.getCategoryName();
 				if (checkNode.isSelected()) {
-					entityDataSourceSet.add(name);
+					entityDataSourceSet.add(categoryCount.id);
 				}
 			}
 			DataSourceFilter dataSourceFilter = new DataSourceFilter(entityDataSourceSet);
 			chainedFilter.addFilter(dataSourceFilter);
 		}
 
-   		DefaultListModel listModel = (DefaultListModel) hitsJList.getModel();
-   		listModel.clear();
+		//apply filters and update the counts next to checked tree nodes
+		final List<SearchHit> passedRecordList = chainedFilter.filter(model.getHits());
 
-		List<SearchHit> passedRecordList = chainedFilter.filter(model.getHits());
-		//TODO update/fix counts
+		//update the hits list (clear, add only hits that pass current filters)
+		final DefaultListModel listModel = (DefaultListModel) hitsJList.getModel();
+		listModel.clear();
 		if (!passedRecordList.isEmpty()) {
 			for (SearchHit searchHit : passedRecordList) {
 				listModel.addElement(searchHit);
 			}
 		}
 
+		updateTree(passedRecordList);
+	}
+
+	private void updateTree(List<SearchHit> hits) {
+		//update counts in the filter tree view/pane;
+		//but don't remove unchecked nodes and corresp. map keys:
+		numHitsByTypeMap.values().clear();
+		numHitsByOrganismMap.values().clear();
+		numHitsByDatasourceMap.values().clear();
+		for(SearchHit hit : hits) {
+			updateCategoryToCountMaps(hit);
+		}
+
+		//update counts (in CategoryCount) in each tree node
+		if(typeFilterEnabled) {
+			for (int i = 0; i < typeFilterNode.getChildCount(); i++) {
+				CheckNode checkNode = (CheckNode) typeFilterNode.getChildAt(i);
+				CategoryCount categoryCount = (CategoryCount) checkNode.getUserObject();
+				categoryCount.count = numHitsByTypeMap.get(categoryCount.id);
+			}
+		}
+		if(organismFilterEnabled) {
+			for (int i = 0; i < organismFilterNode.getChildCount(); i++) {
+				CheckNode checkNode = (CheckNode) organismFilterNode.getChildAt(i);
+				CategoryCount categoryCount = (CategoryCount) checkNode.getUserObject();
+				categoryCount.count = numHitsByOrganismMap.get(categoryCount.id);
+			}
+		}
+		if(datasourceFilterEnabled) {
+			for (int i = 0; i < dataSourceFilterNode.getChildCount(); i++) {
+				CheckNode checkNode = (CheckNode) dataSourceFilterNode.getChildAt(i);
+				CategoryCount categoryCount = (CategoryCount) checkNode.getUserObject();
+				categoryCount.count = numHitsByDatasourceMap.get(categoryCount.id);
+			}
+		}
+
 		filterTreePanel.repaint();
 	}
 
-	
+
 	/**
-	 * Updates the filter tree view once the search result (hits) get updated.
+	 * Resets the tree view once the search result (hits) get updated
+	 * (after a new search query executed).
 	 */
 	@Override
 	public void update(Observable o, Object arg) {
@@ -160,9 +185,13 @@ final class HitsFilterPanel extends JPanel implements Observer {
 		}
 
 		final HitsModel model = (HitsModel) o;
+		if (model.getNumRecords() == 0) {
+			return; //do nothing
+		}
+
+		filterTreePanel.setVisible(false); //hide
 
 		//cleanup, reset
-		filterTreePanel.setVisible(false);
 		tree.setModel(null);
 		rootNode.removeAllChildren();
 		organismFilterNode = null;
@@ -170,52 +199,58 @@ final class HitsFilterPanel extends JPanel implements Observer {
 		typeFilterNode = null;
 		tree.setModel(new DefaultTreeModel(rootNode));
 
-		if (model.getNumRecords() == 0) {
-			return;
+		//initialize the numHitsBy* maps (counts):
+		numHitsByTypeMap.clear();
+		numHitsByOrganismMap.clear();
+		numHitsByDatasourceMap.clear();
+		for(SearchHit hit : model.getHits()) {
+			updateCategoryToCountMaps(hit);
 		}
 
+		//create filter tree nodes (CheckNode)
 		typeFilterEnabled = (
 			model.searchFor == null || model.searchFor.isEmpty()
 				|| model.searchFor.equalsIgnoreCase("Pathway")) ? false : true;
 
         if(typeFilterEnabled) {
 			typeFilterNode = new CheckNode("BioPAX Type");
+			rootNode.add(typeFilterNode);
         	// Create BioPAX type filter nodes (leafs)
-        	for (String key : model.numHitsByTypeMap.keySet()) {
-        		CategoryCount categoryCount = new CategoryCount(key, model.numHitsByTypeMap.get(key));
+        	for (String key : numHitsByTypeMap.keySet()) {
+        		CategoryCount categoryCount = new CategoryCount(key, key, numHitsByTypeMap.get(key));
         		CheckNode typeNode = new CheckNode(categoryCount, false, true);
         		typeFilterNode.add(typeNode);
         	}
-			rootNode.add(typeFilterNode);
         } else typeFilterNode = null;
         
         if(organismFilterEnabled) {
 			organismFilterNode = new CheckNode("Organism");
-        	for (String key : model.numHitsByOrganismMap.keySet()) {
+			rootNode.add(organismFilterNode);
+        	for (String key : numHitsByOrganismMap.keySet()) {
         		String name = App.uriToOrganismNameMap.get(key);
-        		if(name == null) {name = key;}
-        		CategoryCount categoryCount = new CategoryCount(name, model.numHitsByOrganismMap.get(key));
+        		if(name == null)
+					name = key;
+        		CategoryCount categoryCount = new CategoryCount(key, name, numHitsByOrganismMap.get(key));
         		CheckNode organismNode = new CheckNode(categoryCount, false, true);
         		organismFilterNode.add(organismNode);
         	}
-			rootNode.add(organismFilterNode);
         } else organismFilterNode = null;
         
         if(datasourceFilterEnabled) {
 			dataSourceFilterNode = new CheckNode("Datasource");
-			for (String key : model.numHitsByDatasourceMap.keySet()) {
+			rootNode.add(dataSourceFilterNode);
+			for (String key : numHitsByDatasourceMap.keySet()) {
         		String name = App.uriToDatasourceNameMap.get(key);
-        		if(name == null) 
-        			name = key; 
-        		CategoryCount categoryCount = new CategoryCount(name, model.numHitsByDatasourceMap.get(key));
+        		if(name == null)
+					name = key;
+        		CategoryCount categoryCount = new CategoryCount(key, name, numHitsByDatasourceMap.get(key));
         		CheckNode dataSourceNode = new CheckNode(categoryCount, false, true);
         		dataSourceFilterNode.add(dataSourceNode);
         	}
-			rootNode.add(dataSourceFilterNode);
         } else dataSourceFilterNode = null;
 
-        expandAllNodes();
 
+		// set to apply new filters once user checked/unchecked a node
 		tree.getModel().addTreeModelListener(new TreeModelListener() {
 			// Respond to user check/unckeck nodes.
 			public void treeNodesChanged(TreeModelEvent treeModelEvent) {
@@ -226,8 +261,39 @@ final class HitsFilterPanel extends JPanel implements Observer {
 			public void treeStructureChanged(TreeModelEvent treeModelEvent) {}
 		});
 
+		expandAllNodes();
+
 		filterTreePanel.repaint();
 		filterTreePanel.setVisible(true);
+	}
+
+	private void updateCategoryToCountMaps(final SearchHit hit) {
+		// catalog/organize hit counts by type, organism, source -
+		String type = hit.getBiopaxClass();
+		Integer count = numHitsByTypeMap.get(type);
+		if (count != null) {
+			numHitsByTypeMap.put(type, count + 1);
+		} else {
+			numHitsByTypeMap.put(type, 1);
+		}
+
+		for (String org : hit.getOrganism()) {
+			Integer i = numHitsByOrganismMap.get(org);
+			if (i != null) {
+				numHitsByOrganismMap.put(org, i + 1);
+			} else {
+				numHitsByOrganismMap.put(org, 1);
+			}
+		}
+
+		for (String ds : hit.getDataSource()) {
+			Integer i = numHitsByDatasourceMap.get(ds);
+			if (i != null) {
+				numHitsByDatasourceMap.put(ds, i + 1);
+			} else {
+				numHitsByDatasourceMap.put(ds, 1);
+			}
+		}
 	}
 
 	/**
@@ -369,24 +435,18 @@ final class HitsFilterPanel extends JPanel implements Observer {
 	
 	
 	class CategoryCount {
-	    private String categoryName;
-	    private int count;
+	    private final String name;
+		private final String id;
+		Integer count; //modifiable, null-able
 
-	    public CategoryCount (String categoryName, int count) {
-	        this.categoryName = categoryName;
+	    public CategoryCount (String id, String name, int count) {
+			this.id = id;
+	        this.name = name;
 	        this.count = count;
 	    }
 
-	    public String getCategoryName() {
-	        return categoryName;
-	    }
-
-	    public int getCount() {
-	        return count;
-	    }
-
 	    public String toString() {
-	        return categoryName + ":  " + count;
+	        return name + ":  " + ((count!=null) ? count.intValue() : 0);
 	    }
 	}
 }

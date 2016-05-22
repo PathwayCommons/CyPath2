@@ -405,7 +405,11 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
         vSplit.setResizeWeight(0.5f);
 
         // Create search results extra filtering panel
-        HitsFilterPanel filterPanel = new HitsFilterPanel(resList, true, false, true);
+        HitsFilterPanel filterPanel = new HitsFilterPanel(resList);
+		filterPanel.organismFilterEnabled = false; //TODO disabled as long as we have onlu human data
+		filterPanel.datasourceFilterEnabled = true;
+		filterPanel.typeFilterEnabled = true;
+
 		// and add it as an Observer for the hits model (the Observable)
 		hitsModel.addObserver(filterPanel);
 
