@@ -1,6 +1,6 @@
 package org.pathwaycommons.cypath2.internal;
 
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.biopax.paxtools.model.BioPAXElement;
 import org.biopax.paxtools.model.Model;
 import org.biopax.paxtools.model.level3.Entity;
@@ -306,7 +306,7 @@ public class BioPaxReaderTask extends AbstractTask implements CyNetworkReader {
 		
 		// Take appropriate adjustments, if name already exists
 		name = App.cyServices.naming.getSuggestedNetworkTitle(
-			StringEscapeUtils.unescapeHtml(name) + 
+			StringEscapeUtils.unescapeHtml4(name) +
 			" (" + readerMode.getSelectedValue() + ")");
 		
 		log.info("New BioPAX network name is: " + name);

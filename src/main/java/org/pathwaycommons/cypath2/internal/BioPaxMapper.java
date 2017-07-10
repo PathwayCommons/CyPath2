@@ -1,7 +1,7 @@
 package org.pathwaycommons.cypath2.internal;
 
-import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.biopax.paxtools.controller.*;
 import org.biopax.paxtools.converter.LevelUpgrader;
 import org.biopax.paxtools.io.SimpleIOHandler;
@@ -763,7 +763,7 @@ public class BioPaxMapper {
 
 		return (nodeName == null || nodeName.isEmpty())
 				? bpe.getUri()
-					: StringEscapeUtils.unescapeHtml(nodeName);
+					: StringEscapeUtils.unescapeHtml4(nodeName);
 	}
 
 	
