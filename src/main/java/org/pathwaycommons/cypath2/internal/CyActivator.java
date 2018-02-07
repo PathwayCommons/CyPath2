@@ -64,26 +64,43 @@ public final class CyActivator extends AbstractCyActivator {
 		}
 
 		CySwingApplication cySwingApplication = getService(bc,CySwingApplication.class);
+
 		DialogTaskManager taskManager = getService(bc,DialogTaskManager.class);
+
 		OpenBrowser openBrowser = getService(bc,OpenBrowser.class);
+
 		CyNetworkManager cyNetworkManager = getService(bc,CyNetworkManager.class);
+
 		CyApplicationManager cyApplicationManager = getService(bc,CyApplicationManager.class);
+
 		CyNetworkViewManager cyNetworkViewManager = getService(bc,CyNetworkViewManager.class);
-//		CyNetworkReaderManager cyNetworkReaderManager = getService(bc,CyNetworkReaderManager.class);
+
 		CyNetworkNaming cyNetworkNaming = getService(bc,CyNetworkNaming.class);
+
 		CyNetworkFactory cyNetworkFactory = getService(bc,CyNetworkFactory.class);
+
 		CyLayoutAlgorithmManager cyLayoutAlgorithmManager = getService(bc,CyLayoutAlgorithmManager.class);
+
 		UndoSupport undoSupport = getService(bc,UndoSupport.class);
+
 		VisualMappingManager visualMappingManager = getService(bc,VisualMappingManager.class);
+
 		VisualStyleFactory visualStyleFactory = getService(bc,VisualStyleFactory.class);
+
 		VisualMappingFunctionFactory discreteMappingFunctionFactory =
 				getService(bc,VisualMappingFunctionFactory.class,"(mapping.type=discrete)");
+
 		VisualMappingFunctionFactory passthroughMappingFunctionFactory =
 				getService(bc,VisualMappingFunctionFactory.class,"(mapping.type=passthrough)");
+
 		CyProperty<Properties> cyProperties = getService(bc, CyProperty.class, "(cyPropertyName=cytoscape3.props)");
+
 		CyRootNetworkManager cyRootNetworkManager = getService(bc, CyRootNetworkManager.class);
+
 		UnHideAllEdgesTaskFactory unHideAllEdgesTaskFactory = getService(bc, UnHideAllEdgesTaskFactory.class);
+
 		CyNetworkViewFactory cyNetworkViewFactory = getService(bc, CyNetworkViewFactory.class);
+
 		StreamUtil streamUtil = getService(bc,StreamUtil.class);
 
 		// keep all the service references in one place -
@@ -127,7 +144,7 @@ public final class CyActivator extends AbstractCyActivator {
 	    final String description = props.getProperty("cypath2.description");
 	    		
 	    // Create and initialize (build the GUI) new App instance
-		App app = new App("Pathway Commons 2 (BioPAX L3)", description);
+		App app = new App("Pathway Commons", description);
 		app.init();
 		
 		// Create a new menu/toolbar item (CyAction) that opens the PathwayCommons GUI
