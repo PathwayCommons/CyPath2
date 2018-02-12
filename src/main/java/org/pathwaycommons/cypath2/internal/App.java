@@ -50,6 +50,10 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 	static final ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
 	
 	final JList advQueryPanelItemsList;
+	final JButton searchButton;
+	final JTextField searchField;
+	private final String SEARCH_FIELD_TIP_TEXT = "a keyword (e.g., gene name or identifier)";
+	final JComboBox bpTypeComboBox;
     
 	/**
      * Constructor.
@@ -77,6 +81,22 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 				} 
 			}
 		});
+
+		// Create the search button and action
+		searchButton = new JButton("Search");
+		searchButton.setToolTipText("Full-Text Search");
+		// create the query input text field
+		searchField = new JTextField(SEARCH_FIELD_TIP_TEXT.length());
+
+		//BioPAX sub-class combo-box ('type' filter values)
+		bpTypeComboBox = new JComboBox(
+				new NvpListItem[] {
+						new NvpListItem("Top Pathways",""), //this one is treated specially
+						new NvpListItem("Pathways","Pathway"),
+						new NvpListItem("Interactions (all types)", "Interaction"),
+						new NvpListItem("Participants", "EntityReference")
+				}
+		);
 
 		gui = new JPanel();
     }
@@ -205,13 +225,11 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 		return filtersPane;
 	}
 
-	private Component createSearchQueryPanel() {
-
-	  	// create the query field and examples label
-	    final String ENTER_TEXT = "a keyword (e.g., gene name or identifier)";
-	  	final JTextField searchField = new JTextField(ENTER_TEXT.length());
-	    searchField.setText(ENTER_TEXT);
-	    searchField.setToolTipText(ENTER_TEXT);
+	private Component createSearchQueryPanel()
+	{
+	  	// create the query field and example label
+	    searchField.setText(SEARCH_FIELD_TIP_TEXT);
+	    searchField.setToolTipText(SEARCH_FIELD_TIP_TEXT);
 	    searchField.addFocusListener(new FocusAdapter() {
 	        public void focusGained(FocusEvent focusEvent) {
 	            if (searchField.getText() != null && searchField.getText().startsWith("Enter")) {
@@ -219,7 +237,7 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 	            }
 	        }
 	    });
-	    searchField.setBorder (BorderFactory
+	    searchField.setBorder(BorderFactory
 				.createCompoundBorder(searchField.getBorder(), new PulsatingBorder(searchField)));
 		searchField.setHorizontalAlignment(JTextField.LEFT);
 
@@ -259,21 +277,11 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 		final JScrollPane hitListScrollPane = new JScrollPane(resList);
 		hitListScrollPane.setBorder(createTitledBorder("Result"));
 
-		//BioPAX sub-class combo-box ('type' filter values)
-		final JComboBox bpTypeComboBox = new JComboBox(
-				new NvpListItem[] {
-						new NvpListItem("Top Pathways",""), //this one is treated specially
-						new NvpListItem("Pathways","Pathway"),
-						new NvpListItem("Interactions (all types)", "Interaction"),
-						new NvpListItem("Participants", "EntityReference")
-				}
-		);
+		//init combo-box (BioPAX type filter)
 		bpTypeComboBox.setSelectedIndex(0); //default value: Top Pathways
 		bpTypeComboBox.setEditable(false);
 
-		// Create the search button and action
-		final JButton searchButton = new JButton("Search");
-	    searchButton.setToolTipText("Full-Text Search");
+		// Create the search button action
 	    searchButton.addActionListener(new ActionListener() {
 	        public void actionPerformed(ActionEvent actionEvent) {
 	        	searchButton.setEnabled(false);
@@ -281,7 +289,7 @@ final class App extends AbstractWebServiceGUIClient implements NetworkImportWebS
 				final NvpListItem selItem = (NvpListItem) bpTypeComboBox.getItemAt(selIndex);
 	        	hitsModel.searchFor = selItem.getValue();
 	           	final String keyword = searchField.getText();           	
-	            if (keyword == null || keyword.trim().length() == 0 || keyword.startsWith(ENTER_TEXT)) {
+	            if (keyword == null || keyword.trim().length() == 0 || keyword.startsWith(SEARCH_FIELD_TIP_TEXT)) {
 	            	JOptionPane.showMessageDialog(gui, "Type something in the search box.");
 	        		searchButton.setEnabled(true);
 	        	} else {

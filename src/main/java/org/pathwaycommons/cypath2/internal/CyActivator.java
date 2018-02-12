@@ -2,6 +2,7 @@ package org.pathwaycommons.cypath2.internal;
 
 import org.biopax.paxtools.trove.TProvider;
 import org.biopax.paxtools.util.BPCollections;
+import org.cytoscape.application.swing.search.NetworkSearchTaskFactory;
 import org.cytoscape.io.util.StreamUtil;
 import org.cytoscape.task.NodeViewTaskFactory;
 import org.cytoscape.task.hide.UnHideAllEdgesTaskFactory;
@@ -153,7 +154,7 @@ public final class CyActivator extends AbstractCyActivator {
 		showTheDialogActionProps.put(TITLE,"Search/Import Network...");		
 		showTheDialogActionProps.put(PREFERRED_MENU, APPS_MENU + ".PathwayCommons");
 		showTheDialogActionProps.put(MENU_GRAVITY,"2.0");
-		showTheDialogActionProps.put(SMALL_ICON_URL,getClass().getResource("pc2_small.png").toString());
+		showTheDialogActionProps.put(SMALL_ICON_URL,getClass().getResource("pc_logo.png").toString());
 		showTheDialogActionProps.put(IN_TOOL_BAR,"false");
 		showTheDialogActionProps.put(IN_MENU_BAR,"true");
 		showTheDialogActionProps.put(TOOLTIP,"Networks From PC2");	
@@ -168,7 +169,7 @@ public final class CyActivator extends AbstractCyActivator {
 		showAboutDialogActionProps.put(TITLE,"About...");		
 		showAboutDialogActionProps.put(PREFERRED_MENU, APPS_MENU + ".PathwayCommons");
 		showAboutDialogActionProps.put(MENU_GRAVITY,"1.0");
-		showAboutDialogActionProps.put(SMALL_ICON_URL,getClass().getResource("pc2_small.png").toString());
+		showAboutDialogActionProps.put(SMALL_ICON_URL,getClass().getResource("pc_logo.png").toString());
 		showAboutDialogActionProps.put(IN_TOOL_BAR,"false");
 		showAboutDialogActionProps.put(IN_MENU_BAR,"true");
 		ShowAboutDialogAction showAboutDialogAction =
@@ -187,10 +188,15 @@ public final class CyActivator extends AbstractCyActivator {
 
 		// Node selection listener (only for networks imported from BioPAX) and eastern cytopanel (results panel).
 		final EastCytoPanelComponent cytoPanelComponent = new EastCytoPanelComponent();
-		registerAllServices(bc, cytoPanelComponent, new Properties());
+		registerAllServices(bc, cytoPanelComponent);
 
 		// Register: WebServiceClient, WebServiceGUIClient, SearchWebServiceClient,..
-		registerAllServices(bc, app, new Properties());
+		registerAllServices(bc, app);
+
+		// Register the NetworkSearchTaskFactory
+		final NetworkSearchTaskFactory networkSearchTaskFactory =
+				new TheNetworkSearchTaskFactory(showTheDialogAction, app);
+		registerAllServices(bc, networkSearchTaskFactory);
 	}
 
 }

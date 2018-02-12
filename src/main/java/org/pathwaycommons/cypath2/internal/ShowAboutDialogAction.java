@@ -22,7 +22,7 @@ final class ShowAboutDialogAction extends AbstractCyAction {
 	{
 		super(configProps, App.cyServices.applicationManager, App.cyServices.networkViewManager);
 		
-		icon = new ImageIcon(getClass().getResource("pc2.png"), "PC2 icon");
+		icon = new ImageIcon(getClass().getResource("pc_logo.png"), "PC2 icon");
 		this.title = title;
 		this.description = description;
 		dialog = new AboutDialog(App.cyServices.cySwingApplication.getJFrame(), App.cyServices.openBrowser);
