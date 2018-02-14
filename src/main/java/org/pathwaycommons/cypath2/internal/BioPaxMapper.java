@@ -593,15 +593,25 @@ public class BioPaxMapper {
 		Attributes.set(network, node, BIOPAX_URI, element.getUri(), String.class);
 		Attributes.set(network, node, BIOPAX_ENTITY_TYPE, element.getModelInterface().getSimpleName(), String.class);
 
-		String name = getName(element);
+		// traverse to create the rest of attr.
+		bpeAutoMapper.traverse(element, model);
 		
+        // create custom (convenience?) attributes, mainly - from xrefs
+		createExtraXrefAttributes(element, network, node);
+
+		String name = getName(element);
 		if (!(element instanceof Interaction)) {
+			if(element instanceof SimplePhysicalEntity || element instanceof Gene) {
+				String gs = network.getRow(node, CyNetwork.DEFAULT_ATTRS).get("GENE SYMBOL", String.class);
+				if(gs != null)
+					name += " " + gs;
+			}
 			// get chemical modification & cellular location attributes
 			NodeAttributesWrapper chemicalModificationsWrapper = getInteractionChemicalModifications(element);
 			// set node attributes
 			if(chemicalModificationsWrapper != null) {
 				// add modifications to the label/name
-				name += chemicalModificationsWrapper.toString();
+//				name += " " + chemicalModificationsWrapper.toString();
 				//set the node attribute (chem. mod. list)
 				List<String> list = chemicalModificationsWrapper.asList();
 				if (list != null && !list.isEmpty()) {
@@ -609,28 +619,24 @@ public class BioPaxMapper {
 					Attributes.set(network, node, BIOPAX_CHEMICAL_MODIFICATIONS_LIST, list, String.class);
 					if (list.contains(PHOSPHORYLATION_SITE)) {
 						Attributes.set(network, node, BIOPAX_ENTITY_TYPE, PROTEIN_PHOSPHORYLATED, String.class);
+						name += " +phos";
 					}
 				}
 			}
-
 			// add cellular location to the label/name
 			if(element instanceof PhysicalEntity) {
 				CellularLocationVocabulary cl = ((PhysicalEntity) element).getCellularLocation();
-				if(cl != null) {
-					String terms = cl.toString();//it's like CellularLocationVocabulary_terms...
-					terms =  terms.substring(terms.indexOf("_") + 1).replaceAll("\\[|\\]", "");
-					name += (terms.length() > 0) ? ("; " + terms) : "";
+				if(cl != null && !cl.getTerm().isEmpty()) {
+//					String terms = cl.toString();//it's like CellularLocationVocabulary_terms...
+//					terms =  terms.substring(terms.indexOf("_") + 1).replaceAll("\\[|\\]", "");
+//					name += (terms.length() > 0) ? (" (" + terms + ")") : "";
+					name += " (" + cl.getTerm().iterator().next().toLowerCase() + ")";
 				}
 			}
 		}
+
 		// update the name (also used for node's label and quick find)
 		Attributes.set(network, node, CyNetwork.NAME, name, String.class);
-		
-		// traverse to create the rest of attr.
-		bpeAutoMapper.traverse(element, model);
-		
-        // create custom (convenience?) attributes, mainly - from xrefs
-		createExtraXrefAttributes(element, network, node);
 	}
 
 	
@@ -762,8 +768,7 @@ public class BioPaxMapper {
 			nodeName = ((Named)bpe).getDisplayName();
 
 		return (nodeName == null || nodeName.isEmpty())
-				? bpe.getUri()
-					: StringEscapeUtils.unescapeHtml4(nodeName);
+				? bpe.getModelInterface().getSimpleName() : StringEscapeUtils.unescapeHtml4(nodeName);
 	}
 
 	

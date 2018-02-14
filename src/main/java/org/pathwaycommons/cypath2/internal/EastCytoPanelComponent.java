@@ -15,7 +15,6 @@ import javax.swing.event.HyperlinkListener;
 import org.cytoscape.application.swing.CytoPanel;
 import org.cytoscape.application.swing.CytoPanelComponent;
 import org.cytoscape.application.swing.CytoPanelName;
-import org.cytoscape.application.swing.CytoPanelState;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;
 import org.cytoscape.model.events.RowsSetEvent;
@@ -44,14 +43,13 @@ public class EastCytoPanelComponent implements CytoPanelComponent, RowsSetListen
 
 	public EastCytoPanelComponent() {
 		this.bpDetailsPanel = new BioPaxDetailsPanel(App.cyServices.openBrowser);
-		this.icon = new ImageIcon(getClass().getResource("read_obj.gif"));
+		this.icon = new ImageIcon(getClass().getResource("pc_logo.png"));
 		this.component = new JPanel(new BorderLayout());
 		this.cards = new JPanel(new CardLayout());
 
 		component.add(cards, BorderLayout.CENTER);
 		label = new JEditorPane("text/html", "<a href='LEGEND'>Legend</a>");
 		component.add(label, BorderLayout.SOUTH);
-
 		cards.add(bpDetailsPanel, DETAILS_CARD);
 		cards.add(new LegendPanel(), LEGEND_CARD);
 		label.setEditable(false);
@@ -87,7 +85,7 @@ public class EastCytoPanelComponent implements CytoPanelComponent, RowsSetListen
 
 	@Override
 	public String getTitle() {
-		return "Node Details";
+		return "Node(s) Summary ";
 	}
 
 	@Override
@@ -96,7 +94,8 @@ public class EastCytoPanelComponent implements CytoPanelComponent, RowsSetListen
 	}
 
 	public void showDetails() {
-		if (BioPaxUtil.isFromBiopax(App.cyServices.applicationManager.getCurrentNetwork())) {
+		final CyNetwork network = App.cyServices.applicationManager.getCurrentNetwork();
+		if (network!= null && BioPaxUtil.isFromBiopax(network)) {
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
 				public void run() {
@@ -148,10 +147,6 @@ public class EastCytoPanelComponent implements CytoPanelComponent, RowsSetListen
 			if (!network.getDefaultNodeTable().equals(e.getSource()))
 				return;
 
-			CytoPanel eastCytoPanel = App.cyServices.cySwingApplication.getCytoPanel(CytoPanelName.EAST);
-			if(eastCytoPanel.getState() != CytoPanelState.DOCK)
-				App.cyServices.cySwingApplication.getCytoPanel(CytoPanelName.EAST).setState(CytoPanelState.DOCK);
-
 			//east panel will display info about several nodes selected (not all)
 			final Collection<CyNode> selected = new ArrayList<CyNode>();
 			for (CyNode node : network.getNodeList()) {
@@ -165,6 +160,22 @@ public class EastCytoPanelComponent implements CytoPanelComponent, RowsSetListen
 				updateNodeDetails(network, selected);
 				// If legend is showing, show details
 				showDetails();
+
+				//Show (if hidden) "Node Details" tab in the "Results Panel" (East CytoPanel)
+				CytoPanel eastCytoPanel = App.cyServices.cySwingApplication.getCytoPanel(CytoPanelName.EAST);
+//			if(eastCytoPanel.getState() != CytoPanelState.DOCK)
+//				eastCytoPanel.setState(CytoPanelState.DOCK);
+				int idx = eastCytoPanel.indexOfComponent(component);
+				eastCytoPanel.setSelectedIndex(idx);
+
+				//auto-disable/enable "Legend" link (currently, it makes sense for BioPAX-SIF views only...)
+				if(BioPaxUtil.isSifFromBiopax(network)) {
+					label.setEnabled(true);
+					label.setVisible(true);
+				} else {
+					label.setEnabled(false);
+					label.setVisible(false);
+				}
 			}
 		}
 	}

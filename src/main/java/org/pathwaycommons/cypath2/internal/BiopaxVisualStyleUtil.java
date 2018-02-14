@@ -72,34 +72,6 @@ public class BiopaxVisualStyleUtil {
 	
 	private VisualStyle simpleBiopaxStyle;
 	private VisualStyle binarySifStyle;
-
-	// custom node images (phosphorylation)	
-	private static BufferedImage[] customPhosGraphics = null;	
-	
-	static {
-		try {
-			BufferedImage phosNode = javax.imageio.ImageIO.read
-                    (BioPaxMapper.class.getResource("phos-node.jpg"));
-			BufferedImage phosNodeSelectedTop = javax.imageio.ImageIO.read
-                    (BioPaxMapper.class.getResource("phos-node-selected-top.jpg"));
-			BufferedImage phosNodeSelectedRight = javax.imageio.ImageIO.read
-                    (BioPaxMapper.class.getResource("phos-node-selected-right.jpg"));
-			BufferedImage phosNodeSelectedBottom = javax.imageio.ImageIO.read
-                    (BioPaxMapper.class.getResource("phos-node-selected-bottom.jpg"));
-			BufferedImage phosNodeSelectedLeft = javax.imageio.ImageIO.read
-                    (BioPaxMapper.class.getResource("phos-node-selected-left.jpg"));
-			customPhosGraphics = new BufferedImage[] {
-					phosNode,
-			        phosNodeSelectedTop,
-			        phosNodeSelectedRight,
-			        phosNodeSelectedBottom,
-			        phosNodeSelectedLeft
-			};			
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-	
 	
 	/**
 	 * Constructor
@@ -247,8 +219,8 @@ public class BiopaxVisualStyleUtil {
 		simpleBiopaxStyle.addVisualMappingFunction(tgtArrowShape);
 
 		// Node shape
-		simpleBiopaxStyle.setDefaultValue(NODE_SHAPE,
-				NodeShapeVisualProperty.ELLIPSE);
+		simpleBiopaxStyle.setDefaultValue(NODE_SHAPE, NodeShapeVisualProperty.ELLIPSE);
+
 		// create a discrete mapper, for mapping a biopax type to a shape
 		DiscreteMapping<String, NodeShape> shape = (DiscreteMapping<String, NodeShape>) discreteFactory
 				.createVisualMappingFunction(BIOPAX_ENTITY_TYPE, String.class, NODE_SHAPE);
@@ -261,8 +233,7 @@ public class BiopaxVisualStyleUtil {
 		// use a different shape for Complex nodes
 		shape.putMapValue("Complex", NodeShapeVisualProperty.DIAMOND);
 		// hack for phosphorylated proteins
-		shape.putMapValue(BioPaxMapper.PROTEIN_PHOSPHORYLATED,
-				NodeShapeVisualProperty.ELLIPSE);
+		shape.putMapValue(BioPaxMapper.PROTEIN_PHOSPHORYLATED, NodeShapeVisualProperty.ELLIPSE);
 
 		// map all interactions: control to triangles, others to square
 		for (Class<?> c : BioPaxMapper.getSubclassNames(Interaction.class)) {
