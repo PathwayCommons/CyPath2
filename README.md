@@ -1,4 +1,5 @@
-#CyPath2 (or CyPathwayCommons)#
+# Pathway Commons App for Cytoscape 3
+(aka CyPath2)
 
 [![Build Status](https://secure.travis-ci.org/PathwayCommons/CyPath2.png?branch=master)](http://travis-ci.org/PathwayCommons/CyPath2) 
 ---
