@@ -112,7 +112,6 @@ public final class CyActivator extends AbstractCyActivator {
 				cyNetworkManager,
 				cyApplicationManager,
 				cyNetworkViewManager,
-//				cyNetworkReaderManager,
 				cyNetworkNaming,
 				cyNetworkFactory,
 				cyLayoutAlgorithmManager,
@@ -151,7 +150,7 @@ public final class CyActivator extends AbstractCyActivator {
 		// Create a new menu/toolbar item (CyAction) that opens the PathwayCommons GUI
 		Map<String,String> showTheDialogActionProps = new HashMap<String, String>();
 		showTheDialogActionProps.put(ID,"showCyPathwayCommonsDialogAction");
-		showTheDialogActionProps.put(TITLE,"Search/Import Network...");		
+		showTheDialogActionProps.put(TITLE,"Search...");
 		showTheDialogActionProps.put(PREFERRED_MENU, APPS_MENU + ".PathwayCommons");
 		showTheDialogActionProps.put(MENU_GRAVITY,"2.0");
 		showTheDialogActionProps.put(SMALL_ICON_URL,getClass().getResource("pc_logo.png").toString());

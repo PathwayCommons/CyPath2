@@ -85,7 +85,7 @@ public class EastCytoPanelComponent implements CytoPanelComponent, RowsSetListen
 
 	@Override
 	public String getTitle() {
-		return "Node(s) Summary ";
+		return "Node Summary ";
 	}
 
 	@Override

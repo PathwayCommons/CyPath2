@@ -14,7 +14,6 @@ import java.util.Set;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
 
 import org.cytoscape.work.TaskIterator;
 
@@ -66,14 +65,12 @@ final class QueryPanel extends JPanel {
         //default option (1)
 	    b.setSelected(true);
 	    graphType = null;
-	    b.addActionListener(new ActionListener() {
-	        public void actionPerformed(ActionEvent actionEvent) {
-	            graphType = null; //to use "get" command instead of "graph"
+	    b.addActionListener(actionEvent -> {
+	            graphType = null; //using "get" instead of "graph" query
 	        	both.setEnabled(false);
 	        	up.setEnabled(false);
 	        	down.setEnabled(false);
 				undir.setEnabled(false);
-	        }
 	    });
 	    bg.add(b);
 
@@ -85,8 +82,7 @@ final class QueryPanel extends JPanel {
         queryTypePanel.add(b, c);
 	    
 	    b = new JRadioButton("Nearest Neighborhood");
-	    b.addActionListener(new ActionListener() {
-	        public void actionPerformed(ActionEvent actionEvent) {
+	    b.addActionListener(actionEvent -> {
 	        	graphType = GraphType.NEIGHBORHOOD;
 	        	both.setEnabled(true);
 	        	up.setEnabled(true);
@@ -94,7 +90,6 @@ final class QueryPanel extends JPanel {
 	        	undir.setSelected(true);
 				undir.setEnabled(true);
 	        	direction = Direction.UNDIRECTED;
-	        }
 	    });
 	    bg.add(b);
         c.gridx = 0;
@@ -102,8 +97,7 @@ final class QueryPanel extends JPanel {
         queryTypePanel.add(b, c);
 	    
 	    b = new JRadioButton("Common Stream");
-	    b.addActionListener(new ActionListener() {
-	        public void actionPerformed(ActionEvent actionEvent) {
+	    b.addActionListener(actionEvent -> {
 	           	graphType = GraphType.COMMONSTREAM;
 	        	both.setEnabled(false);
 	        	up.setEnabled(true);
@@ -111,7 +105,6 @@ final class QueryPanel extends JPanel {
 	        	down.setSelected(true);
 				undir.setEnabled(false);
 	        	direction = Direction.DOWNSTREAM;
-	        }
 	    });
 	    bg.add(b);
         c.gridx = 0;
@@ -119,15 +112,13 @@ final class QueryPanel extends JPanel {
         queryTypePanel.add(b, c);
 	    
 	    b = new JRadioButton("Paths Beetween");
-	    b.addActionListener(new ActionListener() {
-	        public void actionPerformed(ActionEvent actionEvent) {
+	    b.addActionListener(actionEvent -> {
 	        	graphType = GraphType.PATHSBETWEEN;
 	        	both.setEnabled(false);
 	        	up.setEnabled(false);
 	        	down.setEnabled(false);
 				undir.setEnabled(false);
 	        	direction = null;
-	        }
 	    });
 	    bg.add(b);
         c.gridx = 0;
@@ -135,15 +126,13 @@ final class QueryPanel extends JPanel {
         queryTypePanel.add(b, c);
 	    
 	    b = new JRadioButton("Paths From (selected) To (the rest)");
-	    b.addActionListener(new ActionListener() {
-	        public void actionPerformed(ActionEvent actionEvent) {
+	    b.addActionListener(actionEvent -> {
 	        	graphType = GraphType.PATHSFROMTO;
 	        	both.setEnabled(false);
 				undir.setEnabled(false);
 	        	up.setEnabled(false);
 	        	down.setEnabled(false);
 	        	direction = null;
-	        }
 	    });
 	    bg.add(b);
         c.gridx = 0;
@@ -159,11 +148,7 @@ final class QueryPanel extends JPanel {
     	directionPanel.setLayout(new GridBagLayout());
     	bg = new ButtonGroup();
 
-    	down.addActionListener(new ActionListener() {
-	        public void actionPerformed(ActionEvent actionEvent) {
-	        	direction = Direction.DOWNSTREAM;
-	        }
-	    });
+    	down.addActionListener(e -> direction = Direction.DOWNSTREAM);
 	    bg.add(down);
         c = new GridBagConstraints();
         c.fill = GridBagConstraints.HORIZONTAL;
@@ -172,31 +157,19 @@ final class QueryPanel extends JPanel {
         c.gridy = 0;
         directionPanel.add(down, c);
 	    
-        up.addActionListener(new ActionListener() {
-	        public void actionPerformed(ActionEvent actionEvent) {
-	        	direction = Direction.UPSTREAM;
-	        }
-	    });
+        up.addActionListener(e ->direction = Direction.UPSTREAM);
 	    bg.add(up);
         c.gridx = 0;
         c.gridy = 1;
         directionPanel.add(up, c);
 	    
-	    both.addActionListener(new ActionListener() {
-	        public void actionPerformed(ActionEvent actionEvent) {
-	        	direction = Direction.BOTHSTREAM;
-	        }
-	    });
+	    both.addActionListener(e -> direction=Direction.BOTHSTREAM);
 	    bg.add(both);
         c.gridx = 0;
         c.gridy = 2;
         directionPanel.add(both, c);
 
-		undir.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent actionEvent) {
-				direction = Direction.UNDIRECTED;
-			}
-		});
+		undir.addActionListener(e -> direction = Direction.UNDIRECTED);
 		bg.add(undir);
 		c.gridx = 0;
 		c.gridy = 3;
@@ -209,54 +182,53 @@ final class QueryPanel extends JPanel {
 	    final JButton execQueryButton = new JButton("Execute Query and Create Network");
 	    execQueryButton.setToolTipText("Runs a BioPAX graph query, " +
 	    		"downloads results, builds a new network and view");
-	    execQueryButton.addActionListener(new ActionListener() {
-	        public void actionPerformed(ActionEvent actionEvent) {	        	
-	        	if(list.getSelectedIndices().length == 0) {
-	        		JOptionPane.showMessageDialog(controlPanel, 
-	        			"No items were selected from the list. " +
-	        			"Please pick one or several to be used with the query.");
-	        		return;
-	        	}
-	        		        	
-	        	execQueryButton.setEnabled(false);
-	           	
-	        	//create source and target lists of URIs
-	        	Set<String> srcs = new HashSet<String>();
-	        	Set<String> tgts = new HashSet<String>();
-	        	for(int i=0; i < list.getModel().getSize(); i++) {
-	        		String uri = ((NvpListItem) list.getModel()
-	        				.getElementAt(i)).getValue();
-	        		if(list.isSelectedIndex(i))
-	        			srcs.add(uri);
-	        		else
-	        			tgts.add(uri);
-	        	}
-	        	
-	        	if(graphType == null) {
-	        		final CPathGetQuery getQ = App.client
-	        				.createGetQuery().sources(srcs);
-	        		App.cyServices.taskManager.execute(new TaskIterator(
-	        			new NetworkAndViewTask(getQ, null)
-	        			));
-	        	} else {
-	        		final CPathGraphQuery graphQ = App.client
-	        			.createGraphQuery()
-	        			.kind(graphType)
-	        			.sources(srcs).targets(tgts)
-	        			.datasourceFilter(App.options.selectedDatasources())
-	        			.direction(direction)
-	        			//.limit(1) TODO set limit (optional; default is 1)
-	        			.organismFilter(App.options.selectedOrganisms());
-	        		App.cyServices.taskManager.execute(new TaskIterator(
-	        			new NetworkAndViewTask(graphQ, null)
-		        		));
-	        	}
-	        	
-	        	execQueryButton.setEnabled(true);
-	        }
-	    });	
-	    
-	    final JPanel execQueryButtonPanel = new JPanel();
+		execQueryButton.addActionListener(actionEvent ->
+		{
+			if(list.getSelectedIndices().length == 0) {
+				JOptionPane.showMessageDialog(controlPanel,
+						"No items were selected from the list. " +
+								"Please pick one or several to be used with the query.");
+				return;
+			}
+
+			execQueryButton.setEnabled(false);
+
+			//create source and target lists of URIs
+			Set<String> srcs = new HashSet<String>();
+			Set<String> tgts = new HashSet<String>();
+			for(int i=0; i < list.getModel().getSize(); i++) {
+				String uri = ((NvpListItem) list.getModel()
+						.getElementAt(i)).getValue();
+				if(list.isSelectedIndex(i))
+					srcs.add(uri);
+				else
+					tgts.add(uri);
+			}
+
+			if(graphType == null) {
+				final CPathGetQuery getQ = App.client
+						.createGetQuery().sources(srcs);
+				App.cyServices.taskManager.execute(new TaskIterator(
+						new NetworkAndViewTask(getQ, null)
+				));
+			} else {
+				final CPathGraphQuery graphQ = App.client
+						.createGraphQuery()
+						.kind(graphType)
+						.sources(srcs).targets(tgts)
+						.datasourceFilter(App.options.selectedDatasources())
+						.direction(direction)
+						//.limit(1) TODO set limit (optional; default is 1)
+						.organismFilter(App.options.selectedOrganisms());
+				App.cyServices.taskManager.execute(new TaskIterator(
+						new NetworkAndViewTask(graphQ, null)
+				));
+			}
+
+			execQueryButton.setEnabled(true);
+		});
+
+		final JPanel execQueryButtonPanel = new JPanel();
 	    execQueryButtonPanel.setMaximumSize(new Dimension(400, 100));
 	    execQueryButtonPanel.add(execQueryButton);
 	    controlPanel.add(execQueryButtonPanel);
@@ -300,14 +272,12 @@ final class QueryPanel extends JPanel {
 	    inputFieldLabel.setEditable(false);
 	    inputFieldLabel.setOpaque(false);
 	    inputFieldLabel.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
-	    inputFieldLabel.addHyperlinkListener(new HyperlinkListener() {
-	        // Update input field with the example.
-	        public void hyperlinkUpdate(HyperlinkEvent hyperlinkEvent) {
-	            if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-	                inputField.setText(hyperlinkEvent.getDescription());
-	            }
-	        }
-	    });
+		inputFieldLabel.addHyperlinkListener(hyperlinkEvent -> {
+			// Update input field with the example.
+			if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+				inputField.setText(hyperlinkEvent.getDescription());
+			}
+		});
 	    inputFieldLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 	    inputFieldLabel.setFont(newFont);
 	    inputFieldLabel.setBorder(new EmptyBorder(5,3,1,3));
@@ -316,31 +286,28 @@ final class QueryPanel extends JPanel {
         // process the input IDs button
 	    final JButton inputFieldButton = new JButton("Add to List");
 	    inputFieldButton.setToolTipText("Adds the IDs from the input box to the query sources/targets");
-	    inputFieldButton.addActionListener(
-				new ActionListener() {
-					public void actionPerformed(ActionEvent actionEvent)
+		inputFieldButton.addActionListener(actionEvent ->
+				{
+					final String inputFieldValue = inputField.getText();
+					//exit (do nothing) when no input provided
+					if(inputFieldValue.isEmpty())
+						return;
+
+					//split
+					final String[] inputIds = inputFieldValue.split("[,\\s]+");
+					//add new items to the list
+					inputFieldButton.setEnabled(false);
+					for (String id : inputIds)
 					{
-						final String inputFieldValue = inputField.getText();
-						//exit (do nothing) when no input provided
-						if(inputFieldValue.isEmpty())
-							return;
+						if (id.trim().isEmpty())
+							continue;
 
-						//split
-						final String[] inputIds = inputFieldValue.split("[,\\s]+");
-						//add new items to the list
-						inputFieldButton.setEnabled(false);
-						for (String id : inputIds)
-						{
-							if (id.trim().isEmpty())
-								continue;
-
-							NvpListItem newItem = new NvpListItem(id, id);
-							if (!((DefaultListModel) list.getModel()).contains(newItem)) {
-								((DefaultListModel) list.getModel()).addElement(newItem);
-							}
+						NvpListItem newItem = new NvpListItem(id, id);
+						if (!((DefaultListModel) list.getModel()).contains(newItem)) {
+							((DefaultListModel) list.getModel()).addElement(newItem);
 						}
-						inputFieldButton.setEnabled(true);
 					}
+					inputFieldButton.setEnabled(true);
 				}
 		);
         
