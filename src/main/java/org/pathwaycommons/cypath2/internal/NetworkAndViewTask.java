@@ -79,10 +79,9 @@ class NetworkAndViewTask extends AbstractTask {
 			if (cancelled) {
 				return;
 			}
-    						
-			// Branch based on download mode setting.
+
 			File tmpFile;
-			//always BioPAX (no need in getting SIF from the server anymore due to new BioPAX plugin)!
+			//always BioPAX
 			tmpFile = File.createTempFile("tmp_cypath2", ".owl");
 			tmpFile.deleteOnExit();   							
 			FileWriter writer = new FileWriter(tmpFile);
@@ -111,12 +110,6 @@ class NetworkAndViewTask extends AbstractTask {
 					}				
 					App.cyServices.networkManager.addNetwork(cyNetwork);
 
-					//if a new root network was created, register that one as well
-//					CyRootNetwork cyRootNetwork = cyServices.rootNetworkManager.getRootNetwork(cyNetwork);
-//					if(cyRootNetwork != null) {
-//						cyServices.networkManager.addNetwork(cyRootNetwork);
-//						taskMonitor.setStatusMessage("Registered the root network");
-//					}
 					taskMonitor.setStatusMessage("Registered the network");
 
 					// create and register the view

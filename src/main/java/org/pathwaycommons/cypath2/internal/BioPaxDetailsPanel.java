@@ -146,11 +146,15 @@ public class BioPaxDetailsPanel extends JPanel {
 				buf.append("<dt>").append("Organism").append("</dt>")
 				.append("<dd>").append(s).append("</dd>");
 			}        
-			// cellular location
-			List<?> clTerms = row.getList("cellularLocation/term", String.class); //list
-			if (clTerms != null && !clTerms.isEmpty()) {
-				buf.append("<dt>").append("Cellular Location").append("</dt>")
-				.append("<dd>").append(clTerms.toString().replaceAll("\\[|\\]", "")).append("</dd>");
+			// cellular location (not available when in SIF network mode)
+			if(row.isSet("cellularLocation/term")) {
+				List<?> clTerms = row.getList("cellularLocation/term", String.class); //list
+				if (clTerms != null && !clTerms.isEmpty()) {
+					buf.append("<dt>").append("Cellular Location").append("</dt>")
+						.append("<dd>")
+						.append(clTerms.toString().replaceAll("\\[|\\]", ""))
+						.append("</dd>");
+				}
 			}
 			
 			// chemical modification

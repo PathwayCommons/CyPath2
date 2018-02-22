@@ -128,12 +128,7 @@ public class EastCytoPanelComponent implements CytoPanelComponent, RowsSetListen
 	}
 
 	public void updateNodeDetails(final CyNetwork network, final Collection<CyNode> selected) {
-		SwingUtilities.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				bpDetailsPanel.updateNodeDetails(network, selected);
-			}
-		});
+		SwingUtilities.invokeLater(()->bpDetailsPanel.updateNodeDetails(network, selected));
 	}
 
 	// RowsSetListener interface impl.
