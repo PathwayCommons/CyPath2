@@ -11,7 +11,6 @@ import org.biopax.paxtools.model.Model;
 import org.biopax.paxtools.model.level3.*;
 import org.biopax.paxtools.model.level3.Process;
 import org.biopax.paxtools.pattern.miner.*;
-import org.biopax.paxtools.pattern.util.Blacklist;
 import org.biopax.paxtools.util.ClassFilterSet;
 import org.biopax.paxtools.util.Filter;
 import org.cytoscape.model.*;
@@ -134,7 +133,7 @@ public class BioPaxMapper {
 					
 			CyNode cyParentNode = bpeToCyNodeMap.get(par);
 			assert cyParentNode != null : "cyParentNode is NULL.";
-			// for each its member PE, add the directed edge
+			// for each its member PE, add the directed edge 'member' (from parent to member)
 			for (PhysicalEntity member : members) 
 			{
 				CyNode cyMemberNode = bpeToCyNodeMap.get(member);
@@ -170,21 +169,22 @@ public class BioPaxMapper {
 
 
 	private void createInteractionEdges(CyNetwork network) {
-		//  Extract the List of all Interactions
 		Collection<Interaction> interactionList = model.getObjects(Interaction.class);
-
 		for (Interaction itr : interactionList) {	
-			if(log.isTraceEnabled()) {
-				log.trace("Mapping " + itr.getModelInterface().getSimpleName() 
-					+ " edges : " + itr.getUri());
-			}
-			
+			log.trace("Mapping " + itr.getModelInterface().getSimpleName() + " edges : " + itr.getUri());
+			// convert each disjoint sub-class (of Interaction)
 			if (itr instanceof Conversion) {
 				addConversionInteraction(network, (Conversion)itr);
 			} else if (itr instanceof Control) {
 				addControlInteraction(network, (Control) itr);
-			} else {
-				addPhysicalInteraction(network, itr);
+			} else if (itr instanceof MolecularInteraction){
+				addPhysicalInteraction(network, (MolecularInteraction) itr);
+			} else if (itr instanceof GeneticInteraction){
+				addGeneticInteraction(network, (GeneticInteraction) itr);
+			} else if (itr instanceof TemplateReaction){
+				addTemplateReaction(network, (TemplateReaction) itr);
+			} else { //never
+				throw new IllegalArgumentException("Bug: impossible itr type: " + itr.getModelInterface().getSimpleName());
 			}
 		}
 	}
@@ -212,68 +212,83 @@ public class BioPaxMapper {
 	}
 
 	/*
-	 * Adds a Physical Interaction, such as a binding interaction between
-	 * two proteins.
+	 * Adds a Physical Interaction (binding) between two proteins.
 	 */
-	private void addPhysicalInteraction(CyNetwork network, Interaction interactionElement) {
-		//  Add all Participants
-		Collection<Entity> participantElements = interactionElement.getParticipant();
-		for (Entity participantElement : participantElements) {
-			linkNodes(network, interactionElement, participantElement, "participant");
+	private void addPhysicalInteraction(CyNetwork network, MolecularInteraction interaction) {
+		Collection<Entity> participants = interaction.getParticipant();
+		for (Entity e : participants) {
+			linkNodes(network, e, interaction,"participant"); //like 'left'
+		}
+	}
+
+	private void addGeneticInteraction(CyNetwork network, GeneticInteraction interaction) {
+		Collection<Entity> participants = interaction.getParticipant();
+		for (Entity e : participants) {
+			linkNodes(network, e, interaction,"participant"); //like 'left'
 		}
 	}
 
 	/*
 	 * Adds a Conversion Interaction.
 	 */
-	private void addConversionInteraction(CyNetwork network, Conversion interactionElement) {
-		//  Add Left Side of Reaction
-		Collection<PhysicalEntity> leftSideElements = interactionElement.getLeft();
-		for (PhysicalEntity leftElement: leftSideElements) {
-			linkNodes(network, interactionElement, leftElement, "left");
+	private void addConversionInteraction(CyNetwork network, Conversion conversion) {
+		//Left Side
+		Collection<PhysicalEntity> leftSideElements = conversion.getLeft();
+		for (PhysicalEntity e: leftSideElements) {
+			linkNodes(network, e, conversion, "left");
 		}
+		//Right Side
+		Collection<PhysicalEntity> rightSideElements = conversion.getRight();
+		for (PhysicalEntity e : rightSideElements) {
+			linkNodes(network, conversion, e, "right");
+		}
+	}
 
-		//  Add Right Side of Reaction
-		Collection<PhysicalEntity> rightSideElements = interactionElement.getRight();
-		for (PhysicalEntity rightElement : rightSideElements) {
-			linkNodes(network, interactionElement, rightElement, "right");
+	private void addTemplateReaction(CyNetwork network, TemplateReaction templateReaction) {
+		//to fix an invalid biopax models, lets save all participants first...
+		Collection<Entity> participants = new HashSet<>(templateReaction.getParticipant());
+		//process 'template' property (can be null/empty in some data)
+		NucleicAcid template = templateReaction.getTemplate();
+		if(template != null) {
+			linkNodes(network, template, templateReaction, "template");
+			participants.remove(template);
+		}
+		// process product(s)
+		Collection<PhysicalEntity> products = templateReaction.getProduct();
+		for (PhysicalEntity e : products) {
+			linkNodes(network, templateReaction, e, "product");
+			participants.remove(e);
+		}
+		//finally, let's link the rest participants, if any, with 'participant' edge type
+		for (Entity e : participants) {
+			linkNodes(network, e, templateReaction, "participant");
 		}
 	}
 
 	/*
-	 * Add Edges Between Interaction/Complex Node and Physical Entity Node.
+	 * Add directed edge two nodes.
 	 */
-	private void linkNodes(CyNetwork network, BioPAXElement bpeA, BioPAXElement bpeB, String type)
+	private void linkNodes(CyNetwork network, BioPAXElement src, BioPAXElement tgt, String type)
 	{	
 		// Note: getCyNode also assigns cellular location attribute...
-		CyNode nodeA = bpeToCyNodeMap.get(bpeA);
-		if(nodeA == null) {
-			log.debug("linkNodes: no node was created for " 
-				+ bpeA.getModelInterface() + " " + bpeA.getUri());
-			return; //e.g., we do not create any pathway nodes currently...
+		CyNode srcNode = bpeToCyNodeMap.get(src);
+		if(srcNode == null) {
+			log.debug("linkNodes: no node was created for " + src.getModelInterface() + " " + src.getUri());
+			return;
 		}
 		
-		CyNode nodeB = bpeToCyNodeMap.get(bpeB);
-		if(nodeB == null) {
-			log.debug("linkNodes: no node was created for " 
-					+ bpeB.getModelInterface() + " " + bpeB.getUri());
-			return; //e.g., we do not create any pathway nodes currently...
+		CyNode tgtNode = bpeToCyNodeMap.get(tgt);
+		if(tgtNode == null) {
+			log.debug("linkNodes: no node was created for " + tgt.getModelInterface() + " " + tgt.getUri());
+			return;
 		}
 		
 		CyEdge edge = null;
-		String a = getName(bpeA);
-		String b = getName(bpeB);	
-		if (type.equals("right") || type.equals("cofactor")
-				|| type.equals("participant")) {
-			edge = network.addEdge(nodeA, nodeB, true);
-			Attributes.set(network, edge, CyNetwork.NAME, a + type + b, String.class);
-		} else {
-			edge = network.addEdge(nodeB, nodeA, true);
-			Attributes.set(network, edge, CyNetwork.NAME, b + type + a, String.class);
-		}
-
+		String a = getName(src);
+		String b = getName(tgt);
+		edge = network.addEdge(srcNode, tgtNode, true);
+		Attributes.set(network, edge, CyNetwork.NAME, a + type + b, String.class);
 		Attributes.set(network, edge, "interaction", type, String.class);
-		
 	}
 
 	
@@ -284,25 +299,21 @@ public class BioPaxMapper {
 		Collection<Process> controlledList = control.getControlled();		
 		for (Process process : controlledList) {
 			// Determine the BioPAX Edge Type
-			String typeStr = "controlled"; //default
-			ControlType cType = control.getControlType();
-			typeStr = (cType == null) ? typeStr : cType.toString();
-			//edge direction (trick) - from control to process (like for 'right', 'cofactor', 'participant')
-			linkNodes(network, process, control, typeStr); 
+			ControlType cType = control.getControlType(); //e.g., ACTIVATION
+			String typeStr = (cType == null) ? "controlled" : cType.toString();
+			linkNodes(network, control, process, typeStr); //from Control to controlled process (like 'right')
 		} 
 
 		Collection<Controller> controllerList = control.getController();
 		for (Controller controller : controllerList) {
-			// directed edge - from Controller to Control (like 'left')
-			linkNodes(network, control, controller, "controller");
+			linkNodes(network, controller, control, "controller"); //like 'left'
 		}
 
-		// cofactor relationships
+		// cofactor
 		if(control instanceof Catalysis) {
-			Collection<PhysicalEntity> coFactorList = ((Catalysis) control).getCofactor();
-			for(PhysicalEntity cofactor : coFactorList) {
-				// direction - from control to cofactor (like 'right', 'participant', 'controlled')
-				linkNodes(network, control, cofactor, "cofactor");
+			Collection<PhysicalEntity> coFactors = ((Catalysis) control).getCofactor();
+			for(PhysicalEntity e : coFactors) {
+				linkNodes(network, e, control,"cofactor"); //like 'left'
 			}
 		}	
 	}
@@ -601,10 +612,14 @@ public class BioPaxMapper {
 
 		String name = getName(element);
 		if (!(element instanceof Interaction)) {
-			if(element instanceof SimplePhysicalEntity || element instanceof Gene) {
+			if(element instanceof EntityReference //this is for SIF views
+				|| element instanceof PhysicalEntity
+				|| element instanceof Gene)
+			{
 				String gs = network.getRow(node, CyNetwork.DEFAULT_ATTRS).get("GENE SYMBOL", String.class);
-				if(gs != null)
-					name += " " + gs;
+				if(gs != null) {
+					name = gs; //replace other name(s) with the gene symbol(s)
+				}
 			}
 			// get chemical modification & cellular location attributes
 			NodeAttributesWrapper chemicalModificationsWrapper = getInteractionChemicalModifications(element);

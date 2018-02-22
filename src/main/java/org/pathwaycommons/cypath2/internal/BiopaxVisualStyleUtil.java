@@ -7,8 +7,10 @@ import org.biopax.paxtools.model.level3.Interaction;
 import org.biopax.paxtools.model.level3.PhysicalEntity;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.view.presentation.property.ArrowShapeVisualProperty;
+import org.cytoscape.view.presentation.property.LineTypeVisualProperty;
 import org.cytoscape.view.presentation.property.NodeShapeVisualProperty;
 import org.cytoscape.view.presentation.property.values.ArrowShape;
+import org.cytoscape.view.presentation.property.values.LineType;
 import org.cytoscape.view.presentation.property.values.NodeShape;
 import org.cytoscape.view.vizmap.*;
 import org.cytoscape.view.vizmap.mappings.DiscreteMapping;
@@ -49,9 +51,8 @@ public class BiopaxVisualStyleUtil {
 	 */
 	public static final double BIO_PAX_VISUAL_STYLE_PHYSICAL_ENTITY_NODE_SIZE_SCALE = 3;
 
-
-	static final String BIO_PAX_VISUAL_STYLE = "PC_BIOPAX";
-	static final String BINARY_SIF_VISUAL_STYLE = "PC_SIF";
+	static final String BIO_PAX_VISUAL_STYLE = "Hypergraph (PathwayCommons)"; //BioPAX
+	static final String BINARY_SIF_VISUAL_STYLE = "Binary SIF (PathwayCommons)";
 	
 	private static final double BIO_PAX_VISUAL_STYLE_INTERACTION_NODE_SIZE_SCALE = 0.67;
 	private static final double BIO_PAX_VISUAL_STYLE_COMPLEX_NODE_SIZE_SCALE = 0.67;
@@ -63,13 +64,11 @@ public class BiopaxVisualStyleUtil {
 	//edge attr. name created by the core SIF reader
 	private static final String INTERACTION = "interaction";
 	
-	
 	private final VisualStyleFactory styleFactory;
 	private final VisualMappingManager mappingManager;
 	private final VisualMappingFunctionFactory discreteFactory;
 	private final VisualMappingFunctionFactory passthroughFactory;
-	
-	
+
 	private VisualStyle simpleBiopaxStyle;
 	private VisualStyle binarySifStyle;
 	
@@ -170,11 +169,14 @@ public class BiopaxVisualStyleUtil {
 		simpleBiopaxStyle.addVisualMappingFunction(width);
 		simpleBiopaxStyle.addVisualMappingFunction(height);
 
-		// Node label
-		// create pass through mapper for node labels
+		// Node label: pass through mapper for node labels
 		simpleBiopaxStyle.addVisualMappingFunction(passthroughFactory
-				.createVisualMappingFunction(CyNetwork.NAME, String.class,
-						NODE_LABEL));
+				.createVisualMappingFunction(CyNetwork.NAME, String.class, NODE_LABEL));
+		// Tooltip
+		simpleBiopaxStyle.addVisualMappingFunction(passthroughFactory
+				.createVisualMappingFunction(BIOPAX_ENTITY_TYPE, String.class, NODE_TOOLTIP));
+		simpleBiopaxStyle.addVisualMappingFunction(passthroughFactory
+				.createVisualMappingFunction(INTERACTION, String.class, EDGE_TOOLTIP));
 
 		// Node color
 		simpleBiopaxStyle.setDefaultValue(NODE_FILL_COLOR, DEFAULT_NODE_COLOR);
@@ -197,13 +199,16 @@ public class BiopaxVisualStyleUtil {
 		simpleBiopaxStyle.addVisualMappingFunction(paintFunction);
 
 		// Target arrows
-		DiscreteMapping<String, ArrowShape> tgtArrowShape =
-				(DiscreteMapping<String, ArrowShape>) discreteFactory
-						.createVisualMappingFunction(INTERACTION, String.class, EDGE_TARGET_ARROW_SHAPE);
-		tgtArrowShape.putMapValue("right", ArrowShapeVisualProperty.DELTA);
-		tgtArrowShape.putMapValue("controlled", ArrowShapeVisualProperty.DELTA);
-		tgtArrowShape.putMapValue("cofactor", ArrowShapeVisualProperty.DELTA);
-		tgtArrowShape.putMapValue("contains", ArrowShapeVisualProperty.CIRCLE);
+		DiscreteMapping<String, ArrowShape> tgtArrowShape = (DiscreteMapping<String, ArrowShape>) discreteFactory
+				.createVisualMappingFunction(INTERACTION, String.class, EDGE_TARGET_ARROW_SHAPE);
+		//'controller' and 'left' will have default arrow shape (none)
+		tgtArrowShape.putMapValue("right", ArrowShapeVisualProperty.ARROW);
+		tgtArrowShape.putMapValue("product", ArrowShapeVisualProperty.ARROW);
+		tgtArrowShape.putMapValue("controlled", ArrowShapeVisualProperty.DELTA_SHORT_1);//rare (usually 'ACTIVATION', 'INHIBITION')
+		tgtArrowShape.putMapValue("cofactor", ArrowShapeVisualProperty.OPEN_DIAMOND);
+		tgtArrowShape.putMapValue("member", ArrowShapeVisualProperty.ARROW_SHORT);
+		tgtArrowShape.putMapValue("controller", ArrowShapeVisualProperty.CIRCLE);
+
 		// Inhibition Edges
 		for (ControlType controlType : ControlType.values()) {
 			if (controlType.toString().startsWith("I"))
@@ -217,6 +222,18 @@ public class BiopaxVisualStyleUtil {
 						ArrowShapeVisualProperty.DELTA);
 		}
 		simpleBiopaxStyle.addVisualMappingFunction(tgtArrowShape);
+
+		// Line types
+		DiscreteMapping<String, LineType> edgeLineType = (DiscreteMapping<String, LineType>) discreteFactory
+				.createVisualMappingFunction(INTERACTION, String.class, EDGE_LINE_TYPE);
+		edgeLineType.putMapValue("member", LineTypeVisualProperty.DOT);
+		edgeLineType.putMapValue("contains", LineTypeVisualProperty.LONG_DASH);
+		simpleBiopaxStyle.addVisualMappingFunction(edgeLineType);
+
+		DiscreteMapping<String, ArrowShape> srcArrowShape = (DiscreteMapping<String, ArrowShape>) discreteFactory
+				.createVisualMappingFunction(INTERACTION, String.class, EDGE_SOURCE_ARROW_SHAPE);
+		srcArrowShape.putMapValue("contains", ArrowShapeVisualProperty.OPEN_CIRCLE);
+		simpleBiopaxStyle.addVisualMappingFunction(srcArrowShape);
 
 		// Node shape
 		simpleBiopaxStyle.setDefaultValue(NODE_SHAPE, NodeShapeVisualProperty.ELLIPSE);
@@ -285,8 +302,7 @@ public class BiopaxVisualStyleUtil {
 
 		//Node shape
 		// Default shape is an ellipse.
-		binarySifStyle.setDefaultValue(NODE_SHAPE,
-				NodeShapeVisualProperty.ELLIPSE);
+		binarySifStyle.setDefaultValue(NODE_SHAPE, NodeShapeVisualProperty.ELLIPSE);
 		// Complexes are Hexagons.
 		DiscreteMapping<String, NodeShape> shapeFunction = (DiscreteMapping<String, NodeShape>) discreteFactory
 				.createVisualMappingFunction(BIOPAX_ENTITY_TYPE, String.class, NODE_SHAPE);
@@ -294,20 +310,36 @@ public class BiopaxVisualStyleUtil {
 		binarySifStyle.addVisualMappingFunction(shapeFunction);
 
 		// Node color
-		Color color = new Color(0xFF9999); //LIGHTCORAL
-		binarySifStyle.setDefaultValue(NODE_FILL_COLOR, color);
-		// Complexes and generics are a Different Color.
-		Color colorLightBlue = new Color(0x99CCFF); //light blue
+		binarySifStyle.setDefaultValue(NODE_FILL_COLOR, new Color(0xFF9999)); //LIGHTCORAL
 		DiscreteMapping<String, Paint> paintFunction = (DiscreteMapping<String, Paint>) discreteFactory
 				.createVisualMappingFunction(BIOPAX_ENTITY_TYPE, String.class, NODE_FILL_COLOR);
-		paintFunction.putMapValue("Complex", colorLightBlue);
-
+		paintFunction.putMapValue("Complex", new Color(0x99CCFF)); //LIGHTBLUE
+		paintFunction.putMapValue("RnaReference", new Color(0x2BFFD3));
+		paintFunction.putMapValue("RnaRegionReference", new Color(0x2BFFD3));
+		paintFunction.putMapValue("DnaReference", new Color(0xC9FF99));
+		paintFunction.putMapValue("DnaRegionReference", new Color(0xC9FF99));
 		binarySifStyle.addVisualMappingFunction(paintFunction);
 
-		// Node label
-		// create pass through mapper for node labels
+		// Node label: pass through mapper for node labels
 		binarySifStyle.addVisualMappingFunction(passthroughFactory
 				.createVisualMappingFunction(CyNetwork.NAME, String.class, NODE_LABEL));
+
+		// Tooltips
+		DiscreteMapping<String,String> ttFunc = (DiscreteMapping<String,String>)discreteFactory
+				.createVisualMappingFunction(BIOPAX_ENTITY_TYPE, String.class, NODE_TOOLTIP);
+		ttFunc.putMapValue("RnaReference", "RNA");
+		ttFunc.putMapValue("RnaRegionReference", "RNA Region");
+		ttFunc.putMapValue("DnaReference", "DNA");
+		ttFunc.putMapValue("DnaRegionReference", "DNA Region");
+		ttFunc.putMapValue("ProteinReference", "Protein");
+		ttFunc.putMapValue("SmallMoleculeReference", "Chemical");
+		ttFunc.putMapValue("Gene", "Gene"); //not sure it happens, anyway...
+		ttFunc.putMapValue("PhycicalEntity", "Entity"); //not sure it happens
+		ttFunc.putMapValue("Complex", "Complex");
+		binarySifStyle.addVisualMappingFunction(ttFunc);
+
+		binarySifStyle.addVisualMappingFunction(passthroughFactory
+				.createVisualMappingFunction(INTERACTION, String.class, EDGE_TOOLTIP));
 
 		binarySifStyle.setDefaultValue(EDGE_WIDTH, 4.0);
 

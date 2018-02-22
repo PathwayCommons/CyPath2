@@ -94,7 +94,8 @@ public class BioPaxReaderTask extends AbstractTask implements CyNetworkReader {
 	}
 
 	@Tunable(description="BioPAX Mapping:", groups={"Options"}, tooltip="<html>How to process the BioPAX result:" +
-			"<ul><li><strong>Hypergraph</strong>: map biopax entities, interactions to nodes; properties - edges, attributes;</li>"+
+			"<ul><li><strong>Hypergraph</strong>: map biopax entities and interactions to nodes; properties " +
+													"- to edges and table attributes;</li>"+
 				"<li><strong>Binary (SIF)</strong>: convert the BioPAX to SIF model and table attributes;</li>" +
 			"</ul></html>", gravity=500)
 	public ListSingleSelection<ReaderMode> readerMode;
@@ -142,8 +143,9 @@ public class BioPaxReaderTask extends AbstractTask implements CyNetworkReader {
 		readerMode = new ListSingleSelection<>(ReaderMode.values());
 		readerMode.setSelectedValue(ReaderMode.HYPERGRAPH);
 		
-		// init the SIF rules/patterns list
+		// init the BioPAX patterns list
 		sifSelection = new ListMultipleSelection<>(SIFEnum.values());
+		// select several interesting patterns by default:
 		List<SIFType> values = Arrays.asList(
 				SIFEnum.CONTROLS_EXPRESSION_OF,
 				SIFEnum.CONTROLS_STATE_CHANGE_OF,
@@ -184,9 +186,7 @@ public class BioPaxReaderTask extends AbstractTask implements CyNetworkReader {
 		}
 		
 		final String networkName = getNetworkName(model);
-		String msg = "Model " + networkName + " contains " 
-				+ model.getObjects().size() + " BioPAX elements";
-		log.info(msg);
+		String msg = "New model contains " + model.getObjects().size() + " BioPAX elements";
 		taskMonitor.setStatusMessage(msg);
 		
 		//set parent/root network (can be null - add a new networks group)

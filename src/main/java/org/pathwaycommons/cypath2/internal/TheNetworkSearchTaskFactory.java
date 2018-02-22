@@ -45,7 +45,7 @@ public class TheNetworkSearchTaskFactory extends AbstractNetworkSearchTaskFactor
         } else {
             String q = getQuery();
             Set<String> srcs = new HashSet<String>();
-            for (String name : q.split("[\\s,]+"))
+            for (String name : q.split("[,\\s]+"))
                 srcs.add(name);
             return new TaskIterator(new NetworkAndViewTask(
                     App.client.createGraphQuery().kind(GraphType.PATHSBETWEEN).sources(srcs), q)

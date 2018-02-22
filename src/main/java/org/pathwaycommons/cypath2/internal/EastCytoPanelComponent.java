@@ -15,6 +15,7 @@ import javax.swing.event.HyperlinkListener;
 import org.cytoscape.application.swing.CytoPanel;
 import org.cytoscape.application.swing.CytoPanelComponent;
 import org.cytoscape.application.swing.CytoPanelName;
+import org.cytoscape.application.swing.CytoPanelState;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;
 import org.cytoscape.model.events.RowsSetEvent;
@@ -148,7 +149,7 @@ public class EastCytoPanelComponent implements CytoPanelComponent, RowsSetListen
 				return;
 
 			//east panel will display info about several nodes selected (not all)
-			final Collection<CyNode> selected = new ArrayList<CyNode>();
+			final Collection<CyNode> selected = new ArrayList<>();
 			for (CyNode node : network.getNodeList()) {
 				if (network.getRow(node).get(CyNetwork.SELECTED, Boolean.class)) {
 					selected.add(node);
@@ -161,12 +162,11 @@ public class EastCytoPanelComponent implements CytoPanelComponent, RowsSetListen
 				// If legend is showing, show details
 				showDetails();
 
-				//Show (if hidden) "Node Details" tab in the "Results Panel" (East CytoPanel)
-				CytoPanel eastCytoPanel = App.cyServices.cySwingApplication.getCytoPanel(CytoPanelName.EAST);
-//			if(eastCytoPanel.getState() != CytoPanelState.DOCK)
-//				eastCytoPanel.setState(CytoPanelState.DOCK);
-				int idx = eastCytoPanel.indexOfComponent(component);
-				eastCytoPanel.setSelectedIndex(idx);
+				//Show "Node Details" tab in the "Results Panel" ("View/Show Results Panel" menu action)
+				CytoPanel resultsPanel = App.cyServices.cySwingApplication.getCytoPanel(CytoPanelName.EAST);
+				if(resultsPanel.getState() != CytoPanelState.DOCK)
+					resultsPanel.setState(CytoPanelState.DOCK);
+				resultsPanel.setSelectedIndex(resultsPanel.indexOfComponent(component));
 
 				//auto-disable/enable "Legend" link (currently, it makes sense for BioPAX-SIF views only...)
 				if(BioPaxUtil.isSifFromBiopax(network)) {
