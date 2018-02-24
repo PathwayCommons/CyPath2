@@ -45,16 +45,14 @@ public class LegendPanel extends JPanel {
 		}
 		temp.append("</body></html>");
 		textPane.setText(temp.toString());
-		textPane.addHyperlinkListener(new HyperlinkListener() {
-            public void hyperlinkUpdate(HyperlinkEvent hyperlinkEvent) {
-                if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-                    String name = hyperlinkEvent.getDescription();
-                    if (name.equalsIgnoreCase("filter")) {
-                        new EdgeFilterUi(App.cyServices.applicationManager.getCurrentNetwork());
-                    }
-					else {
-						App.cyServices.openBrowser.openURL(hyperlinkEvent.getURL().toString());
-					}
+		textPane.addHyperlinkListener(hyperlinkEvent -> {
+            if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+                String name = hyperlinkEvent.getDescription();
+                if (name.equalsIgnoreCase("filter")) {
+                    new EdgeFilterUi(App.cyServices.applicationManager.getCurrentNetwork());
+                }
+                else {
+                    App.cyServices.openBrowser.openURL(hyperlinkEvent.getURL().toString());
                 }
             }
         });

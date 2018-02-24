@@ -25,33 +25,14 @@ final class BioPaxUtil {
 	 * @param cyNetwork
 	 */
 	static boolean isFromBiopax(CyNetwork cyNetwork) {
+		if(cyNetwork==null)
+			return false;
 		//true if the attribute column exists
 		CyTable cyTable = cyNetwork.getDefaultNodeTable();
 		return cyTable.getColumn(BIOPAX_ENTITY_TYPE) != null
 				&& cyTable.getColumn(BIOPAX_URI) != null;
 	}
-	
-	
-	/*
-	 * Detects whether a network was generated from BioPAX data
-	 * using the default mapping method, where physical entities 
-	 * and interactions make nodes, and BioPAX Entity class
-	 * (both for the domain and range) properties make edges.
-	 * 
-	 * This is mainly to decide whether to watch for node selection
-	 * events or not, to update the Results Panel (eastern) with the node's 
-	 * info and visual legend. 
-	 * 
-	 * @param cyNetwork
-	 */
-	static boolean isDefaultBiopax(CyNetwork cyNetwork) {
-        boolean biopax = false;
-		String type = cyNetwork.getRow(cyNetwork).get(BIOPAX_NETWORK, String.class);
-		if("DEFAULT".equalsIgnoreCase(type) || BiopaxVisualStyleUtil.BIO_PAX_VISUAL_STYLE.equalsIgnoreCase(type))
-            biopax = true;		
-		return isFromBiopax(cyNetwork) && biopax; 
-	}
-	
+
 	
 	/*
 	 * Detects whether it's a SIF network converted from BioPAX.

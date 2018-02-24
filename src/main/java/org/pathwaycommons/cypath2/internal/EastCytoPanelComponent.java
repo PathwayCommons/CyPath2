@@ -60,15 +60,13 @@ public class EastCytoPanelComponent implements CytoPanelComponent, RowsSetListen
 		final Font font = label.getFont();
 		label.setFont(new Font(font.getFamily(), font.getStyle(), font.getSize() + 1));
 		label.setBorder(new EmptyBorder(5, 3, 3, 3));
-		label.addHyperlinkListener(new HyperlinkListener() {
-			public void hyperlinkUpdate(HyperlinkEvent hyperlinkEvent) {
-				if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-					String name = hyperlinkEvent.getDescription();
-					if (name.equalsIgnoreCase("LEGEND")) {
-						showLegend();
-					} else {
-						showDetails();
-					}
+		label.addHyperlinkListener(hyperlinkEvent -> {
+			if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+				String name = hyperlinkEvent.getDescription();
+				if (name.equalsIgnoreCase("LEGEND")) {
+					showLegend();
+				} else {
+					showDetails();
 				}
 			}
 		});
@@ -96,14 +94,11 @@ public class EastCytoPanelComponent implements CytoPanelComponent, RowsSetListen
 
 	public void showDetails() {
 		final CyNetwork network = App.cyServices.applicationManager.getCurrentNetwork();
-		if (network!= null && BioPaxUtil.isFromBiopax(network)) {
-			SwingUtilities.invokeLater(new Runnable() {
-				@Override
-				public void run() {
-					CardLayout cl = (CardLayout) (cards.getLayout());
-					cl.show(cards, DETAILS_CARD);
-					label.setText("<a href='LEGEND'>Legend</a>");
-				}
+		if (BioPaxUtil.isFromBiopax(network)) {
+			SwingUtilities.invokeLater(() -> {
+				CardLayout cl = (CardLayout) (cards.getLayout());
+				cl.show(cards, DETAILS_CARD);
+				label.setText("<a href='LEGEND'>Legend</a>");
 			});
 		}
 	}
@@ -111,18 +106,19 @@ public class EastCytoPanelComponent implements CytoPanelComponent, RowsSetListen
 	public void showLegend() {
 		final CyNetwork network = App.cyServices.applicationManager.getCurrentNetwork();
 		if (network != null) {
-			SwingUtilities.invokeLater(new Runnable() {
-				@Override
-				public void run() {
+			SwingUtilities.invokeLater(() -> {
 					CardLayout cl = (CardLayout) (cards.getLayout());
-					if (BioPaxUtil.isSifFromBiopax(network)) {
+//					if (BioPaxUtil.isSifFromBiopax(network)) {
+//						cl.show(cards, LEGEND_CARD);
+//						label.setText("<a href='DETAILS'>Details</a>");
+//					} else if (BioPaxUtil.isFromBiopax(network)) {
+//						cl.show(cards, DETAILS_CARD);
+//						label.setText("<a href='LEGEND'>Legend</a>");
+//					}
+					if (BioPaxUtil.isFromBiopax(network)) { //also means isSifFromBiopax=true
 						cl.show(cards, LEGEND_CARD);
 						label.setText("<a href='DETAILS'>Details</a>");
-					} else if (BioPaxUtil.isFromBiopax(network)) {
-						cl.show(cards, DETAILS_CARD);
-						label.setText("<a href='LEGEND'>Legend</a>");
 					}
-				}
 			});
 		}
 	}
@@ -164,13 +160,13 @@ public class EastCytoPanelComponent implements CytoPanelComponent, RowsSetListen
 				resultsPanel.setSelectedIndex(resultsPanel.indexOfComponent(component));
 
 				//auto-disable/enable "Legend" link (currently, it makes sense for BioPAX-SIF views only...)
-				if(BioPaxUtil.isSifFromBiopax(network)) {
-					label.setEnabled(true);
-					label.setVisible(true);
-				} else {
-					label.setEnabled(false);
-					label.setVisible(false);
-				}
+//				if(BioPaxUtil.isSifFromBiopax(network)) {
+//					label.setEnabled(true);
+//					label.setVisible(true);
+//				} else {
+//					label.setEnabled(false);
+//					label.setVisible(false);
+//				}
 			}
 		}
 	}

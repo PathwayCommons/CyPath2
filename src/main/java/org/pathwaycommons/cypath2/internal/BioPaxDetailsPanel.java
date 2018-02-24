@@ -53,10 +53,9 @@ public class BioPaxDetailsPanel extends JPanel {
 
 	public BioPaxDetailsPanel(OpenBrowser browser) {
 		textPane = new JTextPane();
-		//  Set Editor Kit that is capable of handling long words
-		MyEditorKit kit = new MyEditorKit();
+		// Set Editor Kit that is capable of handling long words
+		textPane.setEditorKit(new MyEditorKit());
 
-		textPane.setEditorKit(kit);
         modifyStyleSheetForSingleDocument(textPane);
 
         textPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
