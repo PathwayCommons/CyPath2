@@ -27,7 +27,7 @@
 	
 	<groupId>org.pathwaycommons</groupId>
 	<artifactId>cypath2</artifactId>
-	<version>1.2.2</version>
+	<version>1.2.3-SNAPSHOT</version>
 	
 	<name>CyPath2</name>
 	<description>
