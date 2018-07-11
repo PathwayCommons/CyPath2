@@ -13,12 +13,12 @@
 		<osgi.api.version>4.2.0</osgi.api.version>
 		<paxtools.version>5.1.0-SNAPSHOT</paxtools.version>
 		<cpath2.version>8.0.0-SNAPSHOT</cpath2.version>
-		<spring.version>4.3.7.RELEASE</spring.version>
+		<spring.version>5.0.7.RELEASE</spring.version>
 		<maven-enforcer-plugin>1.2</maven-enforcer-plugin>
 		<slf4j.version>1.7.25</slf4j.version>
 		<java.version>1.8</java.version>
 		<maven.version.range>[3.0.0,4.0.0)</maven.version.range>
-		<maven-bundle-plugin.version>3.0.1</maven-bundle-plugin.version>
+		<maven-bundle-plugin.version>3.0.0</maven-bundle-plugin.version>
 		<maven-compiler-plugin.version>3.3</maven-compiler-plugin.version>
 		<junit.version>4.12</junit.version>
 		<timestamp>${maven.build.timestamp}</timestamp>
