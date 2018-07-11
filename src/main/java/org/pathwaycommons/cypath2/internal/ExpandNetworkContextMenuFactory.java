@@ -11,9 +11,9 @@ import org.cytoscape.work.TaskIterator;
  */
 final class ExpandNetworkContextMenuFactory extends AbstractNodeViewTaskFactory {
 
-	@Override
-	public TaskIterator createTaskIterator(View<CyNode> cyNodeView, CyNetworkView cyNetworkView) {
-		return new TaskIterator(new ExpandNetworkTask(cyNetworkView, cyNodeView));
-	}
+  @Override
+  public TaskIterator createTaskIterator(View<CyNode> cyNodeView, CyNetworkView cyNetworkView) {
+    return new TaskIterator(new ExpandNetworkTask(cyNetworkView, cyNodeView));
+  }
 
 }
