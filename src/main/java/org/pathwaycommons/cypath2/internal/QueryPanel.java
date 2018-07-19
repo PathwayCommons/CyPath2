@@ -2,9 +2,7 @@ package org.pathwaycommons.cypath2.internal;
 
 import cpath.client.CPathClient;
 import cpath.client.CPathClient.Direction;
-import cpath.query.CPathGetQuery;
-import cpath.query.CPathGraphQuery;
-import cpath.service.GraphType;
+import cpath.client.query.*;
 import org.cytoscape.work.TaskIterator;
 
 import javax.swing.*;

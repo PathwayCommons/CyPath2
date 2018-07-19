@@ -1,7 +1,7 @@
 package org.pathwaycommons.cypath2.internal;
 
-import cpath.service.jaxb.SearchHit;
-import cpath.service.jaxb.SearchResponse;
+import cpath.client.query.SearchHit;
+import cpath.client.query.SearchResponse;
 
 import javax.swing.*;
 import java.awt.event.MouseEvent;

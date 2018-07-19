@@ -1,7 +1,7 @@
 package org.pathwaycommons.cypath2.internal;
 
+import cpath.client.query.CPathQuery;
 import cpath.client.util.CPathException;
-import cpath.query.CPathQuery;
 import org.biopax.paxtools.model.Model;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.view.layout.CyLayoutAlgorithm;

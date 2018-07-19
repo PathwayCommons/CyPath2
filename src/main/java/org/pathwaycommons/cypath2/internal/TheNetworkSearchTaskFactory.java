@@ -1,6 +1,6 @@
 package org.pathwaycommons.cypath2.internal;
 
-import cpath.service.GraphType;
+import cpath.client.query.GraphType;
 import org.cytoscape.application.swing.CyAction;
 import org.cytoscape.application.swing.search.AbstractNetworkSearchTaskFactory;
 import org.cytoscape.work.AbstractTask;

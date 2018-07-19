@@ -2,9 +2,7 @@ package org.pathwaycommons.cypath2.internal;
 
 import cpath.client.CPathClient;
 import cpath.client.util.CPathException;
-import cpath.service.GraphType;
-import cpath.service.jaxb.SearchHit;
-import cpath.service.jaxb.SearchResponse;
+import cpath.client.query.*;
 import org.biopax.paxtools.pattern.util.Blacklist;
 import org.cytoscape.io.webservice.NetworkImportWebServiceClient;
 import org.cytoscape.io.webservice.SearchWebServiceClient;

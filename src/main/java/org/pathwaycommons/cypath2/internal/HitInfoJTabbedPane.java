@@ -1,9 +1,6 @@
 package org.pathwaycommons.cypath2.internal;
 
-import cpath.query.CPathGetQuery;
-import cpath.query.CPathGraphQuery;
-import cpath.service.GraphType;
-import cpath.service.jaxb.SearchHit;
+import cpath.client.query.*;
 import org.biopax.paxtools.controller.SimpleEditorMap;
 import org.biopax.paxtools.model.BioPAXElement;
 import org.biopax.paxtools.model.level3.Interaction;

@@ -1,8 +1,8 @@
 package org.pathwaycommons.cypath2.internal;
 
 import cpath.client.CPathClient.Direction;
-import cpath.query.CPathGraphQuery;
-import cpath.service.GraphType;
+import cpath.client.query.CPathGraphQuery;
+import cpath.client.query.GraphType;
 import org.cytoscape.model.CyColumn;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;

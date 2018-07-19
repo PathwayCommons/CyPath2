@@ -1,6 +1,6 @@
 package org.pathwaycommons.cypath2.internal;
 
-import cpath.service.jaxb.SearchHit;
+import cpath.client.query.SearchHit;
 
 import javax.swing.*;
 import javax.swing.event.TreeModelEvent;

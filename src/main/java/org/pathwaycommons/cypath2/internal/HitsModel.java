@@ -2,11 +2,7 @@ package org.pathwaycommons.cypath2.internal;
 
 import cpath.client.CPathClient.Direction;
 import cpath.client.util.CPathException;
-import cpath.service.GraphType;
-import cpath.service.jaxb.SearchHit;
-import cpath.service.jaxb.SearchResponse;
-import cpath.service.jaxb.TraverseEntry;
-import cpath.service.jaxb.TraverseResponse;
+import cpath.client.query.*;
 import org.apache.commons.lang3.StringUtils;
 import org.cytoscape.work.TaskManager;
 import org.slf4j.Logger;
