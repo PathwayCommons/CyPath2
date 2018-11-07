@@ -11,7 +11,7 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<cytoscape.api.version>3.6.0</cytoscape.api.version>
 		<osgi.api.version>4.2.0</osgi.api.version>
-		<paxtools.version>5.1.0-SNAPSHOT</paxtools.version>
+		<paxtools.version>5.1.0</paxtools.version>
 		<cpath2.version>10.0.0-SNAPSHOT</cpath2.version>
 		<spring.version>5.0.7.RELEASE</spring.version>
 		<maven-enforcer-plugin>1.2</maven-enforcer-plugin>
@@ -19,7 +19,7 @@
 		<java.version>1.8</java.version>
 		<maven.version.range>[3.0.0,4.0.0)</maven.version.range>
 		<maven-bundle-plugin.version>3.0.0</maven-bundle-plugin.version>
-		<maven-compiler-plugin.version>3.3</maven-compiler-plugin.version>
+		<maven-compiler-plugin.version>3.8.0</maven-compiler-plugin.version>
 		<junit.version>4.12</junit.version>
 		<timestamp>${maven.build.timestamp}</timestamp>
 		<maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
@@ -309,21 +309,6 @@
 				<exclusion>
 					<groupId>commons-logging</groupId>
 					<artifactId>commons-logging</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.biopax.paxtools</groupId>
-			<artifactId>paxtools-core</artifactId>
-			<version>${paxtools.version}</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>log4j</artifactId>
-					<groupId>log4j</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>commons-logging</artifactId>
-					<groupId>commons-logging</groupId>
 				</exclusion>
 			</exclusions>
 		</dependency>
