@@ -12,7 +12,7 @@
 		<cytoscape.api.version>3.6.0</cytoscape.api.version>
 		<osgi.api.version>4.2.0</osgi.api.version>
 		<paxtools.version>5.1.0</paxtools.version>
-		<cpath2.version>9.0.1-SNAPSHOT</cpath2.version>
+		<cpath2.version>9.0.0-SNAPSHOT</cpath2.version>
 		<spring.version>4.3.7.RELEASE</spring.version>
 		<maven-enforcer-plugin>1.2</maven-enforcer-plugin>
 		<slf4j.version>1.7.25</slf4j.version>
