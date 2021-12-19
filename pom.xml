@@ -27,7 +27,7 @@
 	
 	<groupId>org.pathwaycommons</groupId>
 	<artifactId>cypath2</artifactId>
-	<version>1.2.3-SNAPSHOT</version>
+	<version>1.2.4-SNAPSHOT</version>
 	
 	<name>CyPath2</name>
 	<description>
@@ -170,7 +170,7 @@
 				<enabled>true</enabled>
 			</releases>
 			<name>Cytoscape Releases</name>
-			<url>http://code.cytoscape.org/nexus/content/repositories/releases/</url>
+			<url>http://nrnb-nexus.ucsd.edu/repository/cytoscape_releases/</url>
 		</repository>
 		<repository>
 			<id>cytoscape_thirdparty</id>
@@ -181,7 +181,7 @@
 				<enabled>true</enabled>
 			</releases>
 			<name>Cytoscape Third Party</name>
-			<url>http://code.cytoscape.org/nexus/content/repositories/thirdparty/</url>
+			<url>http://nrnb-nexus.ucsd.edu/repository/cytoscape_thirdparty/</url>
 		</repository>
 		<repository>
 			<id>ossrh-public</id>
@@ -195,13 +195,7 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>org.ops4j.pax.logging</groupId>
-			<artifactId>pax-logging-api</artifactId>
-			<version>[1.5.2,2)</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>cytoscape-temp</groupId>
+			<groupId>org.codehaus.woodstox</groupId>
 			<artifactId>woodstox-core-lgpl</artifactId>
 			<version>[4.0.5, 5)</version>
 			<scope>provided</scope>
@@ -300,6 +294,11 @@
 			<artifactId>group-api</artifactId>
 			<version>${cytoscape.api.version}</version>
 			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.biopax.paxtools</groupId>
+			<artifactId>paxtools-core</artifactId>
+			<version>${paxtools.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>pathwaycommons.cpath</groupId>
