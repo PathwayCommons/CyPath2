@@ -12,14 +12,14 @@
 		<cytoscape.api.version>3.6.0</cytoscape.api.version>
 		<osgi.api.version>4.2.0</osgi.api.version>
 		<paxtools.version>5.1.0</paxtools.version>
-		<cpath2.version>10.0.0-SNAPSHOT</cpath2.version>
+		<cpath2.version>10.0.1-SNAPSHOT</cpath2.version>
 		<spring.version>5.0.7.RELEASE</spring.version>
 		<maven-enforcer-plugin>1.2</maven-enforcer-plugin>
 		<slf4j.version>1.7.25</slf4j.version>
-		<java.version>1.8</java.version>
+		<java.version>11</java.version>
 		<maven.version.range>[3.0.0,4.0.0)</maven.version.range>
-		<maven-bundle-plugin.version>3.0.0</maven-bundle-plugin.version>
-		<maven-compiler-plugin.version>3.8.0</maven-compiler-plugin.version>
+		<maven-bundle-plugin.version>3.5.1</maven-bundle-plugin.version>
+		<maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
 		<junit.version>4.13.1</junit.version>
 		<timestamp>${maven.build.timestamp}</timestamp>
 		<maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
@@ -27,7 +27,7 @@
 	
 	<groupId>org.pathwaycommons</groupId>
 	<artifactId>cypath2</artifactId>
-	<version>1.2.4-SNAPSHOT</version>
+	<version>1.2.5-SNAPSHOT</version>
 
 	
 	<name>CyPath2</name>
@@ -37,21 +37,21 @@
 	interactions, collected from several major pathway data providers 
 	based on their BioPAX and PSI-MI formatted export files. 
 	The PC team selects, validates, normalizes, merges, indexes 
-	the data and runs a web service (http://www.pathwaycommons.org/pc2/),
+	the data and runs a web service (https://www.pathwaycommons.org/pc2/),
 	powered by the cPath2 software, to which this app connects.
 	</description>
 
 	<organization>
 		<name>Pathway Commons</name>
-		<url>http://www.pathwaycommons.org</url>
+		<url>https://www.pathwaycommons.org</url>
 	</organization>
 
 	<packaging>bundle</packaging>
 
 	<scm>
-		<connection>scm:git:git://github.com/PathwayCommons/cpath2-cytoscape-app.git</connection>
-		<developerConnection>scm:git:git@github.com:PathwayCommons/cpath2-cytoscape-app.git</developerConnection>
-		<url>https://github.com/PathwayCommons/cpath2-cytoscape-app.git</url>
+		<connection>scm:git:git://github.com/PathwayCommons/CyPath2.git</connection>
+		<developerConnection>scm:git:git@github.com:PathwayCommons/CyPath2.git</developerConnection>
+		<url>https://github.com/PathwayCommons/CyPath2.git</url>
 	</scm>
 
 	<build>
@@ -171,7 +171,7 @@
 				<enabled>true</enabled>
 			</releases>
 			<name>Cytoscape Releases</name>
-			<url>http://nrnb-nexus.ucsd.edu/repository/cytoscape_releases/</url>
+			<url>https://nrnb-nexus.ucsd.edu/repository/cytoscape_releases/</url>
 		</repository>
 		<repository>
 			<id>cytoscape_thirdparty</id>
@@ -182,7 +182,7 @@
 				<enabled>true</enabled>
 			</releases>
 			<name>Cytoscape Third Party</name>
-			<url>http://nrnb-nexus.ucsd.edu/repository/cytoscape_thirdparty/</url>
+			<url>https://nrnb-nexus.ucsd.edu/repository/cytoscape_thirdparty/</url>
 		</repository>
 		<repository>
 			<id>ossrh-public</id>
