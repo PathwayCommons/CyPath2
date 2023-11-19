@@ -1,7 +1,8 @@
 # Pathway Commons App for Cytoscape 3
-(aka CyPath2)
+(CyPath2)
 
-[![Build Status](https://secure.travis-ci.org/PathwayCommons/CyPath2.png?branch=master)](http://travis-ci.org/PathwayCommons/CyPath2) 
+[![Build with Maven](https://github.com/PathwayCommons/CyPath2/actions/workflows/build.yml/badge.svg)](https://github.com/PathwayCommons/CyPath2/actions/workflows/build.yml)
+
 ---
 
 This is a [Cytoscape 3](http://www.cytoscape.org) app (plugin) that use the cPath2 Java client and API libraries. 

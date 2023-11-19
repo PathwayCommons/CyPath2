@@ -1,8 +1,0 @@
-language: java
-jdk:
-  - oraclejdk8
-cache:
-  directories:
-    - $HOME/.m2
-notifications:
-  slack: pathwaycommons:EDRQfFuGFr8Xn93M5xNMPVRB

@@ -1,0 +1,13 @@
+name: Build with Maven
+
+on:
+  push:
+    branches: 
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    uses: PathwayCommons/cpath2/.github/workflows/maven.yml@master
